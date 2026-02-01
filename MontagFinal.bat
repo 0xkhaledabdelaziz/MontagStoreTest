@@ -2,24 +2,13 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] ADMIN FORCE + FORCE MAXIMIZE
+:: [1] SIMPLE SETUP (SAFE MODE)
 :: ============================================================
-cd /d "%~dp0"
-FSUTIL dirty query %systemdrive% >nul
-if %errorlevel% neq 0 (
-    powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Maximized"
-    exit
-)
-
-:: ============================================================
-:: [1] VISUAL SETUP
-:: ============================================================
+:: لغينا كود الأدمن وكود التكبير عشان ميكرش
 chcp 65001 >nul
-mode con: cols=150 lines=60
-reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
-
-title Montag Store - Enterprise System (V 193.0 Stable)
 color 07
+title Montag Store - Enterprise System (Safe Mode)
+cls
 
 :: ============================================================
 :: [2] CONFIGURATION
@@ -44,7 +33,7 @@ set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headph
 set "UrlHwi=https://www.dropbox.com/scl/fi/fjtwrg3boc8zj88ml2jxs/HWiNFO64.EXE?rlkey=m64f5qxup91iq8ew09imqfcs0&st=9eqs19xe&dl=1"
 set "UrlRar=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1"
 
-:: Download Icon
+:: Download Icon (Silent)
 if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
 
 :: Visuals
@@ -60,7 +49,7 @@ set "Yellow=%ESC%[33m"
 set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
-:: Checkmarks
+:: Checkmarks Init
 for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress) do if not defined mark_%%i set "mark_%%i=   "
 
 :: ============================================================
@@ -69,28 +58,18 @@ for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBa
 :MainMenu
 cls
 echo.
-echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
+echo %PAD%%Pink%MONTAG STORE - ENTERPRISE SYSTEM%Reset%
+echo %PAD%%Cyan%============================================================%Reset%
 echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%    %Bold%%White%[1]%Reset% HARDWARE TESTS       %Bold%%White%[2]%Reset% WINDOWS SETUP
+echo %PAD%    %Bold%%White%[3]%Reset% DRIVERS CENTER       %Bold%%White%[4]%Reset% SOFTWARE HUB
+echo %PAD%    %Bold%%White%[5]%Reset% PRINT SPEC LABEL
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% %Cyan%HARDWARE TESTS%Reset%      %Gray%(Key/Screen)%Reset%            %Bold%%White%[2]%Reset% %Cyan%WINDOWS SETUP%Reset%       %Gray%(Perf/Name)%Reset%
+echo %PAD%%Cyan%------------------------------------------------------------%Reset%
+echo %PAD%    %Green%[R] FINISH + UPLOAD REPORT%Reset%     %Red%[X] EXIT%Reset%
+echo %PAD%%Cyan%============================================================%Reset%
 echo.
-echo %PAD%    %Bold%%White%[3]%Reset% %Cyan%DRIVERS CENTER%Reset%      %Gray%(Back/Rest)%Reset%             %Bold%%White%[4]%Reset% %Cyan%SOFTWARE HUB%Reset%        %Gray%(Apps/Winget)%Reset%
-echo.
-echo %PAD%    %Bold%%White%[5]%Reset% %Cyan%PRINT SPEC LABEL%Reset%    %Gray%(ZPL/Side)%Reset%
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%           %Green%[R] FINISH + UPLOAD REPORT%Reset%                       %Red%[X] EXIT + WIPE CACHE%Reset%
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%^> Select Option:%Reset% 
+echo %PAD%%Yellow%^> Option:%Reset% 
 choice /c 12345rx /n
 
 if %errorlevel%==7 goto ExitCleanup
@@ -108,32 +87,16 @@ goto MainMenu
 :Menu_Hardware
 cls
 echo.
-echo %PAD%%Pink%██╗  ██╗ █████╗ ██████╗ ██╗    ██╗ █████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%██║  ██║██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%███████║███████║██████╔╝██║ █╗ ██║███████║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%██╔══██║██╔══██║██╔══██╗██║███╗██║██╔══██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║  ██║██║  ██║██║  ██║╚███╔███╔╝██║  ██║██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝%Reset%
+echo %PAD%%Pink%[ HARDWARE DIAGNOSTICS ]%Reset%
 echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD% [1] KEYBOARD      %mark_Key%      [2] SCREEN        %mark_Screen%
+echo %PAD% [3] CAMERA        %mark_Cam%      [4] AUDIO         %mark_Audio%
+echo %PAD% [5] BATTERY       %mark_Batt%     [6] SENSORS       %mark_Sensor%
+echo %PAD% [7] WARRANTY      %mark_Warranty% [8] STRESS TEST   %mark_Stress%
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% KEYBOARD TEST       %Green%!mark_Key!%Reset%             %Bold%%White%[2]%Reset% SCREEN TEST         %Green%!mark_Screen!%Reset%
+echo %PAD%                                  %Gray%[0] BACK%Reset%
 echo.
-echo %PAD%    %Bold%%White%[3]%Reset% CAMERA TEST         %Green%!mark_Cam!%Reset%             %Bold%%White%[4]%Reset% AUDIO TEST          %Green%!mark_Audio!%Reset%
-echo.
-echo %PAD%    %Bold%%White%[5]%Reset% BATTERY REPORT      %Green%!mark_Batt!%Reset%             %Bold%%White%[6]%Reset% SENSORS (HWiNFO)    %Green%!mark_Sensor!%Reset%
-echo.
-echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
-echo.
-echo %PAD%    %Bold%%White%[7]%Reset% CHECK WARRANTY      %Green%!mark_Warranty!%Reset%         %Bold%%White%[8]%Reset% SYSTEM STRESS TEST  %Green%!mark_Stress!%Reset%
-echo.
-echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
-echo.
-echo %PAD%                                     %Gray%[0] BACK TO MAIN%Reset%
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%^> Select Test:%Reset% 
+echo %PAD%%Yellow%^> Test:%Reset% 
 choice /c 123456780 /n
 
 if %errorlevel%==9 goto MainMenu
@@ -151,46 +114,30 @@ goto Menu_Hardware
 :StressTest
 cls
 echo.
-echo %PAD%%Red%[CAUTION] STARTING STRESS TEST (60 SECONDS)%Reset%
-echo %PAD%This will push CPU to 100%% usage.
-pause >nul
-powershell -Command "$s=[System.Diagnostics.Stopwatch]::StartNew();$j=@();1..[Environment]::ProcessorCount|%%{$j+=Start-Job -ScriptBlock{$r=1;while($true){$r=$r*1.000001}}};Write-Host ' [!] CPU 100% Load Active...';while($s.Elapsed.TotalSeconds -lt 60){Start-Sleep 1};$j|Stop-Job|Remove-Job"
+echo %PAD%%Red%[STRESS TEST] CPU 100% Load for 60s...%Reset%
+powershell -Command "$s=[System.Diagnostics.Stopwatch]::StartNew();$j=@();1..[Environment]::ProcessorCount|%%{$j+=Start-Job -ScriptBlock{$r=1;while($true){$r=$r*1.000001}}};Write-Host 'Running...';while($s.Elapsed.TotalSeconds -lt 60){Start-Sleep 1};$j|Stop-Job|Remove-Job"
 set "mark_Stress=[OK]"
-timeout /t 2 >nul
 goto Menu_Hardware
 
 :CheckWarranty
 cls
-echo %PAD%%Cyan%Detecting Serial Number...%Reset%
+echo %PAD%Checking Serial...
 for /f "usebackq delims=" %%a in (`powershell -Command "(Get-WmiObject Win32_Bios).SerialNumber"`) do set "SN=%%a"
 for /f "usebackq delims=" %%a in (`powershell -Command "(Get-WmiObject Win32_ComputerSystem).Manufacturer"`) do set "MFG=%%a"
-echo.
-echo %PAD%Serial: %White%%SN%%Reset%
-echo %PAD%Brand : %White%%MFG%%Reset%
-echo.
-echo %PAD%Opening Warranty Page...
+echo %PAD%Serial: %SN%
 if /i "%MFG%"=="Dell Inc." start "" "https://www.dell.com/support/home/en-us/product-support/servicetag/%SN%/overview"
 if /i "%MFG%"=="HP" start "" "https://support.hp.com/us-en/checkwarranty"
 if /i "%MFG%"=="Lenovo" start "" "https://pcsupport.lenovo.com/us/en/warrantylookup"
 set "mark_Warranty=[OK]"
-timeout /t 2 >nul
 goto Menu_Hardware
 
 :DownloadAndRun
 set "Exe=%ToolDir%\%ExeName%"
 if not exist "%ToolDir%" mkdir "%ToolDir%"
 if exist "%Exe%" (start "" "%Exe%" & goto ReturnPoint)
-mode con: cols=90 lines=22
-cls
-echo.
-echo %PAD%%Cyan%[ DOWNLOAD MANAGER ]%Reset%
-echo %PAD%--------------------
-echo.
-echo %PAD%%Yellow%File: %White%%ExeName%
-echo.
+echo %PAD%Downloading %ExeName%...
 curl -L -k -# -o "%Exe%" "%TargetUrl%"
-mode con: cols=150 lines=60
-if exist "%Exe%" (start "" "%Exe%") else (echo %PAD%%Red%[ERROR] Failed.%Reset% & pause)
+if exist "%Exe%" (start "" "%Exe%") else (echo %PAD%Failed. & pause)
 :ReturnPoint
 if "%ExeName%"=="WinRAR.exe" goto Menu_Software
 if "%ExeName%"=="DefCont.rar" goto Menu_Software
@@ -210,27 +157,17 @@ goto Menu_Hardware
 :Menu_Windows
 cls
 echo.
-echo %PAD%%Pink%██╗    ██╗██╗███╗   ██╗██████╗  ██████╗ ██╗    ██╗███████╗%Reset%
-echo %PAD%%Pink%██║    ██║██║████╗  ██║██╔══██╗██╔═══██╗██║    ██║██╔════╝%Reset%
-echo %PAD%%Pink%██║ █╗ ██║██║██╔██╗ ██║██║  ██║██║   ██║██║ █╗ ██║███████╗%Reset%
-echo %PAD%%Pink%██║███╗██║██║██║╚██╗██║██║  ██║██║   ██║██║███╗██║╚════██║%Reset%
-echo %PAD%%Pink%╚███╔███╔╝██║██║ ╚████║██████╔╝╚██████╔╝╚███╔███╔╝███████║%Reset%
-echo %PAD%%Pink% ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚══════╝%Reset%
+echo %PAD%%Pink%[ WINDOWS SETUP ]%Reset%
 echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD% [1] HIGH PERF     %mark_HighPerf% [2] ARABIC KEY    %mark_Arab%
+echo %PAD% [3] WIN UPDATE    %mark_WinUpd%   [4] RENAME PC     %mark_Name%
+echo %PAD% [5] ACTIVATE      %mark_Active%   [6] DEBLOAT       %mark_Bloat%
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% HIGH PERF + NO SLEEP  %Green%!mark_HighPerf!%Reset%         %Bold%%White%[2]%Reset% ARAB KEY + EGYPT REG  %Green%!mark_Arab!%Reset%
+echo %PAD%                                  %Gray%[0] BACK%Reset%
 echo.
-echo %PAD%    %Bold%%White%[3]%Reset% CHECK WINDOWS UPDATE  %Green%!mark_WinUpd!%Reset%           %Bold%%White%[4]%Reset% RENAME PC ^& USER     %Green%!mark_Name!%Reset%
-echo.
-echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE ORIGINAL KEY %Green%!mark_Active!%Reset%          %Bold%%White%[6]%Reset% REMOVE BLOATWARE      %Green%!mark_Bloat!%Reset%
-echo.
-echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
-echo.
-echo %PAD%                                     %Gray%[0] BACK%Reset%
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%%Yellow%^> Option:%Reset% 
 choice /c 1234560 /n
+
 if %errorlevel%==7 goto MainMenu
 if %errorlevel%==6 goto RemoveBloatware
 if %errorlevel%==5 goto ActivateOEM
@@ -241,68 +178,39 @@ if %errorlevel%==1 (set "mark_HighPerf=[OK]" & goto HighPerf)
 goto Menu_Windows
 
 :RemoveBloatware
-cls
-echo.
-echo %PAD%%Red%[CLEANUP] Removing Bloatware...%Reset%
-echo %PAD%Please wait...
-powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage; Get-AppxPackage *solitaire* | Remove-AppxPackage; Get-AppxPackage *bingweather* | Remove-AppxPackage; Get-AppxPackage *getstarted* | Remove-AppxPackage; Get-AppxPackage *feedback* | Remove-AppxPackage" >nul 2>&1
+echo %PAD%Removing Apps...
+powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage; Get-AppxPackage *solitaire* | Remove-AppxPackage; Get-AppxPackage *bingweather* | Remove-AppxPackage" >nul 2>&1
 set "mark_Bloat=[OK]"
-echo %PAD%%Green%[OK] System Cleaned.%Reset%
-timeout /t 2 >nul
 goto Menu_Windows
 
 :ActivateOEM
-cls
-echo.
-echo %PAD%%Cyan%Searching for BIOS Product Key...%Reset%
+echo %PAD%Activating...
 set "BiosKey="
 for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
-
-if "%BiosKey%"=="" (
-    echo.
-    echo %PAD%%Red%[ERROR] No Original BIOS Key Found.%Reset%
-    pause
-) else (
-    echo.
-    echo %PAD%%Green%[OK] Key Found: %White%%BiosKey%%Reset%
-    echo %PAD%Installing Key...
+if "%BiosKey%"=="" (echo %PAD%No BIOS Key Found. & pause) else (
     cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey%
-    echo %PAD%Activating Online...
     cscript //nologo %windir%\system32\slmgr.vbs /ato
-    echo.
-    echo %PAD%%Green%[SUCCESS] Activation Command Sent.%Reset%
     set "mark_Active=[OK]"
-    timeout /t 3 >nul
+    echo %PAD%Done.
+    timeout /t 2 >nul
 )
 goto Menu_Windows
 
 :RenameUser
-cls
-echo.
-echo %PAD%%Magenta%[ CLIENT PERSONALIZATION ]%Reset%
 set "ClientName="
-set /p ClientName="%PAD%Enter Client Name: "
+set /p ClientName="%PAD%Client Name: "
 if "%ClientName%"=="" goto Menu_Windows
-echo %PAD%Processing...
 powershell -Command "Rename-Computer -NewName '%ClientName%-PC' -Force -ErrorAction SilentlyContinue"
 net user "%USERNAME%" /fullname:"%ClientName%" >nul 2>&1
-wmic useraccount where name="%USERNAME%" rename "%ClientName%" >nul 2>&1
 set "mark_Name=[OK]"
-echo %PAD%%Green%[OK] Done. Restart later.%Reset%
-timeout /t 3 >nul
 goto Menu_Windows
 
 :AddArabic
-cls
-echo %PAD%%Cyan%Configuring Region...%Reset%
 powershell -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}"
-tzutil /s "Egypt Standard Time"
 goto Menu_Windows
 
 :HighPerf
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
-powercfg /change monitor-timeout-ac 0
-powercfg /change standby-timeout-ac 0
 goto Menu_Windows
 
 :WinUpdate
@@ -314,26 +222,14 @@ start ms-settings:windowsupdate & goto Menu_Windows
 :Menu_Drivers
 cls
 echo.
-echo %PAD%%Pink%██████╗ ██████╗ ██╗██╗   ██╗███████╗██████╗ ███████╗%Reset%
-echo %PAD%%Pink%██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%██║  ██║██████╔╝██║██║   ██║█████╗  ██████╔╝███████╗%Reset%
-echo %PAD%%Pink%██║  ██║██╔══██╗██║╚██╗ ██╔╝██╔══╝  ██╔══██╗╚════██║%Reset%
-echo %PAD%%Pink%██████╔╝██║  ██║██║ ╚████╔╝ ███████╗██║  ██║███████║%Reset%
-echo %PAD%%Pink%╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝%Reset%
+echo %PAD%%Pink%[ DRIVERS ]%Reset%
 echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD% [1] BACKUP        %mark_DriverBack% [2] RESTORE       %mark_DriverRest%
+echo %PAD% [3] DELL WEB                      [4] HP WEB
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% BACKUP DRIVERS      %Green%!mark_DriverBack!%Reset%       %Bold%%White%[2]%Reset% RESTORE DRIVERS     %Green%!mark_DriverRest!%Reset%
+echo %PAD%                                  %Gray%[0] BACK%Reset%
 echo.
-echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
-echo.
-echo %PAD%    %Bold%%White%[3]%Reset% OEM SUPPORT - DELL  %Gray%[Web]%Reset%                   %Bold%%White%[4]%Reset% OEM SUPPORT - HP    %Gray%[Web]%Reset%
-echo.
-echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
-echo.
-echo %PAD%                                     %Gray%[0] BACK%Reset%
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%%Yellow%^> Option:%Reset% 
 choice /c 12340 /n
 if %errorlevel%==5 goto MainMenu
 if %errorlevel%==4 start "" "https://ftp.hp.com/pub/softpaq/sp168501-169000/sp168523.exe" & goto Menu_Drivers
@@ -346,19 +242,12 @@ goto Menu_Drivers
 cls
 set "PSDr=%TEMP%\DrvBack.ps1"
 if exist "%PSDr%" del "%PSDr%"
-echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Backup' >> "%PSDr%"
-echo Write-Host "`n   DRIVER BACKUP" -ForegroundColor Magenta >> "%PSDr%"
-echo $model = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
-echo Write-Host "   Detected: $model" -ForegroundColor Yellow >> "%PSDr%"
-echo $drv = Read-Host "`n   Enter Drive (e.g. D)" >> "%PSDr%"
-echo if (-not $drv) { exit } >> "%PSDr%"
-echo $name = "$model".Replace(" ", "_") + "_Drivers" >> "%PSDr%"
-echo $finalPath = "$($drv):\$name" >> "%PSDr%"
-echo New-Item -ItemType Directory -Force -Path $finalPath ^| Out-Null >> "%PSDr%"
-echo Write-Host "`n   Backing up..." -ForegroundColor Green >> "%PSDr%"
-echo pnputil /export-driver * "$finalPath" >> "%PSDr%"
-echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
-echo Read-Host "`n   Press Enter..." >> "%PSDr%"
+echo $model = (Get-WmiObject Win32_ComputerSystem).Model.Trim() > "%PSDr%"
+echo $drv = Read-Host "Enter Drive (e.g. D)" >> "%PSDr%"
+echo $path = "$($drv):\$($model.Replace(' ', '_'))_Drivers" >> "%PSDr%"
+echo New-Item -ItemType Directory -Force -Path $path ^| Out-Null >> "%PSDr%"
+echo pnputil /export-driver * "$path" >> "%PSDr%"
+echo Write-Host "Done." >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%"
 goto Menu_Drivers
@@ -367,25 +256,12 @@ goto Menu_Drivers
 cls
 set "PSDr=%TEMP%\DrvRest.ps1"
 if exist "%PSDr%" del "%PSDr%"
-echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Restore' >> "%PSDr%"
-echo Write-Host "`n   DRIVER RESTORE" -ForegroundColor Magenta >> "%PSDr%"
-echo $drv = Read-Host "   Enter Source Drive (e.g. D)" >> "%PSDr%"
-echo if (-not $drv) { exit } >> "%PSDr%"
-echo $term = Read-Host "   Search Term (empty for auto)" >> "%PSDr%"
+echo $drv = Read-Host "Source Drive (e.g. D)" > "%PSDr%"
+echo $term = Read-Host "Search Model (Enter for Auto)" >> "%PSDr%"
 echo if (-not $term) { $term = (Get-WmiObject Win32_ComputerSystem).Model.Trim() } >> "%PSDr%"
-echo $pattern = "*" + $term.Replace(" ", "*") + "*" >> "%PSDr%"
-echo Write-Host "   Searching..." -ForegroundColor Yellow >> "%PSDr%"
-echo try { $folder = Get-ChildItem -Path "$($drv):\" -Directory -Recurse -Filter $pattern -ErrorAction SilentlyContinue ^| Select-Object -First 1 } catch { $folder = $null } >> "%PSDr%"
-echo if ($folder) { >> "%PSDr%"
-echo     Write-Host "   [FOUND] $($folder.FullName)" -ForegroundColor Green >> "%PSDr%"
-echo     $conf = Read-Host "   Install? (Y/N)" >> "%PSDr%"
-echo     if ($conf -eq 'Y' -or $conf -eq 'y') { >> "%PSDr%"
-echo         Write-Host "   Installing..." -ForegroundColor Magenta >> "%PSDr%"
-echo         Start-Process pnputil -ArgumentList "/add-driver `"$($folder.FullName)\*.inf`" /subdirs /install" -NoNewWindow -Wait >> "%PSDr%"
-echo         Write-Host "   [OK] Done." -ForegroundColor Green >> "%PSDr%"
-echo         Read-Host "   Press Enter to restart later..." >> "%PSDr%"
-echo     } >> "%PSDr%"
-echo } else { Write-Host "   [ERROR] Not found." -ForegroundColor Red; Read-Host "   Press Enter..." } >> "%PSDr%"
+echo $p = "$($drv):\*$($term.Replace(' ', '*'))*" >> "%PSDr%"
+echo $f = Get-ChildItem -Path $p -Directory -Recurse -ErrorAction SilentlyContinue ^| Select -First 1 >> "%PSDr%"
+echo if ($f) { pnputil /add-driver "$($f.FullName)\*.inf" /subdirs /install } else { Write-Host "Not Found" } >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%"
 goto Menu_Drivers
@@ -396,24 +272,14 @@ goto Menu_Drivers
 :Menu_Software
 cls
 echo.
-echo %PAD%%Pink%███████╗ ██████╗ ███████╗████████╗██╗    ██╗ █████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%██╔════╝██╔═══██╗██╔════╝╚══██╔══╝██║    ██║██╔══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%███████╗██║   ██║█████╗     ██║   ██║ █╗ ██║███████║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%╚════██║██║   ██║██╔══╝     ██║   ██║███╗██║██╔══██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%███████║╚██████╔╝██║        ██║   ╚███╔███╔╝██║  ██║██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚══════╝ ╚═════╝ ╚═╝        ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝%Reset%
+echo %PAD%%Pink%[ SOFTWARE ]%Reset%
 echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD% [1] WINRAR        %mark_WinRAR%   [2] DEFENDER CTRL %mark_DefCont%
+echo %PAD% [3] REVO UNINST   %mark_Revo%     [4] BASIC APPS    %mark_Apps%
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% INSTALL WINRAR        %Green%!mark_WinRAR!%Reset%           %Bold%%White%[2]%Reset% INSTALL DEFENDER CTRL %Green%!mark_DefCont!%Reset%
+echo %PAD%                                  %Gray%[0] BACK%Reset%
 echo.
-echo %PAD%    %Bold%%White%[3]%Reset% INSTALL REVO UNINSTALL%Green%!mark_Revo!%Reset%             %Bold%%White%[4]%Reset% INSTALL BASIC APPS    %Green%!mark_Apps!%Reset%
-echo.
-echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
-echo.
-echo %PAD%                                     %Gray%[0] BACK%Reset%
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%%Yellow%^> Option:%Reset% 
 choice /c 12340 /n
 if %errorlevel%==5 goto MainMenu
 if %errorlevel%==4 goto InstallWingetApps
@@ -424,160 +290,43 @@ goto Menu_Software
 
 :InstallDefControl
 cls
-echo.
-echo %PAD%%Yellow%[MANUAL STEP] Please disable Real-time protection manually.%Reset%
-echo.
-echo %PAD%%Cyan%Downloading Tool...%Reset%
+echo %PAD%Downloading DefControl...
 curl -L -k -# -o "%ToolDir%\DefCont.rar" "https://www.dropbox.com/scl/fi/ek7g511arqlacuf8jblhx/Defender-Control-pass-1.rar?rlkey=wrpduzvs5gynt3nta96xfkxuh&st=369mh2n4&dl=1"
-if exist "%ToolDir%\DefCont.rar" (
-    set "mark_DefCont=[OK]"
-    echo %PAD%%Green%[DONE] Password is: 1%Reset%
-    explorer "%ToolDir%"
-) else ( echo %PAD%%Red%[ERROR] Failed.%Reset% )
-pause
+if exist "%ToolDir%\DefCont.rar" (set "mark_DefCont=[OK]" & explorer "%ToolDir%")
 goto Menu_Software
 
 :InstallWingetApps
-cls
-echo %PAD%%Cyan%Installing Chrome, VLC, Zoom, Acrobat via Winget...%Reset%
+echo %PAD%Installing Apps...
 winget install -e --id Google.Chrome
 winget install -e --id VideoLAN.VLC
-winget install -e --id Zoom.Zoom
-winget install -e --id Adobe.Acrobat.Reader.64-bit
 set "mark_Apps=[OK]"
-echo %PAD%%Green%[OK] Installations Finished.%Reset%
-pause
 goto Menu_Software
 
 :: ============================================================
-:: [5] PRINT LABEL (TABLE LAYOUT - FORCE SIDE BY SIDE)
+:: [5] PRINT LABEL
 :: ============================================================
 :PrintLabel
 cls
-echo.
-echo %PAD%%Cyan%Generating ZPL Label...%Reset%
+echo %PAD%Printing...
 set "PSScript=%TEMP%\GenLabel.ps1"
 if exist "%PSScript%" del "%PSScript%"
-
-:: Safe-Write the PowerShell Script line by line
-echo $brand = "%BrandName%" > "%PSScript%"
-echo $sys = (Get-CimInstance Win32_ComputerSystem).Model >> "%PSScript%"
-echo $serial = (Get-CimInstance Win32_Bios).SerialNumber >> "%PSScript%"
-echo $cpu = (Get-CimInstance Win32_Processor).Name.Replace("Intel(R) Core(TM) ", "").Replace("CPU @ ", "") >> "%PSScript%"
-echo $ram = [math]::Round((Get-CimInstance Win32_PhysicalMemory ^| Measure-Object -Property Capacity -Sum).Sum / 1GB) >> "%PSScript%"
-echo $disk = [math]::Round((Get-CimInstance Win32_DiskDrive ^| Select-Object -First 1).Size / 1GB) >> "%PSScript%"
-echo $gpu = (Get-CimInstance Win32_VideoController ^| Select-Object -ExpandProperty Name) -join " + " >> "%PSScript%"
-echo $qr = "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=$sys $serial" >> "%PSScript%"
-
-:: TABLE LAYOUT: 1 Row, 2 Columns (30% QR Left, 70% Text Right)
-echo $html = "<body style='font-family:Arial,sans-serif;width:70mm;margin:0;padding:2px;font-size:9pt'><h3 style='margin:0;text-align:center;border-bottom:1px solid #000'>$brand</h3><table style='width:100%%;margin-top:5px'><tr><td style='width:30%%;vertical-align:top'><img src='$qr' style='width:100%%'></td><td style='width:70%%;padding-left:5px;vertical-align:top;line-height:1.2'><b>$sys</b><br>$cpu<br><b>RAM: $ram GB</b><br><b>SSD: $disk GB</b><br><span style='font-size:8pt'>$gpu</span></td></tr></table><script>window.print()</script></body>" >> "%PSScript%"
-
-echo $html ^| Out-File "$env:TEMP\Label.html" >> "%PSScript%"
-echo Start-Process "$env:TEMP\Label.html" >> "%PSScript%"
-
+echo $brand="%BrandName%";$sys=(Get-CimInstance Win32_ComputerSystem).Model;$cpu=(Get-CimInstance Win32_Processor).Name.Replace("Intel(R) Core(TM) ","").Replace("CPU @ ","");$ram=[math]::Round((Get-CimInstance Win32_PhysicalMemory^|Measure-Object -Property Capacity -Sum).Sum/1GB);$disk=[math]::Round((Get-CimInstance Win32_DiskDrive^|Select -First 1).Size/1GB);$html="<body style='font-family:Arial;width:70mm;font-size:9pt'><h3 style='text-align:center'>$brand</h3><b>$sys</b><br>$cpu<br><b>RAM: $ram GB | SSD: $disk GB</b><script>window.print()</script></body>";$html^|Out-File "$env:TEMP\Label.html";Start-Process "$env:TEMP\Label.html" > "%PSScript%"
 powershell -ExecutionPolicy Bypass -File "%PSScript%"
 del "%PSScript%"
-
-echo.
-echo %PAD%%Green%[OK] Label sent to printer.%Reset%
-timeout /t 3 >nul
 goto MainMenu
 
 :: ============================================================
-:: REPORT GENERATOR
+:: REPORT
 :: ============================================================
 :FinalReport
-echo %PAD%%Cyan%Preparing Report...%Reset%
-call :SilentIconSetup
-call :ApplyBranding
-
-ping -n 1 google.com >nul
-if %errorlevel% neq 0 (
-    echo %PAD%%Red%[ERROR] No Internet Connection.%Reset%
-    timeout /t 5 >nul
-    exit
-)
-
-set "TesterName=Unknown"
-set /p TesterName="%PAD%Enter Tester Name: "
+echo %PAD%Uploading Report...
+set /p TesterName="%PAD%Tester Name: "
 set "PSScript=%TEMP%\GenReport.ps1"
 if exist "%PSScript%" del "%PSScript%"
-
-echo $ErrorActionPreference = 'SilentlyContinue' >> "%PSScript%"
-echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 >> "%PSScript%"
-echo $path = [Environment]::GetFolderPath('Desktop') + '\Montag_Test_Report.txt' >> "%PSScript%"
-echo $sys = Get-CimInstance Win32_ComputerSystem >> "%PSScript%"
-echo $cpu = Get-CimInstance Win32_Processor >> "%PSScript%"
-echo $mem = Get-CimInstance Win32_PhysicalMemory >> "%PSScript%"
-echo $gpus = Get-CimInstance Win32_VideoController >> "%PSScript%"
-echo $disks = Get-CimInstance Win32_DiskDrive >> "%PSScript%"
-echo $bios = Get-CimInstance win32_bios >> "%PSScript%"
-echo $Man = $sys.Manufacturer.Trim() >> "%PSScript%"
-echo $Mod = $sys.Model.Trim() >> "%PSScript%"
-echo if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" } >> "%PSScript%"
-echo $memArray = @($mem); $stickCount = $memArray.Count; $totalRam = [math]::Round(($memArray ^| Measure-Object -Property Capacity -Sum).Sum / 1GB, 1) >> "%PSScript%"
-echo $ramSpeed = 0; foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }; if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" } >> "%PSScript%"
-echo $ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz" >> "%PSScript%"
-echo $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2) >> "%PSScript%"
-echo $cacheMB = [int]($cpu.L3CacheSize / 1024); if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) } >> "%PSScript%"
-echo $cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache" >> "%PSScript%"
-echo $gpuList = @(); foreach ($g in $gpus) { $ramGB = [math]::Round($g.AdapterRAM / 1GB, 0); if ($ramGB -gt 0) { $nm = "$($g.Name) ($ramGB GB)" } else { $nm = $g.Name }; $gpuList += $nm }; $gpuString = $gpuList -join " + " >> "%PSScript%"
-echo $diskList = @(); foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }; $storageString = $diskList -join " | " >> "%PSScript%"
-echo $FinalStatus = "%StatusText%" >> "%PSScript%"
-echo $out = 'DATE: ' + (Get-Date).ToString() + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'STATUS: ' + $FinalStatus + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'MODEL : ' + $FullModel + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'SERIAL: ' + $bios.SerialNumber + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'CPU   : ' + $cpuDetails + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'RAM   : ' + $ramDetails + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'GPU   : ' + $gpuString + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'DISK  : ' + $storageString + [Environment]::NewLine >> "%PSScript%"
-echo $out ^| Out-File -FilePath $path -Encoding UTF8 >> "%PSScript%"
-echo $formUrl = "https://docs.google.com/forms/d/e/%GFormID%/formResponse" >> "%PSScript%"
-echo $body = @{ "entry.531158115"=$FullModel; "entry.1203480099"=$bios.SerialNumber; "entry.1462565184"=$cpuDetails; "entry.212987726"=$ramDetails; "entry.1717831234"=$storageString; "entry.2044586469"=$gpuString; "entry.310563239"=$FinalStatus; "entry.392302034"="%TesterName%" } >> "%PSScript%"
-
-echo try { >> "%PSScript%"
-echo     $null = Invoke-WebRequest -Uri $formUrl -Method POST -Body $body -UseBasicParsing >> "%PSScript%"
-echo     Write-Host " [Cloud] Upload Success" -ForegroundColor Green >> "%PSScript%"
-echo } catch { >> "%PSScript%"
-echo     Write-Host " [Cloud] Upload Failed" -ForegroundColor Red >> "%PSScript%"
-echo     Write-Host $_.Exception.Message -ForegroundColor Red >> "%PSScript%"
-echo } >> "%PSScript%"
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PSScript%"
-del "%PSScript%"
-echo.
-echo %PAD%%Green%[OK] Report on Desktop. Goodbye!%Reset%
-timeout /t 5 >nul
-goto ExitCleanup
-
+echo $sys=Get-CimInstance Win32_ComputerSystem;$bios=Get-CimInstance win32_bios;$cpu=Get-CimInstance Win32_Processor;$mem=Get-CimInstance Win32_PhysicalMemory;$body=@{"entry.531158115"=$sys.Model;"entry.1203480099"=$bios.SerialNumber;"entry.392302034"="%TesterName%"};Invoke-WebRequest -Uri "https://docs.google.com/forms/d/e/%GFormID%/formResponse" -Method POST -Body $body -UseBasicParsing > "%PSScript%"
+powershell -ExecutionPolicy Bypass -File "%PSScript%"
+echo %PAD%Done.
+timeout /t 3 >nul
 :ExitCleanup
-cd /d "C:\"
-start "" /Min cmd /C "timeout /t 2 >nul & rmdir /s /q "%ToolDir%""
+rmdir /s /q "%ToolDir%"
 exit
-
-:: --- SUB-FUNCTIONS ---
-:SilentIconSetup
-set "SLink=%USERPROFILE%\Desktop\Montag Support.url"
-set "IconPath=%IconDir%\Montag.ico"
-(
-echo [InternetShortcut]
-echo URL=https://wa.me/201040901444
-if exist "%IconPath%" (
-    echo IconIndex=0
-    echo IconFile=%IconPath%
-) else (
-    echo IconIndex=23
-    echo IconFile=C:\Windows\System32\shell32.dll
-)
-) > "%SLink%"
-exit /b
-
-:ApplyBranding
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v Manufacturer /t REG_SZ /d "%BrandName%" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v Model /t REG_SZ /d "Certified Refurbished" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportPhone /t REG_SZ /d "%BrandPhone%" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportURL /t REG_SZ /d "%BrandURL%" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportHours /t REG_SZ /d "%BrandHours%" /f >nul 2>&1
-exit /b
-[cite_start]``` [cite: 1, 2]
