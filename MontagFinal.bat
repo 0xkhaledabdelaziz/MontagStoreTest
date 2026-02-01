@@ -2,17 +2,17 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [1] VISUAL SETUP ONLY (TEST)
+:: [1] VISUAL SETUP (TEST V2)
 :: ============================================================
 chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Visual Test
+title Montag Store - Visual Test V2
 color 07
 
 :: ============================================================
-:: [2] COLORS DEFINITION (FROM YOUR WORKING FILE)
+:: [2] COLORS
 :: ============================================================
 set "PAD=     "
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
@@ -27,16 +27,16 @@ set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
 :: ============================================================
-:: [3] MAIN MENU DISPLAY (NO COMMANDS)
+:: [3] MAIN MENU (SAFE LOGO)
 :: ============================================================
 cls
 echo.
-echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
+echo %PAD%%Pink% __  __  ____  _   _  _____  ____   _____  _____  ____  _____  _____ %Reset%
+echo %PAD%%Pink%|  \/  |/ __ \| \ | ||_   _|/ __ \ / ____|/ ____||_  _||_   _||_   _|%Reset%
+echo %PAD%%Pink%| \  / | |  | |  \| |  | | | |  | | |  __| (___    ||    | |    | |  %Reset%
+echo %PAD%%Pink%| |\/| | |  | | . ` |  | | | |  | | | |_ |\___ \   ||    | |    | |  %Reset%
+echo %PAD%%Pink%| |  | | |__| | |\  |  | | | |__| | |__| |____) | _||_  _| |_  _| |_ %Reset%
+echo %PAD%%Pink%|_|  |_|\____/|_| \_|  |_|  \____/ \_____|_____/ |____||_____||_____|%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
@@ -52,6 +52,6 @@ echo %PAD%           %Green%[R] FINISH + UPLOAD REPORT%Reset%                   
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Yellow%^> THIS IS A VISUAL TEST ONLY. PRESS ANY KEY TO CLOSE...%Reset% 
+echo %PAD%%Yellow%^> VISUAL TEST V2. PRESS ANY KEY...%Reset% 
 pause >nul
 exit
