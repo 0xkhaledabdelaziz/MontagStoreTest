@@ -2,12 +2,12 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [1] SIMPLE SETUP (SAFE MODE)
+:: [1] VISUAL SETUP (SAFE MODE)
 :: ============================================================
-:: لغينا كود الأدمن وكود التكبير عشان ميكرش
+:: No Admin Force Loop to prevent crashing
 chcp 65001 >nul
 color 07
-title Montag Store - Enterprise System (Safe Mode)
+title Montag Store - Enterprise System (V 194.0 Stable)
 cls
 
 :: ============================================================
@@ -58,16 +58,22 @@ for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBa
 :MainMenu
 cls
 echo.
-echo %PAD%%Pink%MONTAG STORE - ENTERPRISE SYSTEM%Reset%
-echo %PAD%%Cyan%============================================================%Reset%
+echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
+echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
+echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
+echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
+echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
+echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% HARDWARE TESTS       %Bold%%White%[2]%Reset% WINDOWS SETUP
-echo %PAD%    %Bold%%White%[3]%Reset% DRIVERS CENTER       %Bold%%White%[4]%Reset% SOFTWARE HUB
-echo %PAD%    %Bold%%White%[5]%Reset% PRINT SPEC LABEL
+echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Cyan%------------------------------------------------------------%Reset%
+echo %PAD%    %Bold%%White%[1]%Reset% %Cyan%HARDWARE TESTS%Reset%       %Bold%%White%[2]%Reset% %Cyan%WINDOWS SETUP%Reset%
+echo %PAD%    %Bold%%White%[3]%Reset% %Cyan%DRIVERS CENTER%Reset%       %Bold%%White%[4]%Reset% %Cyan%SOFTWARE HUB%Reset%
+echo %PAD%    %Bold%%White%[5]%Reset% %Cyan%PRINT SPEC LABEL%Reset%
+echo.
+echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo %PAD%    %Green%[R] FINISH + UPLOAD REPORT%Reset%     %Red%[X] EXIT%Reset%
-echo %PAD%%Cyan%============================================================%Reset%
+echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%%Yellow%^> Option:%Reset% 
 choice /c 12345rx /n
@@ -87,7 +93,14 @@ goto MainMenu
 :Menu_Hardware
 cls
 echo.
-echo %PAD%%Pink%[ HARDWARE DIAGNOSTICS ]%Reset%
+echo %PAD%%Pink%██╗  ██╗ █████╗ ██████╗ ██╗    ██╗ █████╗ ██████╗ ███████╗%Reset%
+echo %PAD%%Pink%██║  ██║██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔════╝%Reset%
+echo %PAD%%Pink%███████║███████║██████╔╝██║ █╗ ██║███████║██████╔╝█████╗  %Reset%
+echo %PAD%%Pink%██╔══██║██╔══██║██╔══██╗██║███╗██║██╔══██║██╔══██╗██╔══╝  %Reset%
+echo %PAD%%Pink%██║  ██║██║  ██║██║  ██║╚███╔███╔╝██║  ██║██║  ██║███████╗%Reset%
+echo %PAD%%Pink%╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝%Reset%
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD% [1] KEYBOARD      %mark_Key%      [2] SCREEN        %mark_Screen%
 echo %PAD% [3] CAMERA        %mark_Cam%      [4] AUDIO         %mark_Audio%
@@ -157,7 +170,14 @@ goto Menu_Hardware
 :Menu_Windows
 cls
 echo.
-echo %PAD%%Pink%[ WINDOWS SETUP ]%Reset%
+echo %PAD%%Pink%██╗    ██╗██╗███╗   ██╗██████╗  ██████╗ ██╗    ██╗███████╗%Reset%
+echo %PAD%%Pink%██║    ██║██║████╗  ██║██╔══██╗██╔═══██╗██║    ██║██╔════╝%Reset%
+echo %PAD%%Pink%██║ █╗ ██║██║██╔██╗ ██║██║  ██║██║   ██║██║ █╗ ██║███████╗%Reset%
+echo %PAD%%Pink%██║███╗██║██║██║╚██╗██║██║  ██║██║   ██║██║███╗██║╚════██║%Reset%
+echo %PAD%%Pink%╚███╔███╔╝██║██║ ╚████║██████╔╝╚██████╔╝╚███╔███╔╝███████║%Reset%
+echo %PAD%%Pink% ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚══════╝%Reset%
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD% [1] HIGH PERF     %mark_HighPerf% [2] ARABIC KEY    %mark_Arab%
 echo %PAD% [3] WIN UPDATE    %mark_WinUpd%   [4] RENAME PC     %mark_Name%
@@ -222,7 +242,14 @@ start ms-settings:windowsupdate & goto Menu_Windows
 :Menu_Drivers
 cls
 echo.
-echo %PAD%%Pink%[ DRIVERS ]%Reset%
+echo %PAD%%Pink%██████╗ ██████╗ ██╗██╗   ██╗███████╗██████╗ ███████╗%Reset%
+echo %PAD%%Pink%██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝%Reset%
+echo %PAD%%Pink%██║  ██║██████╔╝██║██║   ██║█████╗  ██████╔╝███████╗%Reset%
+echo %PAD%%Pink%██║  ██║██╔══██╗██║╚██╗ ██╔╝██╔══╝  ██╔══██╗╚════██║%Reset%
+echo %PAD%%Pink%██████╔╝██║  ██║██║ ╚████╔╝ ███████╗██║  ██║███████║%Reset%
+echo %PAD%%Pink%╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝%Reset%
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD% [1] BACKUP        %mark_DriverBack% [2] RESTORE       %mark_DriverRest%
 echo %PAD% [3] DELL WEB                      [4] HP WEB
@@ -272,7 +299,14 @@ goto Menu_Drivers
 :Menu_Software
 cls
 echo.
-echo %PAD%%Pink%[ SOFTWARE ]%Reset%
+echo %PAD%%Pink%███████╗ ██████╗ ███████╗████████╗██╗    ██╗ █████╗ ██████╗ ███████╗%Reset%
+echo %PAD%%Pink%██╔════╝██╔═══██╗██╔════╝╚══██╔══╝██║    ██║██╔══██╗██╔══██╗██╔════╝%Reset%
+echo %PAD%%Pink%███████╗██║   ██║█████╗     ██║   ██║ █╗ ██║███████║██████╔╝█████╗  %Reset%
+echo %PAD%%Pink%╚════██║██║   ██║██╔══╝     ██║   ██║███╗██║██╔══██║██╔══██╗██╔══╝  %Reset%
+echo %PAD%%Pink%███████║╚██████╔╝██║        ██║   ╚███╔███╔╝██║  ██║██║  ██║███████╗%Reset%
+echo %PAD%%Pink%╚══════╝ ╚═════╝ ╚═╝        ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝%Reset%
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD% [1] WINRAR        %mark_WinRAR%   [2] DEFENDER CTRL %mark_DefCont%
 echo %PAD% [3] REVO UNINST   %mark_Revo%     [4] BASIC APPS    %mark_Apps%
