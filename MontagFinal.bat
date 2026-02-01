@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 193.0 Fixed)
+title Montag Store - Enterprise System (V 193.0 Stable)
 color 07
 
 :: ============================================================
@@ -580,3 +580,4 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v Suppo
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportURL /t REG_SZ /d "%BrandURL%" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportHours /t REG_SZ /d "%BrandHours%" /f >nul 2>&1
 exit /b
+[cite_start]``` [cite: 1, 2]
