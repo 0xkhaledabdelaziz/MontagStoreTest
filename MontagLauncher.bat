@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 217.0 Stable Classic)
+title Montag Store - Enterprise System (V 220.0 Online Report Fix)
 color 07
 
 :: ============================================================
@@ -603,6 +603,8 @@ echo New-Item -ItemType Directory -Force -Path $finalPath ^| Out-Null >> "%PSDr%
 echo Write-Host "`n   Backing up..." -ForegroundColor Green >> "%PSDr%"
 echo pnputil /export-driver * "$finalPath" >> "%PSDr%"
 echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
+echo pnputil /export-driver * "$finalPath" >> "%PSDr%"
+echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
 echo Read-Host "`n   Press Enter..." >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%"
@@ -826,6 +828,9 @@ set /p TesterName="%PAD%Enter Tester Name: "
 set "PSScript=%TEMP%\GenReport.ps1"
 if exist "%PSScript%" del "%PSScript%"
 
+:: --- PREPARE TEST SUMMARY STRING ---
+set "TestSummary=Key:%mark_Key% Scr:%mark_Screen% Batt:%mark_Batt% Cam:%mark_Cam% Snd:%mark_Audio% WiFi:%mark_WiFi% Sens:%mark_Sensor% Strss:%mark_Stress% Auto:%mark_Auto%"
+
 echo $ErrorActionPreference = 'SilentlyContinue' >> "%PSScript%"
 echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 >> "%PSScript%"
 echo $path = [Environment]::GetFolderPath('Desktop') + '\Montag_Test_Report.txt' >> "%PSScript%"
@@ -846,15 +851,30 @@ echo $cacheMB = [int]($cpu.L3CacheSize / 1024); if ($cacheMB -eq 0) { $cacheMB =
 echo $cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache" >> "%PSScript%"
 echo $gpuList = @(); foreach ($g in $gpus) { $ramGB = [math]::Round($g.AdapterRAM / 1GB, 0); if ($ramGB -gt 0) { $nm = "$($g.Name) ($ramGB GB)" } else { $nm = $g.Name }; $gpuList += $nm }; $gpuString = $gpuList -join " + " >> "%PSScript%"
 echo $diskList = @(); foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }; $storageString = $diskList -join " | " >> "%PSScript%"
-echo $FinalStatus = "%StatusText%" >> "%PSScript%"
+echo $FinalStatus = "%TestSummary%" >> "%PSScript%"
 echo $out = 'DATE: ' + (Get-Date).ToString() + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'STATUS: ' + $FinalStatus + [Environment]::NewLine >> "%PSScript%"
 echo $out += 'MODEL : ' + $FullModel + [Environment]::NewLine >> "%PSScript%"
 echo $out += 'SERIAL: ' + $bios.SerialNumber + [Environment]::NewLine >> "%PSScript%"
 echo $out += 'CPU   : ' + $cpuDetails + [Environment]::NewLine >> "%PSScript%"
 echo $out += 'RAM   : ' + $ramDetails + [Environment]::NewLine >> "%PSScript%"
 echo $out += 'GPU   : ' + $gpuString + [Environment]::NewLine >> "%PSScript%"
 echo $out += 'DISK  : ' + $storageString + [Environment]::NewLine >> "%PSScript%"
+echo $out += '--------------------------------------------------' + [Environment]::NewLine >> "%PSScript%"
+echo $out += 'TEST RESULTS:' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Keyboard : %mark_Key%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Screen   : %mark_Screen%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Battery  : %mark_Batt%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Camera   : %mark_Cam%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Sound    : %mark_Audio%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   WiFi     : %mark_WiFi%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Sensors  : %mark_Sensor%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Stress   : %mark_Stress%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '--------------------------------------------------' + [Environment]::NewLine >> "%PSScript%"
+echo $out += 'SETUP ACTIONS:' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Windows Activation : %mark_Active%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Apps Installed     : %mark_Apps%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   System Cleaned     : %mark_Bloat%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Auto-Pilot Run     : %mark_Auto%' + [Environment]::NewLine >> "%PSScript%"
 echo $out ^| Out-File -FilePath $path -Encoding UTF8 >> "%PSScript%"
 echo $formUrl = "https://docs.google.com/forms/d/e/%GFormID%/formResponse" >> "%PSScript%"
 echo $body = @{ "entry.531158115"=$FullModel; "entry.1203480099"=$bios.SerialNumber; "entry.1462565184"=$cpuDetails; "entry.212987726"=$ramDetails; "entry.1717831234"=$storageString; "entry.2044586469"=$gpuString; "entry.310563239"=$FinalStatus; "entry.392302034"="%TesterName%" } >> "%PSScript%"
