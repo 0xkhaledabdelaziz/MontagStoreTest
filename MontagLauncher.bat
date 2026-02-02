@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 204.0 Final Refined)
+title Montag Store - Enterprise System (V 209.0 Cinematic Intro)
 color 07
 
 :: ============================================================
@@ -62,14 +62,23 @@ set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
 :: Checkmarks
-for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons) do if not defined mark_%%i set "mark_%%i=   "
+for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto) do if not defined mark_%%i set "mark_%%i=   "
 
 :: ============================================================
-:: [2.5] WIFI CHECK & MENU
+:: [2.5] WIFI CHECK & INTRO
 :: ============================================================
 :CheckInternet
 ping -n 1 google.com >nul
-if %errorlevel% equ 0 goto MainMenu
+if %errorlevel% equ 0 (
+    cls
+    call :DrawHeader
+    echo.
+    echo.
+    echo %PAD%%Green%      Welcome to Montag Store Enterprise System...%Reset%
+    call :Speak "Welcome to Montag Store Enterprise System."
+    timeout /t 1 >nul
+    goto MainMenu
+)
 
 :WifiMenu
 cls
@@ -305,13 +314,16 @@ echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE ORIGINAL KEY %Green%!mark_Active!
 echo.
 echo %PAD%    %Bold%%White%[7]%Reset% QUICK BOOST ^& FIX    %Green%!mark_Boost!%Reset%          %Bold%%White%[8]%Reset% SHOW DESKTOP ICONS    %Green%!mark_Icons!%Reset%
 echo.
+echo %PAD%    %Bold%%Yellow%[9] PREPARE FOR SALE (AUTO-PILOT)%Reset% %Green%!mark_Auto!%Reset%
+echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 123456780 /n
-if %errorlevel%==9 goto MainMenu
+choice /c 1234567890 /n
+if %errorlevel%==10 goto MainMenu
+if %errorlevel%==9 goto AutoPilot
 if %errorlevel%==8 goto ShowIcons
 if %errorlevel%==7 goto QuickBoost
 if %errorlevel%==6 goto RemoveBloatware
@@ -320,6 +332,87 @@ if %errorlevel%==4 goto RenameUser
 if %errorlevel%==3 (set "mark_WinUpd=[OK]" & goto WinUpdate)
 if %errorlevel%==2 (set "mark_Arab=[OK]" & goto AddArabic)
 if %errorlevel%==1 (set "mark_HighPerf=[OK]" & goto HighPerf)
+goto Menu_Windows
+
+:AutoPilot
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ AUTO-PILOT: PREPARE FOR SALE ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Red%[WARNING] This will run ALL setup steps automatically.%Reset%
+echo %PAD%Please do not touch the mouse or keyboard.
+echo.
+echo %PAD%%Green%   Initiating Auto-Pilot Mode. Please stand by.%Reset%
+call :Speak "Initiating Auto-Pilot Mode. Please stand by."
+echo.
+timeout /t 2 >nul
+
+:: --- STEP 1: RESTORE POINT (Safety) ---
+echo %PAD%%Yellow%[1/8] Creating Backup Point...%Reset%
+powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_AutoPilot' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
+
+:: --- STEP 2: BOOST & TIME ---
+echo %PAD%%Yellow%[2/8] Tuning System (Time/Hibernate)...%Reset%
+powercfg -h off >nul 2>&1
+net start w32time >nul 2>&1
+w32tm /resync >nul 2>&1
+reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
+
+:: --- STEP 3: BLOATWARE ---
+echo %PAD%%Yellow%[3/8] Removing Bloatware...%Reset%
+echo %PAD%%Green%   Removing unnecessary system applications.%Reset%
+call :Speak "Removing unnecessary system applications."
+powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
+
+:: --- STEP 4: APPS ---
+set "Args=-e --accept-source-agreements --accept-package-agreements"
+echo %PAD%%Yellow%[4/8] Installing Apps (Chrome/VLC/etc)...%Reset%
+echo %PAD%%Green%   Installing basic applications.%Reset%
+call :Speak "Installing basic applications."
+winget install --id Google.Chrome %Args% >nul 2>&1
+winget install --id VideoLAN.VLC %Args% >nul 2>&1
+winget install --id WhatsApp.WhatsApp %Args% >nul 2>&1
+winget install --id AnyDeskSoftwareEvents.AnyDesk %Args% >nul 2>&1
+winget install --id Adobe.Acrobat.Reader.64-bit %Args% >nul 2>&1
+
+:: --- STEP 5: ACTIVATION (OEM) ---
+echo %PAD%%Yellow%[5/8] Checking Activation...%Reset%
+set "BiosKey="
+for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
+if not "%BiosKey%"=="" (
+    cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1
+    cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1
+)
+
+:: --- STEP 6: ICONS ---
+echo %PAD%%Yellow%[6/8] Showing Desktop Icons...%Reset%
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
+
+:: --- STEP 7: CLEANUP ---
+echo %PAD%%Yellow%[7/8] Cleaning Temp Files...%Reset%
+del /s /f /q %temp%\*.* >nul 2>&1
+
+:: --- STEP 8: RESTART EXPLORER ---
+echo %PAD%%Yellow%[8/8] Refreshing Interface...%Reset%
+taskkill /f /im explorer.exe >nul 2>&1
+start explorer.exe
+
+set "mark_Auto=[OK]"
+set "mark_Boost=[OK]"
+set "mark_Bloat=[OK]"
+set "mark_Apps=[OK]"
+set "mark_Icons=[OK]"
+
+echo.
+echo %PAD%%Green%[SUCCESS] Auto-Pilot Completed Successfully!%Reset%
+echo %PAD%System is ready for sale.
+echo %PAD%%Green%   System Ready. Have a nice day.%Reset%
+call :Speak "System Ready. Have a nice day."
+pause
 goto Menu_Windows
 
 :ShowIcons
@@ -809,4 +902,8 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v Model
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportPhone /t REG_SZ /d "%BrandPhone%" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportURL /t REG_SZ /d "%BrandURL%" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportHours /t REG_SZ /d "%BrandHours%" /f >nul 2>&1
+exit /b
+
+:Speak
+powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
 exit /b
