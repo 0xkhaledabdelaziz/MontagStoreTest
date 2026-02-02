@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 220.0 Online Report Fix)
+title Montag Store - Enterprise System (V 222.0 Stable Fix)
 color 07
 
 :: ============================================================
@@ -603,8 +603,6 @@ echo New-Item -ItemType Directory -Force -Path $finalPath ^| Out-Null >> "%PSDr%
 echo Write-Host "`n   Backing up..." -ForegroundColor Green >> "%PSDr%"
 echo pnputil /export-driver * "$finalPath" >> "%PSDr%"
 echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
-echo pnputil /export-driver * "$finalPath" >> "%PSDr%"
-echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
 echo Read-Host "`n   Press Enter..." >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%"
@@ -837,7 +835,6 @@ echo $path = [Environment]::GetFolderPath('Desktop') + '\Montag_Test_Report.txt'
 echo $sys = Get-CimInstance Win32_ComputerSystem >> "%PSScript%"
 echo $cpu = Get-CimInstance Win32_Processor >> "%PSScript%"
 echo $mem = Get-CimInstance Win32_PhysicalMemory >> "%PSScript%"
-echo $gpus = Get-CimInstance Win32_VideoController >> "%PSScript%"
 echo $disks = Get-CimInstance Win32_DiskDrive >> "%PSScript%"
 echo $bios = Get-CimInstance win32_bios >> "%PSScript%"
 echo $Man = $sys.Manufacturer.Trim() >> "%PSScript%"
@@ -849,7 +846,29 @@ echo $ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz" >> "%PSSc
 echo $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2) >> "%PSScript%"
 echo $cacheMB = [int]($cpu.L3CacheSize / 1024); if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) } >> "%PSScript%"
 echo $cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache" >> "%PSScript%"
-echo $gpuList = @(); foreach ($g in $gpus) { $ramGB = [math]::Round($g.AdapterRAM / 1GB, 0); if ($ramGB -gt 0) { $nm = "$($g.Name) ($ramGB GB)" } else { $nm = $g.Name }; $gpuList += $nm }; $gpuString = $gpuList -join " + " >> "%PSScript%"
+
+:: --- TRUE GPU VRAM DETECTION (Registry) ---
+echo $gpuList = @() >> "%PSScript%"
+echo $regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}' >> "%PSScript%"
+echo Get-ChildItem $regBase -ErrorAction SilentlyContinue ^| ForEach-Object { >> "%PSScript%"
+echo     $props = Get-ItemProperty $_.PSPath >> "%PSScript%"
+echo     if ($props.DriverDesc) { >> "%PSScript%"
+echo         $size = 0 >> "%PSScript%"
+echo         if ($props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' } >> "%PSScript%"
+echo         elseif ($props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' } >> "%PSScript%"
+echo         $gb = [math]::Round($size / 1GB) >> "%PSScript%"
+echo         if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" } >> "%PSScript%"
+echo         else { >> "%PSScript%"
+echo             $wmi = Get-CimInstance Win32_VideoController ^| Where-Object { $_.Description -eq $props.DriverDesc } ^| Select-Object -First 1 >> "%PSScript%"
+echo             if ($wmi.AdapterRAM -gt 0) { >> "%PSScript%"
+echo                 $wmiGB = [math]::Round($wmi.AdapterRAM / 1GB) >> "%PSScript%"
+echo                 if($wmiGB -gt 0) { $gpuList += "$($props.DriverDesc) ($wmiGB GB)" } else { $gpuList += $props.DriverDesc } >> "%PSScript%"
+echo             } else { $gpuList += $props.DriverDesc } >> "%PSScript%"
+echo         } >> "%PSScript%"
+echo     } >> "%PSScript%"
+echo } >> "%PSScript%"
+echo $gpuString = ($gpuList ^| Select-Object -Unique) -join " + " >> "%PSScript%"
+
 echo $diskList = @(); foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }; $storageString = $diskList -join " | " >> "%PSScript%"
 echo $FinalStatus = "%TestSummary%" >> "%PSScript%"
 echo $out = 'DATE: ' + (Get-Date).ToString() + [Environment]::NewLine >> "%PSScript%"
