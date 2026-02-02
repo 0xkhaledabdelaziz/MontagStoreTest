@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 209.0 Cinematic Intro)
+title Montag Store - Enterprise System (V 217.0 Stable Classic)
 color 07
 
 :: ============================================================
