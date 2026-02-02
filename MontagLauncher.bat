@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 201.0 Full TuneUp)
+title Montag Store - Enterprise System (V 203.0 Stable)
 color 07
 
 :: ============================================================
@@ -62,7 +62,7 @@ set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
 :: Checkmarks
-for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost) do if not defined mark_%%i set "mark_%%i=   "
+for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons) do if not defined mark_%%i set "mark_%%i=   "
 
 :: ============================================================
 :: [2.5] WIFI CHECK & MENU
@@ -303,15 +303,16 @@ echo %PAD%    %Bold%%White%[3]%Reset% CHECK WINDOWS UPDATE  %Green%!mark_WinUpd!
 echo.
 echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE ORIGINAL KEY %Green%!mark_Active!%Reset%          %Bold%%White%[6]%Reset% REMOVE BLOATWARE      %Green%!mark_Bloat!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[7]%Reset% QUICK BOOST ^& FIX    %Green%!mark_Boost!%Reset%
+echo %PAD%    %Bold%%White%[7]%Reset% QUICK BOOST ^& FIX    %Green%!mark_Boost!%Reset%          %Bold%%White%[8]%Reset% SHOW DESKTOP ICONS    %Green%!mark_Icons!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 12345670 /n
-if %errorlevel%==8 goto MainMenu
+choice /c 123456780 /n
+if %errorlevel%==9 goto MainMenu
+if %errorlevel%==8 goto ShowIcons
 if %errorlevel%==7 goto QuickBoost
 if %errorlevel%==6 goto RemoveBloatware
 if %errorlevel%==5 goto ActivateOEM
@@ -319,6 +320,25 @@ if %errorlevel%==4 goto RenameUser
 if %errorlevel%==3 (set "mark_WinUpd=[OK]" & goto WinUpdate)
 if %errorlevel%==2 (set "mark_Arab=[OK]" & goto AddArabic)
 if %errorlevel%==1 (set "mark_HighPerf=[OK]" & goto HighPerf)
+goto Menu_Windows
+
+:ShowIcons
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ DESKTOP ICONS SETUP ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%Showing 'This PC' and 'User' icons on desktop...%Reset%
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
+taskkill /f /im explorer.exe >nul 2>&1
+start explorer.exe
+echo.
+echo %PAD%%Green%[OK] Icons Visible.%Reset%
+set "mark_Icons=[OK]"
+timeout /t 3 >nul
 goto Menu_Windows
 
 :QuickBoost
@@ -356,12 +376,12 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ SYSTEM CLEANUP MANAGER ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-:: --- 1. SAFETY FIRST (From EXM Idea) ---
+:: --- 1. SAFETY FIRST ---
 echo %PAD%%Yellow%[1/3] Creating System Restore Point (Safety)...%Reset%
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_Clean_Backup' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 if %errorlevel%==0 (echo %PAD%%Green%      Success! Backup created.%Reset%) else (echo %PAD%%Red%      Skipped (Admin rights needed).%Reset%)
 echo.
-:: --- 2. TEMP CLEANUP (Bonus) ---
+:: --- 2. TEMP CLEANUP ---
 echo %PAD%%Yellow%[2/3] Cleaning Temporary Junk Files...%Reset%
 del /s /f /q %temp%\*.* >nul 2>&1
 rd /s /q %temp% >nul 2>&1
