@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 203.0 Stable)
+title Montag Store - Enterprise System (V 204.0 Final Refined)
 color 07
 
 :: ============================================================
@@ -777,9 +777,9 @@ echo } >> "%PSScript%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSScript%"
 del "%PSScript%"
 echo.
-echo %PAD%%Green%[OK] Report on Desktop. Goodbye!%Reset%
-timeout /t 5 >nul
-goto ExitCleanup
+echo %PAD%%Green%[OK] Report on Desktop. Returning to Menu...%Reset%
+timeout /t 3 >nul
+goto MainMenu
 
 :ExitCleanup
 cd /d "C:\"
