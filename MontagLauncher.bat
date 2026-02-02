@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 199.0 Turbo Clean)
+title Montag Store - Enterprise System (V 201.0 Full TuneUp)
 color 07
 
 :: ============================================================
@@ -62,7 +62,7 @@ set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
 :: Checkmarks
-for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS) do if not defined mark_%%i set "mark_%%i=   "
+for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost) do if not defined mark_%%i set "mark_%%i=   "
 
 :: ============================================================
 :: [2.5] WIFI CHECK & MENU
@@ -259,7 +259,6 @@ goto Menu_Hardware
 set "Exe=%ToolDir%\%ExeName%"
 if not exist "%ToolDir%" mkdir "%ToolDir%"
 if exist "%Exe%" (start "" "%Exe%" & goto ReturnPoint)
-:: --- MODIFIED: REMOVED RESIZE + ADDED BLOCK LOGO + CURL PROGRESS BAR (-#) ---
 call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
@@ -268,7 +267,6 @@ echo %PAD%%Cyan%================================================================
 echo.
 echo %PAD%%Yellow%Downloading: %White%%ExeName%...
 echo.
-:: -# enables hash-style progress bar
 curl -L -k -# -o "%Exe%" "%TargetUrl%"
 if exist "%Exe%" (start "" "%Exe%") else (echo %PAD%%Red%[ERROR] Failed.%Reset% & pause)
 :ReturnPoint
@@ -305,19 +303,49 @@ echo %PAD%    %Bold%%White%[3]%Reset% CHECK WINDOWS UPDATE  %Green%!mark_WinUpd!
 echo.
 echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE ORIGINAL KEY %Green%!mark_Active!%Reset%          %Bold%%White%[6]%Reset% REMOVE BLOATWARE      %Green%!mark_Bloat!%Reset%
 echo.
+echo %PAD%    %Bold%%White%[7]%Reset% QUICK BOOST ^& FIX    %Green%!mark_Boost!%Reset%
+echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 1234560 /n
-if %errorlevel%==7 goto MainMenu
+choice /c 12345670 /n
+if %errorlevel%==8 goto MainMenu
+if %errorlevel%==7 goto QuickBoost
 if %errorlevel%==6 goto RemoveBloatware
 if %errorlevel%==5 goto ActivateOEM
 if %errorlevel%==4 goto RenameUser
 if %errorlevel%==3 (set "mark_WinUpd=[OK]" & goto WinUpdate)
 if %errorlevel%==2 (set "mark_Arab=[OK]" & goto AddArabic)
 if %errorlevel%==1 (set "mark_HighPerf=[OK]" & goto HighPerf)
+goto Menu_Windows
+
+:QuickBoost
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ QUICK SYSTEM TUNE-UP ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%[1/3] Disabling Hibernation (Free Space)...%Reset%
+powercfg -h off >nul 2>&1
+echo %PAD%%Green%      Done.%Reset%
+echo.
+echo %PAD%%Yellow%[2/3] Syncing Time (Fix SSL Errors)...%Reset%
+net start w32time >nul 2>&1
+w32tm /resync >nul 2>&1
+echo %PAD%%Green%      Done.%Reset%
+echo.
+echo %PAD%%Yellow%[3/3] Disabling Sticky Keys...%Reset%
+reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
+reg add "HKCU\Control Panel\Accessibility\ToggleKeys" /v Flags /t REG_SZ /d "58" /f >nul 2>&1
+echo %PAD%%Green%      Done.%Reset%
+echo.
+set "mark_Boost=[OK]"
+echo %PAD%%Green%[OK] System Boosted.%Reset%
+timeout /t 2 >nul
 goto Menu_Windows
 
 :RemoveBloatware
@@ -328,33 +356,30 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ SYSTEM CLEANUP MANAGER ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Yellow%Removing Bloatware & Junk Apps...%Reset%
+:: --- 1. SAFETY FIRST (From EXM Idea) ---
+echo %PAD%%Yellow%[1/3] Creating System Restore Point (Safety)...%Reset%
+powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_Clean_Backup' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
+if %errorlevel%==0 (echo %PAD%%Green%      Success! Backup created.%Reset%) else (echo %PAD%%Red%      Skipped (Admin rights needed).%Reset%)
 echo.
-
-:: --- LIST OF APPS TO REMOVE ---
-:: 1. Gaming & Xbox
-echo %PAD%- Removing Xbox & Solitaire...
+:: --- 2. TEMP CLEANUP (Bonus) ---
+echo %PAD%%Yellow%[2/3] Cleaning Temporary Junk Files...%Reset%
+del /s /f /q %temp%\*.* >nul 2>&1
+rd /s /q %temp% >nul 2>&1
+echo %PAD%%Green%      Temp Files Deleted.%Reset%
+echo.
+:: --- 3. BLOATWARE REMOVAL ---
+echo %PAD%%Yellow%[3/3] Removing Bloatware Apps...%Reset%
+echo %PAD%      - Removing Xbox & Solitaire...
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-
-:: 2. 3D Apps & Mixed Reality
-echo %PAD%- Removing 3D Viewer, Paint 3D & VR...
-powershell -Command "Get-AppxPackage *3d* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *reality* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-
-:: 3. Microsoft Services (News, Weather, Maps)
-echo %PAD%- Removing Maps, News, Weather & Money...
+echo %PAD%      - Removing 3D Viewer & Paint 3D...
+powershell -Command "Get-AppxPackage *3d* | Remove-AppxPackage -ErrorAction SilentlyContinue"
+echo %PAD%      - Removing Maps & News...
 powershell -Command "Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *maps* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-
-:: 4. Useless Media Apps (Replaced by VLC)
-echo %PAD%- Removing Groove Music & Movies...
-powershell -Command "Get-AppxPackage *zune* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-
-:: 5. Communication & Ads
-echo %PAD%- Removing Skype, YourPhone, Tips & Feedback...
-powershell -Command "Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *phone* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *getstarted* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *feedback* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *officehub* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-
+echo %PAD%      - Removing Skype & Feedback...
+powershell -Command "Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *feedback* | Remove-AppxPackage -ErrorAction SilentlyContinue"
 set "mark_Bloat=[OK]"
 echo.
-echo %PAD%%Green%[OK] System is now Clean & Fast.%Reset%
+echo %PAD%%Green%[OK] System Cleaned & Secured.%Reset%
 timeout /t 3 >nul
 goto Menu_Windows
 
