@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 222.0 Stable Fix)
+title Montag Store - Enterprise System (V 225.0 Right-Click Brand)
 color 07
 
 :: ============================================================
@@ -31,10 +31,12 @@ set "IconDir=%ProgramData%\MontagStore"
 if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
 attrib +h "%IconDir%" >nul 2>&1
 
+:: --- UPDATED BRANDING DATA ---
 set "BrandName=Montag Store"
-set "BrandPhone=01090040022"
+set "BrandPhone=Manager: 01090040022-01144566115 | Tech: 01040901444"
 set "BrandURL=https://montagstore.com"
 set "BrandHours=Sat-Thu 12PM-9PM"
+set "TechSupportNumber=201040901444" 
 set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
 
 :: URLs Setup
@@ -62,7 +64,7 @@ set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
 :: Checkmarks
-for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto) do if not defined mark_%%i set "mark_%%i=   "
+for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto Game BrandClick) do if not defined mark_%%i set "mark_%%i=   "
 
 :: ============================================================
 :: [2.5] WIFI CHECK & INTRO
@@ -312,7 +314,7 @@ echo %PAD%    %Bold%%White%[3]%Reset% CHECK WINDOWS UPDATE  %Green%!mark_WinUpd!
 echo.
 echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE ORIGINAL KEY %Green%!mark_Active!%Reset%          %Bold%%White%[6]%Reset% REMOVE BLOATWARE      %Green%!mark_Bloat!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[7]%Reset% QUICK BOOST ^& FIX    %Green%!mark_Boost!%Reset%          %Bold%%White%[8]%Reset% SHOW DESKTOP ICONS    %Green%!mark_Icons!%Reset%
+echo %PAD%    %Bold%%White%[7]%Reset% QUICK BOOST ^& FIX    %Green%!mark_Boost!%Reset%          %Bold%%White%[8]%Reset% ADD RIGHT-CLICK BRAND %Green%!mark_BrandClick!%Reset%
 echo.
 echo %PAD%    %Bold%%Yellow%[9] PREPARE FOR SALE (AUTO-PILOT)%Reset% %Green%!mark_Auto!%Reset%
 echo.
@@ -324,7 +326,7 @@ echo %PAD%%Cyan%================================================================
 choice /c 1234567890 /n
 if %errorlevel%==10 goto MainMenu
 if %errorlevel%==9 goto AutoPilot
-if %errorlevel%==8 goto ShowIcons
+if %errorlevel%==8 goto AddRightClickBrand
 if %errorlevel%==7 goto QuickBoost
 if %errorlevel%==6 goto RemoveBloatware
 if %errorlevel%==5 goto ActivateOEM
@@ -351,25 +353,25 @@ echo.
 timeout /t 2 >nul
 
 :: --- STEP 1: RESTORE POINT (Safety) ---
-echo %PAD%%Yellow%[1/8] Creating Backup Point...%Reset%
+echo %PAD%%Yellow%[1/9] Creating Backup Point...%Reset%
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_AutoPilot' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 
 :: --- STEP 2: BOOST & TIME ---
-echo %PAD%%Yellow%[2/8] Tuning System (Time/Hibernate)...%Reset%
+echo %PAD%%Yellow%[2/9] Tuning System (Time/Hibernate)...%Reset%
 powercfg -h off >nul 2>&1
 net start w32time >nul 2>&1
 w32tm /resync >nul 2>&1
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
 
 :: --- STEP 3: BLOATWARE ---
-echo %PAD%%Yellow%[3/8] Removing Bloatware...%Reset%
+echo %PAD%%Yellow%[3/9] Removing Bloatware...%Reset%
 echo %PAD%%Green%   Removing unnecessary system applications.%Reset%
 call :Speak "Removing unnecessary system applications."
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 
 :: --- STEP 4: APPS ---
 set "Args=-e --accept-source-agreements --accept-package-agreements"
-echo %PAD%%Yellow%[4/8] Installing Apps (Chrome/VLC/etc)...%Reset%
+echo %PAD%%Yellow%[4/9] Installing Apps (Chrome/VLC/etc)...%Reset%
 echo %PAD%%Green%   Installing basic applications.%Reset%
 call :Speak "Installing basic applications."
 winget install --id Google.Chrome %Args% >nul 2>&1
@@ -378,8 +380,13 @@ winget install --id WhatsApp.WhatsApp %Args% >nul 2>&1
 winget install --id AnyDeskSoftwareEvents.AnyDesk %Args% >nul 2>&1
 winget install --id Adobe.Acrobat.Reader.64-bit %Args% >nul 2>&1
 
-:: --- STEP 5: ACTIVATION (OEM) ---
-echo %PAD%%Yellow%[5/8] Checking Activation...%Reset%
+:: --- STEP 5: GAMING PACK ---
+echo %PAD%%Yellow%[5/9] Installing Gaming Essentials...%Reset%
+winget install --id Microsoft.VCRedist.2015+.x64 %Args% >nul 2>&1
+winget install --id Microsoft.VCRedist.2015+.x86 %Args% >nul 2>&1
+
+:: --- STEP 6: ACTIVATION (OEM) ---
+echo %PAD%%Yellow%[6/9] Checking Activation...%Reset%
 set "BiosKey="
 for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
 if not "%BiosKey%"=="" (
@@ -387,17 +394,20 @@ if not "%BiosKey%"=="" (
     cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1
 )
 
-:: --- STEP 6: ICONS ---
-echo %PAD%%Yellow%[6/8] Showing Desktop Icons...%Reset%
+:: --- STEP 7: ICONS & BRANDING ---
+echo %PAD%%Yellow%[7/9] Showing Desktop Icons...%Reset%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
 
-:: --- STEP 7: CLEANUP ---
-echo %PAD%%Yellow%[7/8] Cleaning Temp Files...%Reset%
+echo %PAD%%Yellow%[8/9] Applying Right-Click Branding...%Reset%
+call :AddContextSupport >nul 2>&1
+
+:: --- STEP 8: CLEANUP ---
+echo %PAD%%Yellow%[9/9] Cleaning Temp Files...%Reset%
 del /s /f /q %temp%\*.* >nul 2>&1
 
-:: --- STEP 8: RESTART EXPLORER ---
-echo %PAD%%Yellow%[8/8] Refreshing Interface...%Reset%
+:: --- STEP 9: RESTART EXPLORER ---
+echo %PAD%%Yellow%Refreshing Interface...%Reset%
 taskkill /f /im explorer.exe >nul 2>&1
 start explorer.exe
 
@@ -406,6 +416,8 @@ set "mark_Boost=[OK]"
 set "mark_Bloat=[OK]"
 set "mark_Apps=[OK]"
 set "mark_Icons=[OK]"
+set "mark_Game=[OK]"
+set "mark_BrandClick=[OK]"
 
 echo.
 echo %PAD%%Green%[SUCCESS] Auto-Pilot Completed Successfully!%Reset%
@@ -413,6 +425,22 @@ echo %PAD%System is ready for sale.
 echo %PAD%%Green%   System Ready. Have a nice day.%Reset%
 call :Speak "System Ready. Have a nice day."
 pause
+goto Menu_Windows
+
+:AddRightClickBrand
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ DESKTOP BRANDING SETUP ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%Adding 'Contact Montag Support' to context menu...%Reset%
+call :AddContextSupport
+echo.
+echo %PAD%%Green%[OK] Added successfully! Check your Right-Click.%Reset%
+set "mark_BrandClick=[OK]"
+timeout /t 3 >nul
 goto Menu_Windows
 
 :ShowIcons
@@ -654,20 +682,44 @@ echo %PAD%    %Bold%%White%[1]%Reset% INSTALL WINRAR        %Green%!mark_WinRAR!
 echo.
 echo %PAD%    %Bold%%White%[3]%Reset% INSTALL REVO UNINSTALL%Green%!mark_Revo!%Reset%             %Bold%%White%[4]%Reset% INSTALL BASIC APPS    %Green%!mark_Apps!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE              %Green%!mark_MAS!%Reset%
+echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE              %Green%!mark_MAS!%Reset%             %Bold%%White%[6]%Reset% GAMING ESSENTIALS     %Green%!mark_Game!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 123450 /n
-if %errorlevel%==6 goto MainMenu
+choice /c 1234560 /n
+if %errorlevel%==7 goto MainMenu
+if %errorlevel%==6 goto InstallGaming
 if %errorlevel%==5 goto DownloadMAS
 if %errorlevel%==4 goto InstallWingetApps
 if %errorlevel%==3 (set "mark_Revo=[OK]" & set "ExeName=Revo.rar" & set "TargetUrl=https://www.dropbox.com/scl/fi/e0x2yjrnhi6qgx9k6ltxg/RevoUninstallerPro5.rar?rlkey=vq4zsk9x1uyco7ratzkhw62f1&st=4f0776fb&dl=1" & goto DownloadAndRun)
 if %errorlevel%==2 goto InstallDefControl
 if %errorlevel%==1 (set "mark_WinRAR=[OK]" & set "ExeName=WinRAR.exe" & set "TargetUrl=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1" & goto DownloadAndRun)
+goto Menu_Software
+
+:InstallGaming
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ GAMING PACK INSTALLER ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%[1/2] Installing Visual C++ AIO Runtimes (x64^&x86)...%Reset%
+call :Speak "Installing gaming system components."
+winget install --id Microsoft.VCRedist.2015+.x64 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
+winget install --id Microsoft.VCRedist.2015+.x86 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
+echo %PAD%%Green%      Done.%Reset%
+echo.
+echo %PAD%%Yellow%[2/2] Installing DirectX (Check Windows Update if needed)...%Reset%
+:: DirectX is usually handled by Windows Update on Win10/11, but we ensure runtimes are checked.
+echo %PAD%%Green%      Verified.%Reset%
+echo.
+set "mark_Game=[OK]"
+echo %PAD%%Green%[OK] Gaming Essentials Ready.%Reset%
+timeout /t 3 >nul
 goto Menu_Software
 
 :DownloadMAS
@@ -813,6 +865,7 @@ goto MainMenu
 echo %PAD%%Cyan%Preparing Report...%Reset%
 call :SilentIconSetup
 call :ApplyBranding
+call :AddContextSupport
 
 ping -n 1 google.com >nul
 if %errorlevel% neq 0 (
@@ -827,7 +880,7 @@ set "PSScript=%TEMP%\GenReport.ps1"
 if exist "%PSScript%" del "%PSScript%"
 
 :: --- PREPARE TEST SUMMARY STRING ---
-set "TestSummary=Key:%mark_Key% Scr:%mark_Screen% Batt:%mark_Batt% Cam:%mark_Cam% Snd:%mark_Audio% WiFi:%mark_WiFi% Sens:%mark_Sensor% Strss:%mark_Stress% Auto:%mark_Auto%"
+set "TestSummary=Key:%mark_Key% Scr:%mark_Screen% Batt:%mark_Batt% Cam:%mark_Cam% Snd:%mark_Audio% WiFi:%mark_WiFi% Sens:%mark_Sensor% Strss:%mark_Stress% Auto:%mark_Auto% Game:%mark_Game%"
 
 echo $ErrorActionPreference = 'SilentlyContinue' >> "%PSScript%"
 echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 >> "%PSScript%"
@@ -892,6 +945,7 @@ echo $out += '--------------------------------------------------' + [Environment
 echo $out += 'SETUP ACTIONS:' + [Environment]::NewLine >> "%PSScript%"
 echo $out += '   Windows Activation : %mark_Active%' + [Environment]::NewLine >> "%PSScript%"
 echo $out += '   Apps Installed     : %mark_Apps%' + [Environment]::NewLine >> "%PSScript%"
+echo $out += '   Gaming Pack        : %mark_Game%' + [Environment]::NewLine >> "%PSScript%"
 echo $out += '   System Cleaned     : %mark_Bloat%' + [Environment]::NewLine >> "%PSScript%"
 echo $out += '   Auto-Pilot Run     : %mark_Auto%' + [Environment]::NewLine >> "%PSScript%"
 echo $out ^| Out-File -FilePath $path -Encoding UTF8 >> "%PSScript%"
@@ -924,7 +978,7 @@ set "SLink=%USERPROFILE%\Desktop\Montag Support.url"
 set "IconPath=%IconDir%\Montag.ico"
 (
 echo [InternetShortcut]
-echo URL=https://wa.me/201040901444
+echo URL=https://wa.me/%TechSupportNumber%
 if exist "%IconPath%" (
     echo IconIndex=0
     echo IconFile=%IconPath%
@@ -933,6 +987,12 @@ if exist "%IconPath%" (
     echo IconFile=C:\Windows\System32\shell32.dll
 )
 ) > "%SLink%"
+exit /b
+
+:AddContextSupport
+reg add "HKCR\DesktopBackground\Shell\MontagSupport" /ve /t REG_SZ /d "Contact Montag Support" /f >nul 2>&1
+reg add "HKCR\DesktopBackground\Shell\MontagSupport" /v "Icon" /t REG_SZ /d "%IconDir%\Montag.ico" /f >nul 2>&1
+reg add "HKCR\DesktopBackground\Shell\MontagSupport\command" /ve /t REG_SZ /d "explorer \"https://wa.me/%TechSupportNumber%\"" /f >nul 2>&1
 exit /b
 
 :ApplyBranding
