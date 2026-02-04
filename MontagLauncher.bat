@@ -18,7 +18,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - Enterprise System (V 225.0 Right-Click Brand)
+title Montag Store - System (V 235.0 Block Title)
 color 07
 
 :: ============================================================
@@ -31,7 +31,7 @@ set "IconDir=%ProgramData%\MontagStore"
 if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
 attrib +h "%IconDir%" >nul 2>&1
 
-:: --- UPDATED BRANDING DATA ---
+:: --- BRANDING DATA ---
 set "BrandName=Montag Store"
 set "BrandPhone=Manager: 01090040022-01144566115 | Tech: 01040901444"
 set "BrandURL=https://montagstore.com"
@@ -63,7 +63,7 @@ set "Yellow=%ESC%[33m"
 set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
-:: Checkmarks
+:: Checkmarks Initialization
 for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto Game BrandClick) do if not defined mark_%%i set "mark_%%i=   "
 
 :: ============================================================
@@ -76,8 +76,8 @@ if %errorlevel% equ 0 (
     call :DrawHeader
     echo.
     echo.
-    echo %PAD%%Green%      Welcome to Montag Store Enterprise System...%Reset%
-    call :Speak "Welcome to Montag Store Enterprise System."
+    echo %PAD%%Green%      Welcome to Montag Store System...%Reset%
+    call :Speak "Welcome to Montag Store System."
     timeout /t 1 >nul
     goto MainMenu
 )
@@ -772,7 +772,6 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ APP INSTALLER - LIVE PROGRESS ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-
 :: === STEP 1: Google Chrome ===
 echo %PAD%%Yellow%[1/7] Installing Google Chrome...%Reset%
 winget install --id Google.Chrome %Args%
@@ -859,7 +858,7 @@ timeout /t 3 >nul
 goto MainMenu
 
 :: ============================================================
-:: REPORT GENERATOR
+:: REPORT GENERATOR (CLASSIC CLI - BLOCK TITLE)
 :: ============================================================
 :FinalReport
 echo %PAD%%Cyan%Preparing Report...%Reset%
@@ -874,8 +873,41 @@ if %errorlevel% neq 0 (
     exit
 )
 
-set "TesterName=Unknown"
+:: --- ASK FOR TESTER NAME ---
+set "TesterName="
 set /p TesterName="%PAD%Enter Tester Name: "
+if "%TesterName%"=="" set "TesterName=Unknown"
+
+:: --- SELECT OPERATION TYPE (BLOCK TITLE) ---
+cls
+echo.
+echo %PAD%%Pink%███████╗███████╗██╗     ███████╗ ██████╗████████╗%Reset%
+echo %PAD%%Pink%██╔════╝██╔════╝██║     ██╔════╝██╔════╝╚══██╔══╝%Reset%
+echo %PAD%%Pink%███████╗█████╗  ██║     █████╗  ██║        ██║   %Reset%
+echo %PAD%%Pink%╚════██║██╔══╝  ██║     ██╔══╝  ██║        ██║   %Reset%
+echo %PAD%%Pink%███████║███████╗███████╗███████╗╚██████╗   ██║   %Reset%
+echo %PAD%%Pink%╚══════╝╚══════╝╚══════╝╚══════╝ ╚═════╝   ╚═╝   %Reset%
+echo.
+echo %PAD%%Pink% ██████╗ ██████╗ ███████╗██████╗  █████╗ ████████╗██╗ ██████╗ ███╗   ██╗%Reset%
+echo %PAD%%Pink%██╔═══██╗██╔══██╗██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║%Reset%
+echo %PAD%%Pink%██║   ██║██████╔╝█████╗  ██████╔╝███████║   ██║   ██║██║   ██║██╔██╗ ██║%Reset%
+echo %PAD%%Pink%██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗██╔══██║   ██║   ██║██║   ██║██║╚██╗██║%Reset%
+echo %PAD%%Pink%╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║%Reset%
+echo %PAD%%Pink% ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝%Reset%
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%    %Bold%%White%[1]%Reset% SELL (To Customer)
+echo %PAD%    %Bold%%White%[2]%Reset% TEST (For Store/Stock)
+echo.
+echo %PAD%%Yellow%^> Choose Type:%Reset% 
+choice /c 12 /n
+if %errorlevel%==2 set "OpType=TEST"
+if %errorlevel%==1 set "OpType=SELL"
+
+echo.
+echo %PAD%%Cyan%Gathering System Info...%Reset%
+
 set "PSScript=%TEMP%\GenReport.ps1"
 if exist "%PSScript%" del "%PSScript%"
 
@@ -949,8 +981,12 @@ echo $out += '   Gaming Pack        : %mark_Game%' + [Environment]::NewLine >> "
 echo $out += '   System Cleaned     : %mark_Bloat%' + [Environment]::NewLine >> "%PSScript%"
 echo $out += '   Auto-Pilot Run     : %mark_Auto%' + [Environment]::NewLine >> "%PSScript%"
 echo $out ^| Out-File -FilePath $path -Encoding UTF8 >> "%PSScript%"
+
+:: --- MERGE NAME + TYPE FOR FORM ---
+echo $MergedName = "%TesterName% - %OpType%" >> "%PSScript%"
+
 echo $formUrl = "https://docs.google.com/forms/d/e/%GFormID%/formResponse" >> "%PSScript%"
-echo $body = @{ "entry.531158115"=$FullModel; "entry.1203480099"=$bios.SerialNumber; "entry.1462565184"=$cpuDetails; "entry.212987726"=$ramDetails; "entry.1717831234"=$storageString; "entry.2044586469"=$gpuString; "entry.310563239"=$FinalStatus; "entry.392302034"="%TesterName%" } >> "%PSScript%"
+echo $body = @{ "entry.531158115"=$FullModel; "entry.1203480099"=$bios.SerialNumber; "entry.1462565184"=$cpuDetails; "entry.212987726"=$ramDetails; "entry.1717831234"=$storageString; "entry.2044586469"=$gpuString; "entry.310563239"=$FinalStatus; "entry.392302034"=$MergedName; "entry.371291262"="%OpType%" } >> "%PSScript%"
 
 echo try { >> "%PSScript%"
 echo     $null = Invoke-WebRequest -Uri $formUrl -Method POST -Body $body -UseBasicParsing >> "%PSScript%"
@@ -959,6 +995,7 @@ echo } catch { >> "%PSScript%"
 echo     Write-Host " [Cloud] Upload Failed" -ForegroundColor Red >> "%PSScript%"
 echo     Write-Host $_.Exception.Message -ForegroundColor Red >> "%PSScript%"
 echo } >> "%PSScript%"
+echo Start-Process $path >> "%PSScript%"
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSScript%"
 del "%PSScript%"
