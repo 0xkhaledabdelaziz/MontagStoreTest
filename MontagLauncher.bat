@@ -19,7 +19,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 313.0 Full Package)
+title Montag Store - System (V 321.0 Certified Golden Master)
 color 05
 
 :: ============================================================
@@ -63,7 +63,12 @@ set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
 :: Checkmarks Initialization
-for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto Game BrandClick) do if not defined mark_%%i set "mark_%%i=   "
+for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto Game BrandClick CheckWin) do if not defined mark_%%i set "mark_%%i=   "
+
+:: --- EXTRACT ENGINE ONCE (CRASH PROOF OPTIMIZATION) ---
+set "EngineScript=%ToolDir%\MontagEngine.ps1"
+for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__ENGINE_START__:::$" "%~f0"') do set "StartLine=%%a"
+more +%StartLine% "%~f0" > "%EngineScript%"
 
 :: ============================================================
 :: [2.5] WIFI CHECK & INTRO
@@ -216,6 +221,8 @@ echo %PAD%%Cyan%----------------------------------------------------------------
 echo.
 echo %PAD%    %Bold%%White%[7]%Reset% CHECK WARRANTY      %Green%!mark_Warranty!%Reset%         %Bold%%White%[8]%Reset% SYSTEM STRESS TEST  %Green%!mark_Stress!%Reset%
 echo.
+echo %PAD%    %Bold%%Red%[9] CHECK WIN INTEGRITY%Reset% %Green%!mark_CheckWin!%Reset%
+echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%                                     %Gray%[0] BACK TO MAIN%Reset%
@@ -223,9 +230,10 @@ echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%%Yellow%^> Select Test:%Reset% 
-choice /c 123456780 /n
+choice /c 1234567890 /n
 
-if %errorlevel%==9 goto MainMenu
+if %errorlevel%==10 goto MainMenu
+if %errorlevel%==9 goto CheckWinIntegrity
 if %errorlevel%==8 goto StressTest
 if %errorlevel%==7 goto CheckWarranty
 if %errorlevel%==6 (set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun)
@@ -263,6 +271,23 @@ if /i "%MFG%"=="HP" start "" "https://support.hp.com/us-en/checkwarranty"
 if /i "%MFG%"=="Lenovo" start "" "https://pcsupport.lenovo.com/us/en/warrantylookup"
 set "mark_Warranty=[OK]"
 timeout /t 2 >nul
+goto Menu_Hardware
+
+:CheckWinIntegrity
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ WINDOWS DETECTIVE - ORIGINALITY CHECK ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+:: --- CRASH PROOF METHOD: USE THE UNIFIED ENGINE IN 'CHECK' MODE ---
+powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "CheckWin"
+
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+set "mark_CheckWin=[OK]"
+pause
 goto Menu_Hardware
 
 :DownloadAndRun
@@ -597,6 +622,8 @@ echo %PAD%%Cyan%================================================================
 echo.
 echo %PAD%    %Bold%%White%[1]%Reset% BACKUP DRIVERS      %Green%!mark_DriverBack!%Reset%       %Bold%%White%[2]%Reset% RESTORE DRIVERS     %Green%!mark_DriverRest!%Reset%
 echo.
+echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
+echo.
 echo %PAD%    %Bold%%White%[3]%Reset% OEM SUPPORT - DELL  %Gray%[Web]%Reset%                   %Bold%%White%[4]%Reset% OEM SUPPORT - HP    %Gray%[Web]%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
@@ -880,19 +907,12 @@ if "!mark_Active!"=="[OK]" set "TEST_LOG=!TEST_LOG! Active:OK"
 if "!mark_Bloat!"=="[OK]" set "TEST_LOG=!TEST_LOG! Debloat:OK"
 if "!mark_Apps!"=="[OK]" set "TEST_LOG=!TEST_LOG! Apps:OK"
 if "!mark_DriverBack!"=="[OK]" set "TEST_LOG=!TEST_LOG! DrvBack:OK"
+if "!mark_CheckWin!"=="[OK]" set "TEST_LOG=!TEST_LOG! WinCheck:OK"
 
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 
-set "PSScript=%TEMP%\GenReportHTML.ps1"
-
-:: --- HYBRID MAGIC: EXTRACT HTML GENERATOR (MORE +n METHOD) ---
-:: This avoids regex/path issues by simply grabbing the tail of the file.
-for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a"
-more +%StartLine% "%~f0" > "%PSScript%"
-
-:: Run the extracted script
-powershell -ExecutionPolicy Bypass -File "%PSScript%" -TesterName "User" -StatusLog "%TEST_LOG%" -FormID "%GFormID%"
-del "%PSScript%" >nul 2>&1
+:: --- USE THE UNIFIED ENGINE IN 'REPORT' MODE ---
+powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "Report" -TesterName "User" -StatusLog "%TEST_LOG%" -FormID "%GFormID%"
 
 echo.
 echo %PAD%%Green%[OK] Interface Opened. Returning to Menu...%Reset%
@@ -940,75 +960,114 @@ powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.
 exit /b
 
 :: ============================================================
-::  POWERSHELL HTML ENGINE (DO NOT TOUCH BELOW THIS LINE)
+::  UNIFIED POWERSHELL ENGINE (NO ECHO HAZARDS)
 :: ============================================================
-:::__POWERSHELL_START__:::
-param($TesterName, $StatusLog, $FormID)
+:::__ENGINE_START__:::
+param($Task, $TesterName, $StatusLog, $FormID)
 $ErrorActionPreference = 'SilentlyContinue'
 
-# --- 1. GATHER DEEP SPECS ---
-$sys = Get-CimInstance Win32_ComputerSystem
-$cpu = Get-CimInstance Win32_Processor
-$bios = Get-CimInstance Win32_Bios
-$Man = $sys.Manufacturer.Trim()
-$Mod = $sys.Model.Trim()
-if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" }
-$maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
-$cacheMB = [int]($cpu.L3CacheSize / 1024)
-if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
-$cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache"
+# --- 1. WINDOWS CHECKER MODE ---
+if ($Task -eq 'CheckWin') {
+    $score = 0
+    $lic = Get-CimInstance SoftwareLicensingProduct | Where-Object {$_.PartialProductKey -and $_.Name -like "*Windows*"} | Select-Object -ExpandProperty Name -First 1
+    
+    if ($lic -match "Volume" -or $lic -match "KMS") { 
+        $status = "FAKE/VOLUME (Modified)"
+        $color = "Red"
+        $score++ 
+    } else { 
+        $status = "OEM/RETAIL (Original)"
+        $color = "Green" 
+    }
+    Write-Host "   [1/4] License Channel : $status" -ForegroundColor $color
 
-$mem = Get-CimInstance Win32_PhysicalMemory
-$memArray = @($mem)
-$stickCount = $memArray.Count
-$totalRam = [math]::Round(($memArray | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
-$ramSpeed = 0
-foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }
-if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" }
-$ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz"
+    $def = Get-Service windefend -ErrorAction SilentlyContinue
+    if (!$def) { Write-Host "   [2/4] Windows Defender: DELETED (Modified)" -ForegroundColor Red; $score++ } 
+    else { Write-Host "   [2/4] Windows Defender: OK" -ForegroundColor Green }
 
-$disks = Get-CimInstance Win32_DiskDrive
-$diskList = @()
+    $upd = Get-Service wuauserv -ErrorAction SilentlyContinue
+    if (!$upd) { Write-Host "   [3/4] Windows Update  : DELETED (Modified)" -ForegroundColor Red; $score++ } 
+    else { Write-Host "   [3/4] Windows Update  : OK" -ForegroundColor Green }
+
+    if (Test-Path "C:\Windows\System32\Recovery\ReAgent.xml") {
+        Write-Host "   [4/4] Recovery System : OK" -ForegroundColor Green
+    } else {
+        Write-Host "   [4/4] Recovery System : MISSING (Modified)" -ForegroundColor Red; $score++
+    }
+
+    if ($score -eq 0) { 
+        Write-Host "`n   [VERDICT] ORIGINAL (STOCK) WINDOWS - SAFE" -ForegroundColor Green 
+    } else { 
+        Write-Host "`n   [VERDICT] MODIFIED / FAKE DETECTED - FORMAT RECOMMENDED" -ForegroundColor Red 
+    }
+    exit
+}
+
+# --- 2. REPORT GENERATOR MODE ---
+if ($Task -eq 'Report') {
+    # Gather Specs
+    $sys = Get-CimInstance Win32_ComputerSystem
+    $cpu = Get-CimInstance Win32_Processor
+    $bios = Get-CimInstance Win32_Bios
+    $Man = $sys.Manufacturer.Trim()
+    $Mod = $sys.Model.Trim()
+    if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" }
+    $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
+    $cacheMB = [int]($cpu.L3CacheSize / 1024)
+    if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
+    $cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache"
+
+    $mem = Get-CimInstance Win32_PhysicalMemory
+    $memArray = @($mem)
+    $stickCount = $memArray.Count
+    $totalRam = [math]::Round(($memArray | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
+    $ramSpeed = 0
+    foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }
+    if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" }
+    $ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz"
+
+    $disks = Get-CimInstance Win32_DiskDrive
+    $diskList = @()
 foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }
-$storageString = $diskList -join " | "
+    $storageString = $diskList -join " | "
 
-$gpuList = @()
-$regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
-    $props = Get-ItemProperty $_.PSPath
-    if ($props.DriverDesc) {
-        $size = 0
-        if ($props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
-        elseif ($props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
-        $gb = [math]::Round($size / 1GB)
-        if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" }
-        else {
-            $wmi = Get-CimInstance Win32_VideoController | Where-Object { $_.Description -eq $props.DriverDesc } | Select-Object -First 1
-            if ($wmi.AdapterRAM -gt 0) {
-                $wmiGB = [math]::Round($wmi.AdapterRAM / 1GB)
-                if($wmiGB -gt 0) { $gpuList += "$($props.DriverDesc) ($wmiGB GB)" } else { $gpuList += $props.DriverDesc }
-            } else { $gpuList += $props.DriverDesc }
+    $gpuList = @()
+    $regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+    Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
+        $props = Get-ItemProperty $_.PSPath
+        if ($props.DriverDesc) {
+            $size = 0
+            if ($props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
+            elseif ($props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
+            $gb = [math]::Round($size / 1GB)
+            if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" }
+            else {
+                $wmi = Get-CimInstance Win32_VideoController | Where-Object { $_.Description -eq $props.DriverDesc } | Select-Object -First 1
+                if ($wmi.AdapterRAM -gt 0) {
+                    $wmiGB = [math]::Round($wmi.AdapterRAM / 1GB)
+                    if($wmiGB -gt 0) { $gpuList += "$($props.DriverDesc) ($wmiGB GB)" } else { $gpuList += $props.DriverDesc }
+                } else { $gpuList += $props.DriverDesc }
+            }
         }
     }
-}
-$gpuString = ($gpuList | Select-Object -Unique) -join " + "
+    $gpuString = ($gpuList | Select-Object -Unique) -join " + "
 
-# --- 2. GENERATE TEXT REPORT (DESKTOP) ---
-$txtReport = "MONTAG STORE - SYSTEM INFO`r`n"
-$txtReport += "----------------------------------------`r`n"
-$txtReport += "DATE   : " + (Get-Date).ToString() + "`r`n"
-$txtReport += "MODEL  : $FullModel`r`n"
-$txtReport += "SERIAL : $($bios.SerialNumber)`r`n"
-$txtReport += "CPU    : $cpuDetails`r`n"
-$txtReport += "RAM    : $ramDetails`r`n"
-$txtReport += "GPU    : $gpuString`r`n"
-$txtReport += "DISK   : $storageString`r`n"
-$txtReport += "STATUS : $StatusLog`r`n"
-$txtReport += "----------------------------------------`r`n"
-$txtReport | Out-File "$([Environment]::GetFolderPath('Desktop'))\Montag_Specs.txt" -Encoding UTF8
+    # Generate Text Report
+    $txtReport = "MONTAG STORE - SYSTEM INFO`r`n"
+    $txtReport += "----------------------------------------`r`n"
+    $txtReport += "DATE   : " + (Get-Date).ToString() + "`r`n"
+    $txtReport += "MODEL  : $FullModel`r`n"
+    $txtReport += "SERIAL : $($bios.SerialNumber)`r`n"
+    $txtReport += "CPU    : $cpuDetails`r`n"
+    $txtReport += "RAM    : $ramDetails`r`n"
+    $txtReport += "GPU    : $gpuString`r`n"
+    $txtReport += "DISK   : $storageString`r`n"
+    $txtReport += "STATUS : $StatusLog`r`n"
+    $txtReport += "----------------------------------------`r`n"
+    $txtReport | Out-File "$([Environment]::GetFolderPath('Desktop'))\Montag_Specs.txt" -Encoding UTF8
 
-# --- 3. GENERATE HTML UI (Clean ASCII, No Icons) ---
-$htmlContent = @"
+    # Generate HTML
+    $htmlContent = @"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1029,8 +1088,6 @@ $htmlContent = @"
     label { display: block; color: #fff; margin-bottom: 5px; font-size: 18px; }
     input, textarea { width: 95%; padding: 15px; background: #000; border: 2px solid #444; color: #8f00ff; font-family: inherit; font-size: 16px; border-radius: 5px; outline: none; transition: 0.3s; }
     input:focus, textarea:focus { border-color: #8f00ff; box-shadow: 0 0 10px #8f00ff; }
-    .status-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
-    .badge { background: #003300; border: 1px solid #00ff41; color: #fff; padding: 5px 10px; font-size: 12px; border-radius: 15px; }
     .btn-group { display: flex; gap: 20px; }
     button { flex: 1; padding: 20px; font-size: 20px; font-family: inherit; font-weight: bold; border: none; cursor: pointer; color: #fff; text-transform: uppercase; border-radius: 5px; position: relative; overflow: hidden; transition: 0.3s; }
     .btn-sell { background: linear-gradient(45deg, #1e7e34, #28a745); box-shadow: 0 5px 0 #155724; }
@@ -1082,16 +1139,13 @@ $htmlContent = @"
                 "&entry.2044586469=" + encodeURIComponent("$gpuString") +
                 "&entry.310563239=" + encodeURIComponent(statusRaw);
             
-            // SILENT SUBMISSION (Background Fetch)
             fetch(finalURL, { mode: 'no-cors' });
-            
-            // Close after 1 second
             setTimeout(function(){ window.close(); }, 1000);
         }
     </script>
 </body>
 </html>
 "@
-
-$htmlContent | Out-File "$env:TEMP\SystemReport.html" -Encoding UTF8
-Start-Process "$env:TEMP\SystemReport.html"
+    $htmlContent | Out-File "$env:TEMP\SystemReport.html" -Encoding UTF8
+    Start-Process "$env:TEMP\SystemReport.html"
+}
