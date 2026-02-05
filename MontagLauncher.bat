@@ -1,3 +1,4 @@
+<# :
 @echo off
 setlocal EnableDelayedExpansion
 
@@ -18,28 +19,26 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 235.0 Block Title)
-color 07
+title Montag Store - System (V 311.0 Silent Submit)
+color 05
 
 :: ============================================================
 :: [2] CONFIGURATION
 :: ============================================================
 set "ToolDir=%SystemDrive%\MontagTools"
 if not exist "%ToolDir%" mkdir "%ToolDir%" >nul 2>&1
-
 set "IconDir=%ProgramData%\MontagStore"
 if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
 attrib +h "%IconDir%" >nul 2>&1
 
-:: --- BRANDING DATA ---
+:: --- BRANDING ---
 set "BrandName=Montag Store"
 set "BrandPhone=Manager: 01090040022-01144566115 | Tech: 01040901444"
 set "BrandURL=https://montagstore.com"
-set "BrandHours=Sat-Thu 12PM-9PM"
-set "TechSupportNumber=201040901444" 
 set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
+set "TechSupportNumber=201040901444"
 
-:: URLs Setup
+:: --- URLS ---
 set "UrlKey=https://www.dropbox.com/scl/fi/onvccubmkxicdtvecdqvq/KeyboardTestUtility.exe?rlkey=62ag37rdvhp45iuzlk8261yus&st=k6li1383&dl=1"
 set "UrlScr=https://www.dropbox.com/scl/fi/b63drni7qk3t8f0wudnk7/defpix.exe?rlkey=ir9k1d9gi99dwunjmqtnvtq7n&st=6etkm6wa&dl=1"
 set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headphones-Trim.mp4?rlkey=mw5md1jthagl3nfu3yfumulri&st=5xo6k9gg&dl=1"
@@ -76,7 +75,7 @@ if %errorlevel% equ 0 (
     call :DrawHeader
     echo.
     echo.
-    echo %PAD%%Green%      Welcome to Montag Store System...%Reset%
+    echo %PAD%%Pink%      Welcome to Montag Store System...%Reset%
     call :Speak "Welcome to Montag Store System."
     timeout /t 1 >nul
     goto MainMenu
@@ -858,149 +857,47 @@ timeout /t 3 >nul
 goto MainMenu
 
 :: ============================================================
-:: REPORT GENERATOR (CLASSIC CLI - BLOCK TITLE)
+:: REPORT GENERATOR (HYBRID: DEEP SPECS + HTML UI)
 :: ============================================================
 :FinalReport
-echo %PAD%%Cyan%Preparing Report...%Reset%
+echo %PAD%%Cyan%Deep Scanning System Specs...%Reset%
 call :SilentIconSetup
 call :ApplyBranding
 call :AddContextSupport
 
-ping -n 1 google.com >nul
-if %errorlevel% neq 0 (
-    echo %PAD%%Red%[ERROR] No Internet Connection.%Reset%
-    timeout /t 5 >nul
-    exit
-)
+:: Build Detailed Status String with Checkmarks (Using [OK] to prevent crash)
+set "TEST_LOG="
+if "!mark_Key!"=="[OK]" set "TEST_LOG=!TEST_LOG! Key:OK"
+if "!mark_Screen!"=="[OK]" set "TEST_LOG=!TEST_LOG! Screen:OK"
+if "!mark_Audio!"=="[OK]" set "TEST_LOG=!TEST_LOG! Audio:OK"
+if "!mark_Batt!"=="[OK]" set "TEST_LOG=!TEST_LOG! Batt:OK"
+if "!mark_Cam!"=="[OK]" set "TEST_LOG=!TEST_LOG! Cam:OK"
+if "!mark_WiFi!"=="[OK]" set "TEST_LOG=!TEST_LOG! WiFi:OK"
+if "!mark_Sensor!"=="[OK]" set "TEST_LOG=!TEST_LOG! Sensor:OK"
+if "!mark_Stress!"=="[OK]" set "TEST_LOG=!TEST_LOG! Stress:OK"
+if "!mark_HighPerf!"=="[OK]" set "TEST_LOG=!TEST_LOG! Perf:OK"
+if "!mark_WinUpd!"=="[OK]" set "TEST_LOG=!TEST_LOG! Upd:OK"
+if "!mark_Name!"=="[OK]" set "TEST_LOG=!TEST_LOG! Name:OK"
+if "!mark_Active!"=="[OK]" set "TEST_LOG=!TEST_LOG! Active:OK"
+if "!mark_Bloat!"=="[OK]" set "TEST_LOG=!TEST_LOG! Debloat:OK"
+if "!mark_Apps!"=="[OK]" set "TEST_LOG=!TEST_LOG! Apps:OK"
+if "!mark_DriverBack!"=="[OK]" set "TEST_LOG=!TEST_LOG! DrvBack:OK"
 
-:: --- ASK FOR TESTER NAME ---
-set "TesterName="
-set /p TesterName="%PAD%Enter Tester Name: "
-if "%TesterName%"=="" set "TesterName=Unknown"
+if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 
-:: --- SELECT OPERATION TYPE (BLOCK TITLE) ---
-cls
-echo.
-echo %PAD%%Pink%███████╗███████╗██╗     ███████╗ ██████╗████████╗%Reset%
-echo %PAD%%Pink%██╔════╝██╔════╝██║     ██╔════╝██╔════╝╚══██╔══╝%Reset%
-echo %PAD%%Pink%███████╗█████╗  ██║     █████╗  ██║        ██║   %Reset%
-echo %PAD%%Pink%╚════██║██╔══╝  ██║     ██╔══╝  ██║        ██║   %Reset%
-echo %PAD%%Pink%███████║███████╗███████╗███████╗╚██████╗   ██║   %Reset%
-echo %PAD%%Pink%╚══════╝╚══════╝╚══════╝╚══════╝ ╚═════╝   ╚═╝   %Reset%
-echo.
-echo %PAD%%Pink% ██████╗ ██████╗ ███████╗██████╗  █████╗ ████████╗██╗ ██████╗ ███╗   ██╗%Reset%
-echo %PAD%%Pink%██╔═══██╗██╔══██╗██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║%Reset%
-echo %PAD%%Pink%██║   ██║██████╔╝█████╗  ██████╔╝███████║   ██║   ██║██║   ██║██╔██╗ ██║%Reset%
-echo %PAD%%Pink%██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗██╔══██║   ██║   ██║██║   ██║██║╚██╗██║%Reset%
-echo %PAD%%Pink%╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║%Reset%
-echo %PAD%%Pink% ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝%Reset%
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%    %Bold%%White%[1]%Reset% SELL (To Customer)
-echo %PAD%    %Bold%%White%[2]%Reset% TEST (For Store/Stock)
-echo.
-echo %PAD%%Yellow%^> Choose Type:%Reset% 
-choice /c 12 /n
-if %errorlevel%==2 set "OpType=TEST"
-if %errorlevel%==1 set "OpType=SELL"
+set "PSScript=%TEMP%\GenReportHTML.ps1"
+
+:: --- HYBRID MAGIC: EXTRACT HTML GENERATOR (MORE +n METHOD) ---
+:: This avoids regex/path issues by simply grabbing the tail of the file.
+for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a"
+more +%StartLine% "%~f0" > "%PSScript%"
+
+:: Run the extracted script
+powershell -ExecutionPolicy Bypass -File "%PSScript%" -TesterName "User" -StatusLog "%TEST_LOG%" -FormID "%GFormID%"
+del "%PSScript%" >nul 2>&1
 
 echo.
-echo %PAD%%Cyan%Gathering System Info...%Reset%
-
-set "PSScript=%TEMP%\GenReport.ps1"
-if exist "%PSScript%" del "%PSScript%"
-
-:: --- PREPARE TEST SUMMARY STRING ---
-set "TestSummary=Key:%mark_Key% Scr:%mark_Screen% Batt:%mark_Batt% Cam:%mark_Cam% Snd:%mark_Audio% WiFi:%mark_WiFi% Sens:%mark_Sensor% Strss:%mark_Stress% Auto:%mark_Auto% Game:%mark_Game%"
-
-echo $ErrorActionPreference = 'SilentlyContinue' >> "%PSScript%"
-echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 >> "%PSScript%"
-echo $path = [Environment]::GetFolderPath('Desktop') + '\Montag_Test_Report.txt' >> "%PSScript%"
-echo $sys = Get-CimInstance Win32_ComputerSystem >> "%PSScript%"
-echo $cpu = Get-CimInstance Win32_Processor >> "%PSScript%"
-echo $mem = Get-CimInstance Win32_PhysicalMemory >> "%PSScript%"
-echo $disks = Get-CimInstance Win32_DiskDrive >> "%PSScript%"
-echo $bios = Get-CimInstance win32_bios >> "%PSScript%"
-echo $Man = $sys.Manufacturer.Trim() >> "%PSScript%"
-echo $Mod = $sys.Model.Trim() >> "%PSScript%"
-echo if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" } >> "%PSScript%"
-echo $memArray = @($mem); $stickCount = $memArray.Count; $totalRam = [math]::Round(($memArray ^| Measure-Object -Property Capacity -Sum).Sum / 1GB, 1) >> "%PSScript%"
-echo $ramSpeed = 0; foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }; if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" } >> "%PSScript%"
-echo $ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz" >> "%PSScript%"
-echo $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2) >> "%PSScript%"
-echo $cacheMB = [int]($cpu.L3CacheSize / 1024); if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) } >> "%PSScript%"
-echo $cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache" >> "%PSScript%"
-
-:: --- TRUE GPU VRAM DETECTION (Registry) ---
-echo $gpuList = @() >> "%PSScript%"
-echo $regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}' >> "%PSScript%"
-echo Get-ChildItem $regBase -ErrorAction SilentlyContinue ^| ForEach-Object { >> "%PSScript%"
-echo     $props = Get-ItemProperty $_.PSPath >> "%PSScript%"
-echo     if ($props.DriverDesc) { >> "%PSScript%"
-echo         $size = 0 >> "%PSScript%"
-echo         if ($props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' } >> "%PSScript%"
-echo         elseif ($props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' } >> "%PSScript%"
-echo         $gb = [math]::Round($size / 1GB) >> "%PSScript%"
-echo         if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" } >> "%PSScript%"
-echo         else { >> "%PSScript%"
-echo             $wmi = Get-CimInstance Win32_VideoController ^| Where-Object { $_.Description -eq $props.DriverDesc } ^| Select-Object -First 1 >> "%PSScript%"
-echo             if ($wmi.AdapterRAM -gt 0) { >> "%PSScript%"
-echo                 $wmiGB = [math]::Round($wmi.AdapterRAM / 1GB) >> "%PSScript%"
-echo                 if($wmiGB -gt 0) { $gpuList += "$($props.DriverDesc) ($wmiGB GB)" } else { $gpuList += $props.DriverDesc } >> "%PSScript%"
-echo             } else { $gpuList += $props.DriverDesc } >> "%PSScript%"
-echo         } >> "%PSScript%"
-echo     } >> "%PSScript%"
-echo } >> "%PSScript%"
-echo $gpuString = ($gpuList ^| Select-Object -Unique) -join " + " >> "%PSScript%"
-
-echo $diskList = @(); foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }; $storageString = $diskList -join " | " >> "%PSScript%"
-echo $FinalStatus = "%TestSummary%" >> "%PSScript%"
-echo $out = 'DATE: ' + (Get-Date).ToString() + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'MODEL : ' + $FullModel + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'SERIAL: ' + $bios.SerialNumber + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'CPU   : ' + $cpuDetails + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'RAM   : ' + $ramDetails + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'GPU   : ' + $gpuString + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'DISK  : ' + $storageString + [Environment]::NewLine >> "%PSScript%"
-echo $out += '--------------------------------------------------' + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'TEST RESULTS:' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Keyboard : %mark_Key%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Screen   : %mark_Screen%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Battery  : %mark_Batt%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Camera   : %mark_Cam%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Sound    : %mark_Audio%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   WiFi     : %mark_WiFi%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Sensors  : %mark_Sensor%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Stress   : %mark_Stress%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '--------------------------------------------------' + [Environment]::NewLine >> "%PSScript%"
-echo $out += 'SETUP ACTIONS:' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Windows Activation : %mark_Active%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Apps Installed     : %mark_Apps%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Gaming Pack        : %mark_Game%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   System Cleaned     : %mark_Bloat%' + [Environment]::NewLine >> "%PSScript%"
-echo $out += '   Auto-Pilot Run     : %mark_Auto%' + [Environment]::NewLine >> "%PSScript%"
-echo $out ^| Out-File -FilePath $path -Encoding UTF8 >> "%PSScript%"
-
-:: --- MERGE NAME + TYPE FOR FORM ---
-echo $MergedName = "%TesterName% - %OpType%" >> "%PSScript%"
-
-echo $formUrl = "https://docs.google.com/forms/d/e/%GFormID%/formResponse" >> "%PSScript%"
-echo $body = @{ "entry.531158115"=$FullModel; "entry.1203480099"=$bios.SerialNumber; "entry.1462565184"=$cpuDetails; "entry.212987726"=$ramDetails; "entry.1717831234"=$storageString; "entry.2044586469"=$gpuString; "entry.310563239"=$FinalStatus; "entry.392302034"=$MergedName; "entry.371291262"="%OpType%" } >> "%PSScript%"
-
-echo try { >> "%PSScript%"
-echo     $null = Invoke-WebRequest -Uri $formUrl -Method POST -Body $body -UseBasicParsing >> "%PSScript%"
-echo     Write-Host " [Cloud] Upload Success" -ForegroundColor Green >> "%PSScript%"
-echo } catch { >> "%PSScript%"
-echo     Write-Host " [Cloud] Upload Failed" -ForegroundColor Red >> "%PSScript%"
-echo     Write-Host $_.Exception.Message -ForegroundColor Red >> "%PSScript%"
-echo } >> "%PSScript%"
-echo Start-Process $path >> "%PSScript%"
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PSScript%"
-del "%PSScript%"
-echo.
-echo %PAD%%Green%[OK] Report on Desktop. Returning to Menu...%Reset%
+echo %PAD%%Green%[OK] Interface Opened. Returning to Menu...%Reset%
 timeout /t 3 >nul
 goto MainMenu
 
@@ -1043,3 +940,144 @@ exit /b
 :Speak
 powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
 exit /b
+
+:: ============================================================
+::  POWERSHELL HTML ENGINE (DO NOT TOUCH BELOW THIS LINE)
+:: ============================================================
+:::__POWERSHELL_START__:::
+param($TesterName, $StatusLog, $FormID)
+$ErrorActionPreference = 'SilentlyContinue'
+
+# --- 1. GATHER DEEP SPECS ---
+$sys = Get-CimInstance Win32_ComputerSystem
+$cpu = Get-CimInstance Win32_Processor
+$bios = Get-CimInstance Win32_Bios
+$Man = $sys.Manufacturer.Trim()
+$Mod = $sys.Model.Trim()
+if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" }
+$maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
+$cacheMB = [int]($cpu.L3CacheSize / 1024)
+if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
+$cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache"
+
+$mem = Get-CimInstance Win32_PhysicalMemory
+$memArray = @($mem)
+$stickCount = $memArray.Count
+$totalRam = [math]::Round(($memArray | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
+$ramSpeed = 0
+foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }
+if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" }
+$ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz"
+
+$disks = Get-CimInstance Win32_DiskDrive
+$diskList = @()
+foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }
+$storageString = $diskList -join " | "
+
+$gpuList = @()
+$regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
+    $props = Get-ItemProperty $_.PSPath
+    if ($props.DriverDesc) {
+        $size = 0
+        if ($props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
+        elseif ($props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
+        $gb = [math]::Round($size / 1GB)
+        if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" }
+        else {
+            $wmi = Get-CimInstance Win32_VideoController | Where-Object { $_.Description -eq $props.DriverDesc } | Select-Object -First 1
+            if ($wmi.AdapterRAM -gt 0) {
+                $wmiGB = [math]::Round($wmi.AdapterRAM / 1GB)
+                if($wmiGB -gt 0) { $gpuList += "$($props.DriverDesc) ($wmiGB GB)" } else { $gpuList += $props.DriverDesc }
+            } else { $gpuList += $props.DriverDesc }
+        }
+    }
+}
+$gpuString = ($gpuList | Select-Object -Unique) -join " + "
+
+# --- 2. GENERATE HTML UI (Clean ASCII, No Icons) ---
+$htmlContent = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Montag Store System</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    body { background-color: #050505; color: #8f00ff; font-family: 'Share Tech Mono', monospace; text-align: center; padding: 20px; overflow-x: hidden; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; }
+    .container { max-width: 700px; margin: auto; background: rgba(20, 20, 20, 0.9); padding: 30px; border: 1px solid #333; box-shadow: 0 0 20px rgba(143, 0, 255, 0.2); border-radius: 10px; position: relative; }
+    .glitch-header { font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff; letter-spacing: 3px; margin-bottom: 20px; animation: glitch 1s infinite alternate; color: #fff; }
+    @keyframes glitch { 0% { text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff; } 100% { text-shadow: -2px -2px 0px #ff00ff, 2px 2px 0px #00ffff; } }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; direction: ltr; margin-bottom: 20px; }
+    .card { background: #111; border: 1px solid #8f00ff; padding: 15px; border-radius: 5px; box-shadow: inset 0 0 10px rgba(143, 0, 255, 0.1); transition: 0.3s; }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 0 15px rgba(143, 0, 255, 0.4); }
+    .card h4 { margin: 0 0 5px 0; color: #fff; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
+    .card p { margin: 0; font-size: 13px; color: #ccc; word-wrap: break-word; }
+    .input-group { margin-bottom: 20px; text-align: left; }
+    label { display: block; color: #fff; margin-bottom: 5px; font-size: 18px; }
+    input, textarea { width: 95%; padding: 15px; background: #000; border: 2px solid #444; color: #8f00ff; font-family: inherit; font-size: 16px; border-radius: 5px; outline: none; transition: 0.3s; }
+    input:focus, textarea:focus { border-color: #8f00ff; box-shadow: 0 0 10px #8f00ff; }
+    .btn-group { display: flex; gap: 20px; }
+    button { flex: 1; padding: 20px; font-size: 20px; font-family: inherit; font-weight: bold; border: none; cursor: pointer; color: #fff; text-transform: uppercase; border-radius: 5px; position: relative; overflow: hidden; transition: 0.3s; }
+    .btn-sell { background: linear-gradient(45deg, #1e7e34, #28a745); box-shadow: 0 5px 0 #155724; }
+    .btn-test { background: linear-gradient(45deg, #117a8b, #17a2b8); box-shadow: 0 5px 0 #0f6674; }
+    button:active { transform: translateY(4px); box-shadow: none; }
+    button:hover { filter: brightness(1.2); }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="glitch-header">MONTAG STORE REPORT</div>
+        <div class="input-group">
+            <label>TESTER NAME:</label>
+            <input type="text" id="testerName" placeholder="Type your name here..." autofocus required>
+        </div>
+        <div class="info-grid">
+            <div class="card"><h4>MODEL</h4><p>$FullModel</p></div>
+            <div class="card"><h4>SERIAL</h4><p>$($bios.SerialNumber)</p></div>
+            <div class="card"><h4>CPU</h4><p>$cpuDetails</p></div>
+            <div class="card"><h4>RAM</h4><p>$ramDetails</p></div>
+            <div class="card"><h4>GRAPHICS</h4><p>$gpuString</p></div>
+            <div class="card"><h4>STORAGE</h4><p>$storageString</p></div>
+        </div>
+        <div class="input-group">
+            <label>INSPECTION LOGS (STATUS):</label>
+            <textarea id="status" rows="2">$StatusLog</textarea>
+        </div>
+        <div class="btn-group">
+            <button class="btn-sell" onclick="sendData('SELL')">SELL (CUSTOMER)</button>
+            <button class="btn-test" onclick="sendData('TEST')">TEST (STOCK)</button>
+        </div>
+    </div>
+    <script>
+        function sendData(type) {
+            var testerRaw = document.getElementById('testerName').value;
+            var statusRaw = document.getElementById('status').value;
+            if (testerRaw.trim() === "") { alert("Please enter tester name first!"); return; }
+            
+            var mergedTesterName = testerRaw + " - " + type;
+            var baseURL = "https://docs.google.com/forms/d/e/$FormID/formResponse?usp=pp_url";
+            var finalURL = baseURL + 
+                "&entry.371291262=" + type +
+                "&entry.392302034=" + encodeURIComponent(mergedTesterName) +
+                "&entry.531158115=" + encodeURIComponent("$FullModel") +
+                "&entry.1203480099=" + encodeURIComponent("$($bios.SerialNumber)") +
+                "&entry.1462565184=" + encodeURIComponent("$cpuDetails") +
+                "&entry.212987726=" + encodeURIComponent("$ramDetails") +
+                "&entry.1717831234=" + encodeURIComponent("$storageString") +
+                "&entry.2044586469=" + encodeURIComponent("$gpuString") +
+                "&entry.310563239=" + encodeURIComponent(statusRaw);
+            
+            // SILENT SUBMISSION (Background Fetch)
+            fetch(finalURL, { mode: 'no-cors' });
+            
+            // Close after 1 second
+            setTimeout(function(){ window.close(); }, 1000);
+        }
+    </script>
+</body>
+</html>
+"@
+
+$htmlContent | Out-File "$env:TEMP\SystemReport.html" -Encoding UTF8
+Start-Process "$env:TEMP\SystemReport.html"
