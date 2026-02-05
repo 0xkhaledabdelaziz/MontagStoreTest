@@ -19,7 +19,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 311.0 Silent Submit)
+title Montag Store - System (V 313.0 Full Package)
 color 05
 
 :: ============================================================
@@ -75,7 +75,7 @@ if %errorlevel% equ 0 (
     call :DrawHeader
     echo.
     echo.
-    echo %PAD%%Pink%      Welcome to Montag Store System...%Reset%
+    echo %PAD%%Green%      Welcome to Montag Store System...%Reset%
     call :Speak "Welcome to Montag Store System."
     timeout /t 1 >nul
     goto MainMenu
@@ -597,8 +597,6 @@ echo %PAD%%Cyan%================================================================
 echo.
 echo %PAD%    %Bold%%White%[1]%Reset% BACKUP DRIVERS      %Green%!mark_DriverBack!%Reset%       %Bold%%White%[2]%Reset% RESTORE DRIVERS     %Green%!mark_DriverRest!%Reset%
 echo.
-echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
-echo.
 echo %PAD%    %Bold%%White%[3]%Reset% OEM SUPPORT - DELL  %Gray%[Web]%Reset%                   %Bold%%White%[4]%Reset% OEM SUPPORT - HP    %Gray%[Web]%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
@@ -995,7 +993,21 @@ Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
 }
 $gpuString = ($gpuList | Select-Object -Unique) -join " + "
 
-# --- 2. GENERATE HTML UI (Clean ASCII, No Icons) ---
+# --- 2. GENERATE TEXT REPORT (DESKTOP) ---
+$txtReport = "MONTAG STORE - SYSTEM INFO`r`n"
+$txtReport += "----------------------------------------`r`n"
+$txtReport += "DATE   : " + (Get-Date).ToString() + "`r`n"
+$txtReport += "MODEL  : $FullModel`r`n"
+$txtReport += "SERIAL : $($bios.SerialNumber)`r`n"
+$txtReport += "CPU    : $cpuDetails`r`n"
+$txtReport += "RAM    : $ramDetails`r`n"
+$txtReport += "GPU    : $gpuString`r`n"
+$txtReport += "DISK   : $storageString`r`n"
+$txtReport += "STATUS : $StatusLog`r`n"
+$txtReport += "----------------------------------------`r`n"
+$txtReport | Out-File "$([Environment]::GetFolderPath('Desktop'))\Montag_Specs.txt" -Encoding UTF8
+
+# --- 3. GENERATE HTML UI (Clean ASCII, No Icons) ---
 $htmlContent = @"
 <!DOCTYPE html>
 <html lang="en">
@@ -1017,6 +1029,8 @@ $htmlContent = @"
     label { display: block; color: #fff; margin-bottom: 5px; font-size: 18px; }
     input, textarea { width: 95%; padding: 15px; background: #000; border: 2px solid #444; color: #8f00ff; font-family: inherit; font-size: 16px; border-radius: 5px; outline: none; transition: 0.3s; }
     input:focus, textarea:focus { border-color: #8f00ff; box-shadow: 0 0 10px #8f00ff; }
+    .status-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
+    .badge { background: #003300; border: 1px solid #00ff41; color: #fff; padding: 5px 10px; font-size: 12px; border-radius: 15px; }
     .btn-group { display: flex; gap: 20px; }
     button { flex: 1; padding: 20px; font-size: 20px; font-family: inherit; font-weight: bold; border: none; cursor: pointer; color: #fff; text-transform: uppercase; border-radius: 5px; position: relative; overflow: hidden; transition: 0.3s; }
     .btn-sell { background: linear-gradient(45deg, #1e7e34, #28a745); box-shadow: 0 5px 0 #155724; }
