@@ -3,7 +3,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] ADMIN FORCE + FORCE MAXIMIZE + DEFENDER BYPASS
+:: [0] ADMIN FORCE + FORCE MAXIMIZE
 :: ============================================================
 cd /d "%~dp0"
 FSUTIL dirty query %systemdrive% >nul
@@ -12,7 +12,7 @@ if %errorlevel% neq 0 (
     exit
 )
 
-:: Whitelist Current Path
+:: Whitelist Current Path (Safety)
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%~dp0'" >nul 2>&1
 
 :: ============================================================
@@ -22,7 +22,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 333.0 The Cleaner)
+title Montag Store - System (V 334.0 Office Terminator)
 color 05
 
 :: ============================================================
@@ -738,7 +738,7 @@ echo.
 echo %PAD%    %Bold%%White%[1]%Reset% INSTALL FROM USB (OFFLINE)
 echo %PAD%    %Bold%%White%[2]%Reset% DOWNLOAD 2021 LTSC (ONLINE)
 echo.
-echo %PAD%    %Bold%%Red%[3] UNINSTALL OFFICE (ROOT SCRUB)%Reset%
+echo %PAD%    %Bold%%Red%[3] FORCE UNINSTALL OFFICE (DEEP CLEAN)%Reset%
 echo.
 echo %PAD%    %Gray%[0] CANCEL%Reset%
 echo.
@@ -806,10 +806,13 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ OFFICE REMOVAL TOOL ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Yellow%Initializing Nuclear Cleanup...%Reset%
+echo %PAD%%Red%[WARNING] THIS WILL DELETE ALL OFFICE FILES!%Reset%
+echo %PAD%Closing apps and cleaning registry/files...
+echo.
+echo %PAD%%Yellow%Executing 'The Terminator'...%Reset%
 powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "NukeOffice"
 echo.
-echo %PAD%%Green%[DONE] Office scrubbed from system.%Reset%
+echo %PAD%%Green%[DONE] Office scrubbed. Please restart PC.%Reset%
 set "mark_OffClean=[OK]"
 pause
 goto Menu_Software
@@ -1245,16 +1248,29 @@ foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($
 
 # --- 3. NUCLEAR OFFICE REMOVAL MODE ---
 if ($Task -eq 'NukeOffice') {
+    # 1. Kill All Office Processes
     $procs = "WINWORD","EXCEL","POWERPNT","OUTLOOK","ONENOTE","LYNC","MSACCESS","OFFICECLICKTORUN"
     foreach ($p in $procs) { Stop-Process -Name $p -Force -ErrorAction SilentlyContinue }
-    
+
+    # 2. Try Native Uninstall First
     $c2r = "${env:ProgramFiles}\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe"
     if (Test-Path $c2r) {
-        Write-Host "   [+] Found Native Uninstaller. Executing..." -ForegroundColor Green
+        Write-Host "   [+] Found Native Uninstaller. Executing Force Remove..." -ForegroundColor Green
         Start-Process -FilePath $c2r -ArgumentList "/origin7 /forceuninstall" -Wait 
-    } else {
-        Write-Host "   [!] Native tool not found. Cleaning Appx..." -ForegroundColor Yellow
     }
+
+    # 3. Clean Registry Keys (The Nuclear Part)
+    Write-Host "   [+] Cleaning Registry Keys..." -ForegroundColor Yellow
+    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\OfficeSoftwareProtectionPlatform" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
+
+    # 4. Clean File System
+    Write-Host "   [+] Cleaning Program Files..." -ForegroundColor Yellow
+    Remove-Item -Path "${env:ProgramFiles}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "${env:ProgramFiles(x86)}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
+    
+    # 5. Clean Store Apps
     Get-AppxPackage -Name *Office* | Remove-AppxPackage -ErrorAction SilentlyContinue
     Get-AppxPackage -Name *Outlook* | Remove-AppxPackage -ErrorAction SilentlyContinue
 }
