@@ -19,7 +19,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 327.0 USB Hunter)
+title Montag Store - System (V 328.0 Bug-Free Hunter)
 color 05
 
 :: ============================================================
@@ -748,21 +748,16 @@ if %errorlevel%==2 goto InstallOfficeOnline
 if %errorlevel%==1 goto InstallOfficeOffline
 
 :InstallOfficeOffline
-echo %PAD%%Yellow%Scanning All Drives for 'Office\Setup.exe'...%Reset%
+echo %PAD%%Yellow%Scanning connected drives for 'Office\Setup.exe'...%Reset%
 set "FoundInstaller="
 
-:: USB HUNTER LOOP
-for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
-    if exist "%%d:\Office\Setup.exe" (
-        set "FoundInstaller=%%d:\Office\Setup.exe"
-        goto FoundIt
-    )
-)
+:: --- BUG FREE HUNTER: SIMPLE LOOP (NO BLOCKS) ---
+for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do if exist "%%d:\Office\Setup.exe" (set "FoundInstaller=%%d:\Office\Setup.exe" & goto FoundIt)
 
 :FoundIt
 if not defined FoundInstaller (
     echo %PAD%%Red%[ERROR] Offline Files Not Found!%Reset%
-    echo %PAD%We checked all drives (D: to Z:) but couldn't find:
+    echo %PAD%We scanned drives D: to Z: but could not find:
     echo %PAD%'\Office\Setup.exe'
     echo.
     echo %PAD%Please check your USB drive.
