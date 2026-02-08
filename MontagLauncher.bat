@@ -3,7 +3,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] ADMIN FORCE + FORCE MAXIMIZE
+:: [0] ADMIN FORCE + FORCE MAXIMIZE + DEFENDER BYPASS
 :: ============================================================
 cd /d "%~dp0"
 FSUTIL dirty query %systemdrive% >nul
@@ -12,7 +12,7 @@ if %errorlevel% neq 0 (
     exit
 )
 
-:: Whitelist Current Path (Safety)
+:: Whitelist Current Path
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%~dp0'" >nul 2>&1
 
 :: ============================================================
@@ -22,7 +22,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 332.0 Office Specialist)
+title Montag Store - System (V 333.0 The Cleaner)
 color 05
 
 :: ============================================================
@@ -48,8 +48,6 @@ set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headph
 set "UrlHwi=https://www.dropbox.com/scl/fi/fjtwrg3boc8zj88ml2jxs/HWiNFO64.EXE?rlkey=m64f5qxup91iq8ew09imqfcs0&st=9eqs19xe&dl=1"
 set "UrlRar=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1"
 set "UrlMAS=https://www.dropbox.com/scl/fi/cnj7x4fp8zqksmeewhsmg/MAS_AIO.cmd?rlkey=1zr26qvm9l7r26iaw52czjmt9&st=7o2zhkih&dl=1"
-:: DIRECT LINK TO OFFICE DEPLOYMENT TOOL (ODT) setup.exe
-set "UrlODT=https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe"
 
 :: Download Icon
 if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
@@ -780,53 +778,22 @@ pause
 goto Menu_Software
 
 :InstallOfficeOnline
-cls
-call :DrawHeader
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ OFFICE 2021 LTSC DOWNLOADER ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%[1/3] Checking Internet...%Reset%
 ping -n 1 google.com >nul
 if %errorlevel% neq 0 (
-    echo %PAD%%Red%[ERROR] No Internet Connection!%Reset%
+    echo %PAD%%Red%[ERROR] No Internet Connection! Cannot download.%Reset%
     pause
     goto Menu_Software
 )
-
-echo %PAD%%Yellow%[2/3] Preparing Office Deployment Tool...%Reset%
-set "ODTPath=%ToolDir%\ODT"
-if not exist "%ODTPath%" mkdir "%ODTPath%"
-curl -L -k -# -o "%ODTPath%\setup.exe" "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe"
-
-:: Create XML Configuration
-(
-echo ^<Configuration^>
-echo   ^<Add OfficeClientEdition="64" Channel="PerpetualVL2021"^>
-echo     ^<Product ID="ProPlus2021Volume"^>
-echo       ^<Language ID="en-us" /^>
-echo       ^<ExcludeApp ID="Lync" /^>
-echo     ^</Product^>
-echo   ^</Add^>
-echo   ^<Display Level="Full" AcceptEULA="TRUE" /^>
-echo ^</Configuration^>
-) > "%ODTPath%\config.xml"
-
-echo %PAD%%Yellow%[3/3] Downloading & Installing Office 2021...%Reset%
-echo %PAD%This will take time depending on internet speed.
-call :Speak "Downloading Office 2021 from Microsoft."
-cd /d "%ODTPath%"
-start /wait setup.exe /configure config.xml
-
+echo %PAD%%Yellow%Downloading & Installing Office 2021 LTSC... (This may take time)%Reset%
+call :Speak "Downloading Office 2021. Please wait."
+winget install --id Microsoft.Office.LTSC.Professional2021 -e --accept-source-agreements --accept-package-agreements
 if %errorlevel%==0 (
     echo.
-    echo %PAD%%Green%[SUCCESS] Installation Complete!%Reset%
-    echo %PAD%Use Option [5] to ACTIVATE.
+    echo %PAD%%Green%[SUCCESS] Installed. Remember to ACTIVATE using Option [5].%Reset%
     set "mark_Office=[OK]"
 ) else (
     echo.
-    echo %PAD%%Red%[ERROR] Installation Failed.%Reset%
+    echo %PAD%%Red%[ERROR] Download Failed or Cancelled.%Reset%
 )
 pause
 goto Menu_Software
@@ -839,21 +806,10 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ OFFICE REMOVAL TOOL ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Red%[WARNING] FORCE REMOVAL MODE%Reset%
-echo %PAD%This will close all Office apps and remove them completely.
+echo %PAD%%Yellow%Initializing Nuclear Cleanup...%Reset%
+powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "NukeOffice"
 echo.
-echo %PAD%%Yellow%Searching for native remover...%Reset%
-
-if exist "C:\Program Files\Common Files\microsoft shared\ClickToRun\OfficeC2RClient.exe" (
-    echo %PAD%%Green%[OK] Native Tool Found. Executing Force Uninstall...%Reset%
-    "C:\Program Files\Common Files\microsoft shared\ClickToRun\OfficeC2RClient.exe" /origin7 /forceuninstall
-    echo %PAD%%Green%[DONE] Cleanup command sent. Please restart.%Reset%
-) else (
-    echo %PAD%%Red%[!] Native tool not found. Falling back to PowerShell...%Reset%
-    powershell -Command "Get-AppxPackage *office* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-    wmic product where "name like '%%Office%%'" call uninstall /nointeractive >nul 2>&1
-    echo %PAD%%Green%[DONE] Basic cleanup finished.%Reset%
-)
+echo %PAD%%Green%[DONE] Office scrubbed from system.%Reset%
 set "mark_OffClean=[OK]"
 pause
 goto Menu_Software
@@ -1285,4 +1241,20 @@ foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($
 "@
     $htmlContent | Out-File "$env:TEMP\SystemReport.html" -Encoding UTF8
     Start-Process "$env:TEMP\SystemReport.html"
+}
+
+# --- 3. NUCLEAR OFFICE REMOVAL MODE ---
+if ($Task -eq 'NukeOffice') {
+    $procs = "WINWORD","EXCEL","POWERPNT","OUTLOOK","ONENOTE","LYNC","MSACCESS","OFFICECLICKTORUN"
+    foreach ($p in $procs) { Stop-Process -Name $p -Force -ErrorAction SilentlyContinue }
+    
+    $c2r = "${env:ProgramFiles}\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe"
+    if (Test-Path $c2r) {
+        Write-Host "   [+] Found Native Uninstaller. Executing..." -ForegroundColor Green
+        Start-Process -FilePath $c2r -ArgumentList "/origin7 /forceuninstall" -Wait 
+    } else {
+        Write-Host "   [!] Native tool not found. Cleaning Appx..." -ForegroundColor Yellow
+    }
+    Get-AppxPackage -Name *Office* | Remove-AppxPackage -ErrorAction SilentlyContinue
+    Get-AppxPackage -Name *Outlook* | Remove-AppxPackage -ErrorAction SilentlyContinue
 }
