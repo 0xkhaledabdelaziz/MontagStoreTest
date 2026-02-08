@@ -12,6 +12,9 @@ if %errorlevel% neq 0 (
     exit
 )
 
+:: Whitelist Current Path (Safety)
+powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%~dp0'" >nul 2>&1
+
 :: ============================================================
 :: [1] VISUAL SETUP
 :: ============================================================
@@ -19,7 +22,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 331.0 Final Uninstall Fix)
+title Montag Store - System (V 332.0 Office Specialist)
 color 05
 
 :: ============================================================
@@ -45,6 +48,8 @@ set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headph
 set "UrlHwi=https://www.dropbox.com/scl/fi/fjtwrg3boc8zj88ml2jxs/HWiNFO64.EXE?rlkey=m64f5qxup91iq8ew09imqfcs0&st=9eqs19xe&dl=1"
 set "UrlRar=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1"
 set "UrlMAS=https://www.dropbox.com/scl/fi/cnj7x4fp8zqksmeewhsmg/MAS_AIO.cmd?rlkey=1zr26qvm9l7r26iaw52czjmt9&st=7o2zhkih&dl=1"
+:: DIRECT LINK TO OFFICE DEPLOYMENT TOOL (ODT) setup.exe
+set "UrlODT=https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe"
 
 :: Download Icon
 if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
@@ -775,22 +780,53 @@ pause
 goto Menu_Software
 
 :InstallOfficeOnline
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ OFFICE 2021 LTSC DOWNLOADER ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%[1/3] Checking Internet...%Reset%
 ping -n 1 google.com >nul
 if %errorlevel% neq 0 (
-    echo %PAD%%Red%[ERROR] No Internet Connection! Cannot download.%Reset%
+    echo %PAD%%Red%[ERROR] No Internet Connection!%Reset%
     pause
     goto Menu_Software
 )
-echo %PAD%%Yellow%Downloading & Installing Office 2021 LTSC... (This may take time)%Reset%
-call :Speak "Downloading Office 2021. Please wait."
-winget install --id Microsoft.Office.LTSC.Professional2021 -e --accept-source-agreements --accept-package-agreements
+
+echo %PAD%%Yellow%[2/3] Preparing Office Deployment Tool...%Reset%
+set "ODTPath=%ToolDir%\ODT"
+if not exist "%ODTPath%" mkdir "%ODTPath%"
+curl -L -k -# -o "%ODTPath%\setup.exe" "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe"
+
+:: Create XML Configuration
+(
+echo ^<Configuration^>
+echo   ^<Add OfficeClientEdition="64" Channel="PerpetualVL2021"^>
+echo     ^<Product ID="ProPlus2021Volume"^>
+echo       ^<Language ID="en-us" /^>
+echo       ^<ExcludeApp ID="Lync" /^>
+echo     ^</Product^>
+echo   ^</Add^>
+echo   ^<Display Level="Full" AcceptEULA="TRUE" /^>
+echo ^</Configuration^>
+) > "%ODTPath%\config.xml"
+
+echo %PAD%%Yellow%[3/3] Downloading & Installing Office 2021...%Reset%
+echo %PAD%This will take time depending on internet speed.
+call :Speak "Downloading Office 2021 from Microsoft."
+cd /d "%ODTPath%"
+start /wait setup.exe /configure config.xml
+
 if %errorlevel%==0 (
     echo.
-    echo %PAD%%Green%[SUCCESS] Installed. Remember to ACTIVATE using Option [5].%Reset%
+    echo %PAD%%Green%[SUCCESS] Installation Complete!%Reset%
+    echo %PAD%Use Option [5] to ACTIVATE.
     set "mark_Office=[OK]"
 ) else (
     echo.
-    echo %PAD%%Red%[ERROR] Download Failed or Cancelled.%Reset%
+    echo %PAD%%Red%[ERROR] Installation Failed.%Reset%
 )
 pause
 goto Menu_Software
@@ -803,45 +839,21 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ OFFICE REMOVAL TOOL ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Yellow%Checking Internet Connection...%Reset%
-ping -n 1 google.com >nul
-if %errorlevel% neq 0 goto ScrubOffline
-goto ScrubOnline
-
-:ScrubOnline
-echo %PAD%%Green%[OK] Connected.%Reset%
-echo %PAD%%Yellow%Downloading Microsoft Support and Recovery Assistant (SaRA)...%Reset%
-echo %PAD%This tool will remove Office completely from roots.
+echo %PAD%%Red%[WARNING] FORCE REMOVAL MODE%Reset%
+echo %PAD%This will close all Office apps and remove them completely.
 echo.
-set "Scrubber=%TEMP%\SetupProd_OffScrub.exe"
-curl -L -k -# -o "%Scrubber%" "%UrlOffScrub%"
-if exist "%Scrubber%" (
-    echo.
-    echo %PAD%%Green%[SUCCESS] Launching Scrubber...%Reset%
-    echo %PAD%Follow the Microsoft wizard to complete removal.
-    start "" "%Scrubber%"
-    set "mark_OffClean=[OK]"
+echo %PAD%%Yellow%Searching for native remover...%Reset%
+
+if exist "C:\Program Files\Common Files\microsoft shared\ClickToRun\OfficeC2RClient.exe" (
+    echo %PAD%%Green%[OK] Native Tool Found. Executing Force Uninstall...%Reset%
+    "C:\Program Files\Common Files\microsoft shared\ClickToRun\OfficeC2RClient.exe" /origin7 /forceuninstall
+    echo %PAD%%Green%[DONE] Cleanup command sent. Please restart.%Reset%
 ) else (
-    echo %PAD%%Red%[ERROR] Download failed. Trying offline force method...%Reset%
-    goto ScrubOffline
+    echo %PAD%%Red%[!] Native tool not found. Falling back to PowerShell...%Reset%
+    powershell -Command "Get-AppxPackage *office* | Remove-AppxPackage -ErrorAction SilentlyContinue"
+    wmic product where "name like '%%Office%%'" call uninstall /nointeractive >nul 2>&1
+    echo %PAD%%Green%[DONE] Basic cleanup finished.%Reset%
 )
-pause
-goto Menu_Software
-
-:ScrubOffline
-echo %PAD%%Red%[WARNING] No Internet or Download Failed.%Reset%
-echo %PAD%Attempting FORCE REMOVAL via PowerShell/WMIC...
-echo.
-echo %PAD%%Yellow%[1/3] Removing Office Store Apps...%Reset%
-powershell -Command "Get-AppxPackage *office* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-echo %PAD%%Yellow%[2/3] Removing Office 2016/2019/2021 (Winget)...%Reset%
-winget uninstall --id Microsoft.Office.LTSC.Professional2021 -e --accept-source-agreements >nul 2>&1
-winget uninstall --id Microsoft.Office.ProfessionalPlus2019 -e --accept-source-agreements >nul 2>&1
-winget uninstall --id Microsoft.Office.ProfessionalPlus2016 -e --accept-source-agreements >nul 2>&1
-echo %PAD%%Yellow%[3/3] Final Cleanup (WMIC Force)...%Reset%
-wmic product where "name like '%%Office%%'" call uninstall /nointeractive >nul 2>&1
-echo.
-echo %PAD%%Green%[DONE] Force cleanup finished. Please restart.%Reset%
 set "mark_OffClean=[OK]"
 pause
 goto Menu_Software
