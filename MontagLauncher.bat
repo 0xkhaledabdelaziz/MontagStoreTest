@@ -19,7 +19,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 326.0 Office Ultimate)
+title Montag Store - System (V 327.0 USB Hunter)
 color 05
 
 :: ============================================================
@@ -748,18 +748,32 @@ if %errorlevel%==2 goto InstallOfficeOnline
 if %errorlevel%==1 goto InstallOfficeOffline
 
 :InstallOfficeOffline
-echo %PAD%%Yellow%Searching USB for 'Office\Setup.exe'...%Reset%
-set "OfficePath=%~dp0Office"
-set "Installer=%OfficePath%\Setup.exe"
+echo %PAD%%Yellow%Scanning All Drives for 'Office\Setup.exe'...%Reset%
+set "FoundInstaller="
 
-if not exist "%Installer%" (
+:: USB HUNTER LOOP
+for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+    if exist "%%d:\Office\Setup.exe" (
+        set "FoundInstaller=%%d:\Office\Setup.exe"
+        goto FoundIt
+    )
+)
+
+:FoundIt
+if not defined FoundInstaller (
     echo %PAD%%Red%[ERROR] Offline Files Not Found!%Reset%
-    echo %PAD%Please ensure 'Office\Setup.exe' exists on the USB.
+    echo %PAD%We checked all drives (D: to Z:) but couldn't find:
+    echo %PAD%'\Office\Setup.exe'
+    echo.
+    echo %PAD%Please check your USB drive.
     pause
     goto Menu_Software
 )
-echo %PAD%%Green%[OK] Found. Installing...%Reset%
-start /wait "" "%Installer%"
+
+echo %PAD%%Green%[OK] Found at: %FoundInstaller%%Reset%
+echo %PAD%%Yellow%Installing...%Reset%
+call :Speak "Office setup found. Installing now."
+start /wait "" "%FoundInstaller%"
 set "mark_Office=[OK]"
 echo.
 echo %PAD%%Green%[SUCCESS] Installation Complete.%Reset%
