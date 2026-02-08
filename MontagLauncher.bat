@@ -19,7 +19,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 321.0 Certified Golden Master)
+title Montag Store - System (V 326.0 Office Ultimate)
 color 05
 
 :: ============================================================
@@ -45,6 +45,7 @@ set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headph
 set "UrlHwi=https://www.dropbox.com/scl/fi/fjtwrg3boc8zj88ml2jxs/HWiNFO64.EXE?rlkey=m64f5qxup91iq8ew09imqfcs0&st=9eqs19xe&dl=1"
 set "UrlRar=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1"
 set "UrlMAS=https://www.dropbox.com/scl/fi/cnj7x4fp8zqksmeewhsmg/MAS_AIO.cmd?rlkey=1zr26qvm9l7r26iaw52czjmt9&st=7o2zhkih&dl=1"
+set "UrlOffScrub=https://aka.ms/SaRA-officeUninstallFromPC"
 
 :: Download Icon
 if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
@@ -63,9 +64,9 @@ set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
 :: Checkmarks Initialization
-for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto Game BrandClick CheckWin) do if not defined mark_%%i set "mark_%%i=   "
+for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto Game BrandClick CheckWin Office OffClean) do if not defined mark_%%i set "mark_%%i=   "
 
-:: --- EXTRACT ENGINE ONCE (CRASH PROOF OPTIMIZATION) ---
+:: --- EXTRACT ENGINE ONCE ---
 set "EngineScript=%ToolDir%\MontagEngine.ps1"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__ENGINE_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%EngineScript%"
@@ -281,9 +282,7 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ WINDOWS DETECTIVE - ORIGINALITY CHECK ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-:: --- CRASH PROOF METHOD: USE THE UNIFIED ENGINE IN 'CHECK' MODE ---
 powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "CheckWin"
-
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 set "mark_CheckWin=[OK]"
@@ -708,19 +707,124 @@ echo %PAD%    %Bold%%White%[3]%Reset% INSTALL REVO UNINSTALL%Green%!mark_Revo!%R
 echo.
 echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE              %Green%!mark_MAS!%Reset%             %Bold%%White%[6]%Reset% GAMING ESSENTIALS     %Green%!mark_Game!%Reset%
 echo.
+echo %PAD%    %Bold%%White%[7]%Reset% OFFICE HUB (INSTALL/FIX)%Green%!mark_Office!%Reset%
+echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 1234560 /n
-if %errorlevel%==7 goto MainMenu
+choice /c 12345670 /n
+if %errorlevel%==8 goto MainMenu
+if %errorlevel%==7 goto InstallOffice
 if %errorlevel%==6 goto InstallGaming
 if %errorlevel%==5 goto DownloadMAS
 if %errorlevel%==4 goto InstallWingetApps
 if %errorlevel%==3 (set "mark_Revo=[OK]" & set "ExeName=Revo.rar" & set "TargetUrl=https://www.dropbox.com/scl/fi/e0x2yjrnhi6qgx9k6ltxg/RevoUninstallerPro5.rar?rlkey=vq4zsk9x1uyco7ratzkhw62f1&st=4f0776fb&dl=1" & goto DownloadAndRun)
 if %errorlevel%==2 goto InstallDefControl
 if %errorlevel%==1 (set "mark_WinRAR=[OK]" & set "ExeName=WinRAR.exe" & set "TargetUrl=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1" & goto DownloadAndRun)
+goto Menu_Software
+
+:InstallOffice
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ OFFICE SUITE MANAGER ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%    %Bold%%White%[1]%Reset% INSTALL FROM USB (OFFLINE)
+echo %PAD%    %Bold%%White%[2]%Reset% DOWNLOAD 2021 LTSC (ONLINE)
+echo.
+echo %PAD%    %Bold%%Red%[3] UNINSTALL OFFICE (ROOT SCRUB)%Reset%
+echo.
+echo %PAD%    %Gray%[0] CANCEL%Reset%
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+choice /c 1230 /n
+if %errorlevel%==4 goto Menu_Software
+if %errorlevel%==3 goto UninstallOffice
+if %errorlevel%==2 goto InstallOfficeOnline
+if %errorlevel%==1 goto InstallOfficeOffline
+
+:InstallOfficeOffline
+echo %PAD%%Yellow%Searching USB for 'Office\Setup.exe'...%Reset%
+set "OfficePath=%~dp0Office"
+set "Installer=%OfficePath%\Setup.exe"
+
+if not exist "%Installer%" (
+    echo %PAD%%Red%[ERROR] Offline Files Not Found!%Reset%
+    echo %PAD%Please ensure 'Office\Setup.exe' exists on the USB.
+    pause
+    goto Menu_Software
+)
+echo %PAD%%Green%[OK] Found. Installing...%Reset%
+start /wait "" "%Installer%"
+set "mark_Office=[OK]"
+echo.
+echo %PAD%%Green%[SUCCESS] Installation Complete.%Reset%
+pause
+goto Menu_Software
+
+:InstallOfficeOnline
+ping -n 1 google.com >nul
+if %errorlevel% neq 0 (
+    echo %PAD%%Red%[ERROR] No Internet Connection! Cannot download.%Reset%
+    pause
+    goto Menu_Software
+)
+echo %PAD%%Yellow%Downloading & Installing Office 2021 LTSC... (This may take time)%Reset%
+call :Speak "Downloading Office 2021. Please wait."
+winget install --id Microsoft.Office.LTSC.Professional2021 -e --accept-source-agreements --accept-package-agreements
+if %errorlevel%==0 (
+    echo.
+    echo %PAD%%Green%[SUCCESS] Installed. Remember to ACTIVATE using Option [5].%Reset%
+    set "mark_Office=[OK]"
+) else (
+    echo.
+    echo %PAD%%Red%[ERROR] Download Failed or Cancelled.%Reset%
+)
+pause
+goto Menu_Software
+
+:UninstallOffice
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ OFFICE REMOVAL TOOL ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%Checking Internet Connection...%Reset%
+ping -n 1 google.com >nul
+if %errorlevel% neq 0 (
+    echo %PAD%%Red%[WARNING] No Internet. Cannot download official scrubber.%Reset%
+    echo %PAD%Attempting quick removal via Winget/PowerShell...
+    echo.
+    powershell -Command "Get-AppxPackage *office* | Remove-AppxPackage -ErrorAction SilentlyContinue"
+    winget uninstall --id Microsoft.Office.LTSC.Professional2021 -e --accept-source-agreements >nul 2>&1
+    winget uninstall --id Microsoft.Office.ProfessionalPlus2019 -e --accept-source-agreements >nul 2>&1
+    echo %PAD%%Green%[DONE] Quick cleanup finished.%Reset%
+) else (
+    echo %PAD%%Green%[OK] Connected.%Reset%
+    echo %PAD%%Yellow%Downloading Microsoft Support and Recovery Assistant (SaRA)...%Reset%
+    echo %PAD%This tool will remove Office completely from roots.
+    echo.
+    
+    set "Scrubber=%TEMP%\SetupProd_OffScrub.exe"
+    curl -L -k -# -o "!Scrubber!" "https://outlookdiagnostics.azureedge.net/sarasetup/SetupProd_OffScrub.exe"
+    
+    if exist "!Scrubber!" (
+        echo.
+        echo %PAD%%Green%[SUCCESS] Launching Scrubber...%Reset%
+        echo %PAD%Follow the Microsoft wizard to complete removal.
+        start "" "!Scrubber!"
+        set "mark_OffClean=[OK]"
+    ) else (
+        echo %PAD%%Red%[ERROR] Download failed.%Reset%
+    )
+)
+pause
 goto Menu_Software
 
 :InstallGaming
@@ -908,6 +1012,8 @@ if "!mark_Bloat!"=="[OK]" set "TEST_LOG=!TEST_LOG! Debloat:OK"
 if "!mark_Apps!"=="[OK]" set "TEST_LOG=!TEST_LOG! Apps:OK"
 if "!mark_DriverBack!"=="[OK]" set "TEST_LOG=!TEST_LOG! DrvBack:OK"
 if "!mark_CheckWin!"=="[OK]" set "TEST_LOG=!TEST_LOG! WinCheck:OK"
+if "!mark_Office!"=="[OK]" set "TEST_LOG=!TEST_LOG! Office:OK"
+if "!mark_OffClean!"=="[OK]" set "TEST_LOG=!TEST_LOG! OffScrub:OK"
 
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 
