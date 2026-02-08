@@ -3,7 +3,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] ADMIN FORCE + FORCE MAXIMIZE
+:: [0] ADMIN FORCE & DEFENDER BYPASS
 :: ============================================================
 cd /d "%~dp0"
 FSUTIL dirty query %systemdrive% >nul
@@ -12,10 +12,8 @@ if %errorlevel% neq 0 (
     exit
 )
 
-:: Whitelist Working Directories (Safety First)
-if not exist "%SystemDrive%\MontagOffice" mkdir "%SystemDrive%\MontagOffice" >nul 2>&1
+:: Whitelist Current Path
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%~dp0'" >nul 2>&1
-powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%SystemDrive%\MontagOffice'" >nul 2>&1
 
 :: ============================================================
 :: [1] VISUAL SETUP
@@ -24,7 +22,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 350.0 Egypt Edition)
+title Montag Store - System (V 339.0 Egypt Edition)
 color 05
 
 :: ============================================================
@@ -720,7 +718,7 @@ echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 choice /c 12345670 /n
 if %errorlevel%==8 goto MainMenu
-if %errorlevel%==7 goto InstallOfficeMenu
+if %errorlevel%==7 goto InstallOffice
 if %errorlevel%==6 goto InstallGaming
 if %errorlevel%==5 goto DownloadMAS
 if %errorlevel%==4 goto InstallWingetApps
@@ -729,7 +727,7 @@ if %errorlevel%==2 goto InstallDefControl
 if %errorlevel%==1 (set "mark_WinRAR=[OK]" & set "ExeName=WinRAR.exe" & set "TargetUrl=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1" & goto DownloadAndRun)
 goto Menu_Software
 
-:InstallOfficeMenu
+:InstallOffice
 cls
 call :DrawHeader
 echo.
@@ -737,34 +735,129 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ OFFICE SUITE MANAGER ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% INSTALL OFFICE 2019 (RECOMMENDED)
-echo %PAD%    %Bold%%White%[2]%Reset% INSTALL OFFICE 2021 (NEW)
+echo %PAD%    %Bold%%White%[1]%Reset% INSTALL FROM USB (OFFLINE)
+echo %PAD%    %Bold%%White%[2]%Reset% DOWNLOAD 2021 LTSC (ONLINE)
 echo.
-echo %PAD%    %Bold%%Red%[3] FORCE UNINSTALL OFFICE (NUCLEAR)%Reset%
+echo %PAD%    %Bold%%Red%[3] FORCE UNINSTALL OFFICE (DEEP CLEAN)%Reset%
 echo.
-echo %PAD%    %Gray%[0] BACK%Reset%
+echo %PAD%    %Gray%[0] CANCEL%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 choice /c 1230 /n
 if %errorlevel%==4 goto Menu_Software
-if %errorlevel%==3 goto ForceUninstall
-if %errorlevel%==2 set "Ver=2021" & goto InstallOfficeExec
-if %errorlevel%==1 set "Ver=2019" & goto InstallOfficeExec
+if %errorlevel%==3 goto UninstallOffice
+if %errorlevel%==2 goto InstallOfficeOnline
+if %errorlevel%==1 goto InstallOfficeOffline
 
-:InstallOfficeExec
-cls
-echo.
-echo %PAD%%Yellow%[!] STARTING INSTALLATION ENGINE FOR OFFICE %Ver%...%Reset%
-powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "InstallOffice" -Version "%Ver%"
+:InstallOfficeOffline
+echo %PAD%%Yellow%Scanning All Drives for 'Office\Setup.exe'...%Reset%
+set "FoundInstaller="
+
+:: --- BUG FREE HUNTER: SIMPLE LOOP (NO BLOCKS) ---
+for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do if exist "%%d:\Office\Setup.exe" (set "FoundInstaller=%%d:\Office\Setup.exe" & goto FoundIt)
+
+:FoundIt
+if not defined FoundInstaller (
+    echo %PAD%%Red%[ERROR] Offline Files Not Found!%Reset%
+    echo %PAD%We scanned drives D: to Z: but could not find:
+    echo %PAD%'\Office\Setup.exe'
+    echo.
+    echo %PAD%Please check your USB drive.
+    pause
+    goto Menu_Software
+)
+
+echo %PAD%%Green%[OK] Found at: %FoundInstaller%%Reset%
+echo %PAD%%Yellow%Installing...%Reset%
+call :Speak "Office setup found. Installing now."
+start /wait "" "%FoundInstaller%"
 set "mark_Office=[OK]"
+echo.
+echo %PAD%%Green%[SUCCESS] Installation Complete.%Reset%
 pause
 goto Menu_Software
 
-:ForceUninstall
+:InstallOfficeOnline
 cls
+call :DrawHeader
 echo.
-echo %PAD%%Red%[!] STARTING NUCLEAR CLEANER...%Reset%
-powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "NukeOffice"
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ OFFICE 2021 LTSC DOWNLOADER ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%[1/3] Checking Internet...%Reset%
+ping -n 1 google.com >nul
+if %errorlevel% neq 0 (
+    echo %PAD%%Red%[ERROR] No Internet Connection!%Reset%
+    pause
+    goto Menu_Software
+)
+
+echo %PAD%%Yellow%[2/3] Preparing Office Deployment Tool...%Reset%
+set "ODTPath=%ToolDir%\ODT"
+if not exist "%ODTPath%" mkdir "%ODTPath%"
+
+:: Try Direct Microsoft Download First
+echo %PAD%Downloading setup.exe (Direct)...
+curl -L -k -# -o "%ODTPath%\setup.exe" "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe"
+
+:: Backup Download Method (PowerShell) if curl fails
+if not exist "%ODTPath%\setup.exe" (
+    echo %PAD%%Yellow%[Retry] Downloading via PowerShell...%Reset%
+    powershell -Command "Invoke-WebRequest -Uri 'https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe' -OutFile '%ODTPath%\setup.exe'"
+)
+
+if not exist "%ODTPath%\setup.exe" (
+    echo %PAD%%Red%[ERROR] setup.exe failed to download! Check internet.%Reset%
+    pause
+    goto Menu_Software
+)
+
+:: Create XML Configuration
+(
+echo ^<Configuration^>
+echo   ^<Add OfficeClientEdition="64" Channel="PerpetualVL2021"^>
+echo     ^<Product ID="ProPlus2021Volume"^>
+echo       ^<Language ID="en-us" /^>
+echo       ^<ExcludeApp ID="Lync" /^>
+echo     ^</Product^>
+echo   ^</Add^>
+echo   ^<Display Level="Full" AcceptEULA="TRUE" /^>
+echo ^</Configuration^>
+) > "%ODTPath%\config.xml"
+
+echo %PAD%%Yellow%[3/3] Downloading and Installing Office 2021...%Reset%
+echo %PAD%This will take time depending on internet speed.
+call :Speak "Downloading Office 2021 from Microsoft."
+"%ODTPath%\setup.exe" /configure "%ODTPath%\config.xml"
+
+if %errorlevel%==0 (
+    echo.
+    echo %PAD%%Green%[SUCCESS] Installation Complete!%Reset%
+    echo %PAD%Use Option [5] to ACTIVATE.
+    set "mark_Office=[OK]"
+) else (
+    echo.
+    echo %PAD%%Red%[ERROR] Installation Failed. Code: %errorlevel%%Reset%
+)
+pause
+goto Menu_Software
+
+:UninstallOffice
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ OFFICE REMOVAL TOOL ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Red%[WARNING] THIS WILL DELETE ALL OFFICE FILES!%Reset%
+echo %PAD%Closing apps and cleaning registry/files...
+echo.
+echo %PAD%%Yellow%Executing 'The Terminator'...%Reset%
+powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "NukeOffice"
+echo.
+echo %PAD%%Green%[DONE] Office scrubbed from system.%Reset%
 set "mark_OffClean=[OK]"
 pause
 goto Menu_Software
@@ -1011,111 +1104,10 @@ exit /b
 ::  UNIFIED POWERSHELL ENGINE (NO ECHO HAZARDS)
 :: ============================================================
 :::__ENGINE_START__:::
-param($Task, $TesterName, $StatusLog, $FormID, $Version)
+param($Task, $TesterName, $StatusLog, $FormID)
 $ErrorActionPreference = 'SilentlyContinue'
 
-# =======================================================
-# OFFICE INSTALLATION (SMART TRIPLE MIRROR)
-# =======================================================
-if ($Task -eq 'InstallOffice') {
-    $WorkDir = "$env:SystemDrive\MontagOffice"
-    if (!(Test-Path $WorkDir)) { New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null }
-    $SetupPath = "$WorkDir\setup.exe"
-    
-    # 1. DOWNLOAD (3 Mirrors + Manual Fallback)
-    if (!(Test-Path $SetupPath) -or (Get-Item $SetupPath).Length -lt 2000000) {
-        Write-Host "   [1/3] Downloading Office Deployment Tool..." -ForegroundColor Cyan
-        
-        $Mirrors = @(
-            "https://officecdn.microsoft.com/pr/wsus/setup.exe",
-            "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe",
-            "https://c2rsetup.officeapps.live.com/c2r/downloadVS.aspx?sku=deployment&version=16.0.17328.20162"
-        )
-
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        $WebClient = New-Object System.Net.WebClient
-        $WebClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-        $Downloaded = $false
-
-        foreach ($Link in $Mirrors) {
-            if ($Downloaded) { break }
-            try {
-                $WebClient.DownloadFile($Link, $SetupPath)
-                if ((Get-Item $SetupPath).Length -gt 2000000) {
-                    Write-Host "         [OK] Downloaded." -ForegroundColor Green
-                    $Downloaded = $true
-                }
-            } catch {}
-        }
-
-        if (-not $Downloaded) {
-            Write-Host "`n   [!] FATAL ERROR: Auto-Download Blocked by ISP." -ForegroundColor Red
-            Write-Host "   [ACTION] Please manually copy 'setup.exe' to C:\MontagOffice"
-            Write-Host "   Opening folder..."
-            Invoke-Item $WorkDir
-            Read-Host "   Press Enter after copying the file..."
-        }
-    }
-
-    if (!(Test-Path $SetupPath)) { Write-Host "   [ERROR] setup.exe not found." -ForegroundColor Red; return }
-
-    # 2. CONFIG XML
-    Write-Host "   [2/3] Generating Config for Office $Version..." -ForegroundColor Yellow
-    $PIDKey = if ($Version -eq "2019") { "ProPlus2019Volume" } else { "ProPlus2021Volume" }
-    $ChnKey = if ($Version -eq "2019") { "PerpetualVL2019" } else { "PerpetualVL2021" }
-    
-    $ConfigContent = @"
-<Configuration>
-  <Add OfficeClientEdition="64" Channel="$ChnKey">
-    <Product ID="$PIDKey">
-      <Language ID="en-us" />
-      <ExcludeApp ID="Lync" />
-      <ExcludeApp ID="OneDrive" />
-    </Product>
-  </Add>
-  <Display Level="Full" AcceptEULA="TRUE" />
-  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
-</Configuration>
-"@
-    [IO.File]::WriteAllText("$WorkDir\config.xml", $ConfigContent)
-
-    # 3. INSTALL
-    Write-Host "   [3/3] Installing... (Download happens in background)" -ForegroundColor Cyan
-    try {
-        $proc = Start-Process -FilePath $SetupPath -ArgumentList "/configure `"$WorkDir\config.xml`"" -Wait -PassThru
-        if ($proc.ExitCode -eq 0) { Write-Host "`n   [SUCCESS] Installed!" -ForegroundColor Green }
-        else { Write-Host "`n   [!] Exit Code: $($proc.ExitCode)" -ForegroundColor Yellow }
-    } catch { Write-Host "   [CRASH] Failed to run setup.exe" -ForegroundColor Red }
-}
-
-# =======================================================
-# OFFICE UNINSTALL (NUCLEAR)
-# =======================================================
-if ($Task -eq 'NukeOffice') {
-    Write-Host "   [1/3] Stopping Office Services..." -ForegroundColor Yellow
-    $procs = "WINWORD","EXCEL","POWERPNT","OUTLOOK","ONENOTE","LYNC","MSACCESS","OFFICECLICKTORUN","setup","officec2rclient"
-    foreach ($p in $procs) { Stop-Process -Name $p -Force -ErrorAction SilentlyContinue }
-
-    $c2r = "${env:ProgramFiles}\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe"
-    if (Test-Path $c2r) {
-        Write-Host "   [2/3] Executing Force Uninstall..." -ForegroundColor Green
-        Start-Process -FilePath $c2r -ArgumentList "/origin7 /forceuninstall" -Wait 
-    } else {
-        Write-Host "   [!] Native tool missing. Using Brute Force." -ForegroundColor Red
-    }
-
-    Write-Host "   [3/3] Cleaning Registry & Files..." -ForegroundColor Magenta
-    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\OfficeSoftwareProtectionPlatform" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "${env:ProgramFiles}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "${env:ProgramFiles(x86)}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "   [OK] Cleaned." -ForegroundColor Green
-}
-
-# =======================================================
-# EXISTING TASKS (CHECKWIN / REPORT)
-# =======================================================
+# --- 1. WINDOWS CHECKER MODE ---
 if ($Task -eq 'CheckWin') {
     $score = 0
     $lic = Get-CimInstance SoftwareLicensingProduct | Where-Object {$_.PartialProductKey -and $_.Name -like "*Windows*"} | Select-Object -ExpandProperty Name -First 1
@@ -1152,6 +1144,7 @@ if ($Task -eq 'CheckWin') {
     exit
 }
 
+# --- 2. REPORT GENERATOR MODE ---
 if ($Task -eq 'Report') {
     # Gather Specs
     $sys = Get-CimInstance Win32_ComputerSystem
@@ -1296,4 +1289,33 @@ foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($
 "@
     $htmlContent | Out-File "$env:TEMP\SystemReport.html" -Encoding UTF8
     Start-Process "$env:TEMP\SystemReport.html"
+}
+
+# --- 3. NUCLEAR OFFICE REMOVAL MODE ---
+if ($Task -eq 'NukeOffice') {
+    # 1. Kill All Office Processes
+    $procs = "WINWORD","EXCEL","POWERPNT","OUTLOOK","ONENOTE","LYNC","MSACCESS","OFFICECLICKTORUN"
+    foreach ($p in $procs) { Stop-Process -Name $p -Force -ErrorAction SilentlyContinue }
+
+    # 2. Try Native Uninstall First
+    $c2r = "${env:ProgramFiles}\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe"
+    if (Test-Path $c2r) {
+        Write-Host "   [+] Found Native Uninstaller. Executing Force Remove..." -ForegroundColor Green
+        Start-Process -FilePath $c2r -ArgumentList "/origin7 /forceuninstall" -Wait 
+    }
+
+    # 3. Clean Registry Keys (The Nuclear Part)
+    Write-Host "   [+] Cleaning Registry Keys..." -ForegroundColor Yellow
+    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\OfficeSoftwareProtectionPlatform" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
+
+    # 4. Clean File System
+    Write-Host "   [+] Cleaning Program Files..." -ForegroundColor Yellow
+    Remove-Item -Path "${env:ProgramFiles}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "${env:ProgramFiles(x86)}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
+    
+    # 5. Clean Store Apps
+    Get-AppxPackage -Name *Office* | Remove-AppxPackage -ErrorAction SilentlyContinue
+    Get-AppxPackage -Name *Outlook* | Remove-AppxPackage -ErrorAction SilentlyContinue
 }
