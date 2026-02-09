@@ -3,7 +3,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] ADMIN FORCE & DEFENDER BYPASS
+:: [0] ADMIN FORCE + FORCE MAXIMIZE
 :: ============================================================
 cd /d "%~dp0"
 FSUTIL dirty query %systemdrive% >nul
@@ -12,8 +12,10 @@ if %errorlevel% neq 0 (
     exit
 )
 
-:: Whitelist Current Path
+:: Whitelist Working Directories
+if not exist "%SystemDrive%\MontagOffice" mkdir "%SystemDrive%\MontagOffice" >nul 2>&1
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%~dp0'" >nul 2>&1
+powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%SystemDrive%\MontagOffice'" >nul 2>&1
 
 :: ============================================================
 :: [1] VISUAL SETUP
@@ -22,7 +24,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 339.0 Egypt Edition)
+title Montag Store - System (V 400.0 Fixed Full)
 color 05
 
 :: ============================================================
@@ -70,7 +72,7 @@ for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBa
 
 :: --- EXTRACT ENGINE ONCE ---
 set "EngineScript=%ToolDir%\MontagEngine.ps1"
-for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__ENGINE_START__:::$" "%~f0"') do set "StartLine=%%a"
+for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%EngineScript%"
 
 :: ============================================================
@@ -81,7 +83,6 @@ ping -n 1 google.com >nul
 if %errorlevel% equ 0 (
     cls
     call :DrawHeader
-    echo.
     echo.
     echo %PAD%%Green%      Welcome to Montag Store System...%Reset%
     call :Speak "Welcome to Montag Store System."
@@ -177,7 +178,7 @@ echo %PAD%%Cyan%================================================================
 echo.
 echo %PAD%    %Bold%%White%[1]%Reset% %Cyan%HARDWARE TESTS%Reset%      %Gray%(Key/Screen)%Reset%            %Bold%%White%[2]%Reset% %Cyan%WINDOWS SETUP%Reset%       %Gray%(Perf/Name)%Reset%
 echo.
-echo %PAD%    %Bold%%White%[3]%Reset% %Cyan%DRIVERS CENTER%Reset%      %Gray%(Back/Rest)%Reset%             %Bold%%White%[4]%Reset% %Cyan%SOFTWARE HUB%Reset%        %Gray%(Apps/Winget)%Reset%
+echo %PAD%    %Bold%%White%[3]%Reset% %Cyan%DRIVERS CENTER%Reset%      %Gray%(Back/Rest)%Reset%             %Bold%%White%[4]%Reset% %Cyan%SOFTWARE HUB%Reset%        %Gray%(Apps/Office)%Reset%
 echo.
 echo %PAD%    %Bold%%White%[5]%Reset% %Cyan%PRINT SPEC LABEL%Reset%    %Gray%(ZPL/Side)%Reset%
 echo.
@@ -718,7 +719,7 @@ echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 choice /c 12345670 /n
 if %errorlevel%==8 goto MainMenu
-if %errorlevel%==7 goto InstallOffice
+if %errorlevel%==7 goto InstallOfficeMenu
 if %errorlevel%==6 goto InstallGaming
 if %errorlevel%==5 goto DownloadMAS
 if %errorlevel%==4 goto InstallWingetApps
@@ -727,7 +728,7 @@ if %errorlevel%==2 goto InstallDefControl
 if %errorlevel%==1 (set "mark_WinRAR=[OK]" & set "ExeName=WinRAR.exe" & set "TargetUrl=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1" & goto DownloadAndRun)
 goto Menu_Software
 
-:InstallOffice
+:InstallOfficeMenu
 cls
 call :DrawHeader
 echo.
@@ -736,44 +737,26 @@ echo %PAD%                              [ OFFICE SUITE MANAGER ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%    %Bold%%White%[1]%Reset% INSTALL FROM USB (OFFLINE)
-echo %PAD%    %Bold%%White%[2]%Reset% DOWNLOAD 2021 LTSC (ONLINE)
+echo %PAD%    %Bold%%White%[2]%Reset% DOWNLOAD 2019 LTSC (ONLINE)
+echo %PAD%    %Bold%%White%[3]%Reset% DOWNLOAD 2021 LTSC (ONLINE)
 echo.
-echo %PAD%    %Bold%%Red%[3] FORCE UNINSTALL OFFICE (DEEP CLEAN)%Reset%
+echo %PAD%    %Bold%%Red%[4] FORCE UNINSTALL OFFICE (DEEP CLEAN)%Reset%
 echo.
 echo %PAD%    %Gray%[0] CANCEL%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 1230 /n
-if %errorlevel%==4 goto Menu_Software
-if %errorlevel%==3 goto UninstallOffice
-if %errorlevel%==2 goto InstallOfficeOnline
+choice /c 12340 /n
+if %errorlevel%==5 goto Menu_Software
+if %errorlevel%==4 goto UninstallOffice
+if %errorlevel%==3 set "Ver=2021" & goto InstallOfficeOnline
+if %errorlevel%==2 set "Ver=2019" & goto InstallOfficeOnline
 if %errorlevel%==1 goto InstallOfficeOffline
 
 :InstallOfficeOffline
 echo %PAD%%Yellow%Scanning All Drives for 'Office\Setup.exe'...%Reset%
-set "FoundInstaller="
-
-:: --- BUG FREE HUNTER: SIMPLE LOOP (NO BLOCKS) ---
-for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do if exist "%%d:\Office\Setup.exe" (set "FoundInstaller=%%d:\Office\Setup.exe" & goto FoundIt)
-
-:FoundIt
-if not defined FoundInstaller (
-    echo %PAD%%Red%[ERROR] Offline Files Not Found!%Reset%
-    echo %PAD%We scanned drives D: to Z: but could not find:
-    echo %PAD%'\Office\Setup.exe'
-    echo.
-    echo %PAD%Please check your USB drive.
-    pause
-    goto Menu_Software
-)
-
-echo %PAD%%Green%[OK] Found at: %FoundInstaller%%Reset%
-echo %PAD%%Yellow%Installing...%Reset%
-call :Speak "Office setup found. Installing now."
-start /wait "" "%FoundInstaller%"
-set "mark_Office=[OK]"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "InstallOffline"
 echo.
-echo %PAD%%Green%[SUCCESS] Installation Complete.%Reset%
+set "mark_Office=[OK]"
 pause
 goto Menu_Software
 
@@ -782,7 +765,7 @@ cls
 call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ OFFICE 2021 LTSC DOWNLOADER ]
+echo %PAD%                              [ OFFICE %Ver% DOWNLOADER ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%%Yellow%[1/3] Checking Internet...%Reset%
@@ -793,53 +776,10 @@ if %errorlevel% neq 0 (
     goto Menu_Software
 )
 
-echo %PAD%%Yellow%[2/3] Preparing Office Deployment Tool...%Reset%
-set "ODTPath=%ToolDir%\ODT"
-if not exist "%ODTPath%" mkdir "%ODTPath%"
-
-:: Try Direct Microsoft Download First
-echo %PAD%Downloading setup.exe (Direct)...
-curl -L -k -# -o "%ODTPath%\setup.exe" "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe"
-
-:: Backup Download Method (PowerShell) if curl fails
-if not exist "%ODTPath%\setup.exe" (
-    echo %PAD%%Yellow%[Retry] Downloading via PowerShell...%Reset%
-    powershell -Command "Invoke-WebRequest -Uri 'https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/setup.exe' -OutFile '%ODTPath%\setup.exe'"
-)
-
-if not exist "%ODTPath%\setup.exe" (
-    echo %PAD%%Red%[ERROR] setup.exe failed to download! Check internet.%Reset%
-    pause
-    goto Menu_Software
-)
-
-:: Create XML Configuration
-(
-echo ^<Configuration^>
-echo   ^<Add OfficeClientEdition="64" Channel="PerpetualVL2021"^>
-echo     ^<Product ID="ProPlus2021Volume"^>
-echo       ^<Language ID="en-us" /^>
-echo       ^<ExcludeApp ID="Lync" /^>
-echo     ^</Product^>
-echo   ^</Add^>
-echo   ^<Display Level="Full" AcceptEULA="TRUE" /^>
-echo ^</Configuration^>
-) > "%ODTPath%\config.xml"
-
-echo %PAD%%Yellow%[3/3] Downloading and Installing Office 2021...%Reset%
-echo %PAD%This will take time depending on internet speed.
-call :Speak "Downloading Office 2021 from Microsoft."
-"%ODTPath%\setup.exe" /configure "%ODTPath%\config.xml"
-
-if %errorlevel%==0 (
-    echo.
-    echo %PAD%%Green%[SUCCESS] Installation Complete!%Reset%
-    echo %PAD%Use Option [5] to ACTIVATE.
-    set "mark_Office=[OK]"
-) else (
-    echo.
-    echo %PAD%%Red%[ERROR] Installation Failed. Code: %errorlevel%%Reset%
-)
+echo %PAD%%Yellow%[2/3] STARTING SMART DOWNLOADER (POWERSHELL ENGINE)...%Reset%
+powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "InstallOnline" -Version "%Ver%"
+echo.
+set "mark_Office=[OK]"
 pause
 goto Menu_Software
 
@@ -855,7 +795,7 @@ echo %PAD%%Red%[WARNING] THIS WILL DELETE ALL OFFICE FILES!%Reset%
 echo %PAD%Closing apps and cleaning registry/files...
 echo.
 echo %PAD%%Yellow%Executing 'The Terminator'...%Reset%
-powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "NukeOffice"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "NukeOffice"
 echo.
 echo %PAD%%Green%[DONE] Office scrubbed from system.%Reset%
 set "mark_OffClean=[OK]"
@@ -877,7 +817,6 @@ winget install --id Microsoft.VCRedist.2015+.x86 -e --accept-source-agreements -
 echo %PAD%%Green%      Done.%Reset%
 echo.
 echo %PAD%%Yellow%[2/2] Installing DirectX (Check Windows Update if needed)...%Reset%
-:: DirectX is usually handled by Windows Update on Win10/11, but we ensure runtimes are checked.
 echo %PAD%%Green%      Verified.%Reset%
 echo.
 set "mark_Game=[OK]"
@@ -926,8 +865,6 @@ goto Menu_Software
 set "Args=-e --accept-source-agreements --accept-package-agreements"
 set "Count=0"
 set "Total=7"
-
-:: Draw header once
 cls
 call :DrawHeader
 echo.
@@ -935,41 +872,20 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ APP INSTALLER - LIVE PROGRESS ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-:: === STEP 1: Google Chrome ===
 echo %PAD%%Yellow%[1/7] Installing Google Chrome...%Reset%
 winget install --id Google.Chrome %Args%
-
-:: === STEP 2: Brave Browser ===
-echo.
 echo %PAD%%Yellow%[2/7] Installing Brave Browser...%Reset%
 winget install --id Brave.Brave %Args%
-
-:: === STEP 3: WhatsApp ===
-echo.
 echo %PAD%%Yellow%[3/7] Installing WhatsApp...%Reset%
 winget install --id WhatsApp.WhatsApp %Args%
-
-:: === STEP 4: AnyDesk ===
-echo.
 echo %PAD%%Yellow%[4/7] Installing AnyDesk...%Reset%
 winget install --id AnyDeskSoftwareEvents.AnyDesk %Args%
-
-:: === STEP 5: VLC Media Player ===
-echo.
 echo %PAD%%Yellow%[5/7] Installing VLC Media Player...%Reset%
 winget install --id VideoLAN.VLC %Args%
-
-:: === STEP 6: Adobe Reader ===
-echo.
 echo %PAD%%Yellow%[6/7] Installing Adobe Reader...%Reset%
 winget install --id Adobe.Acrobat.Reader.64-bit %Args%
-
-:: === STEP 7: Zoom ===
-echo.
 echo %PAD%%Yellow%[7/7] Installing Zoom...%Reset%
 winget install --id Zoom.Zoom %Args%
-
-:: === FINISH ===
 set "mark_Apps=[OK]"
 echo.
 echo %PAD%%Green%[OK] All applications installed successfully.%Reset%
@@ -993,28 +909,7 @@ exit /b
 cls
 echo.
 echo %PAD%%Cyan%Generating ZPL Label...%Reset%
-set "PSScript=%TEMP%\GenLabel.ps1"
-if exist "%PSScript%" del "%PSScript%"
-
-:: Safe-Write the PowerShell Script line by line
-echo $brand = "%BrandName%" > "%PSScript%"
-echo $sys = (Get-CimInstance Win32_ComputerSystem).Model >> "%PSScript%"
-echo $serial = (Get-CimInstance Win32_Bios).SerialNumber >> "%PSScript%"
-echo $cpu = (Get-CimInstance Win32_Processor).Name.Replace("Intel(R) Core(TM) ", "").Replace("CPU @ ", "") >> "%PSScript%"
-echo $ram = [math]::Round((Get-CimInstance Win32_PhysicalMemory ^| Measure-Object -Property Capacity -Sum).Sum / 1GB) >> "%PSScript%"
-echo $disk = [math]::Round((Get-CimInstance Win32_DiskDrive ^| Select-Object -First 1).Size / 1GB) >> "%PSScript%"
-echo $gpu = (Get-CimInstance Win32_VideoController ^| Select-Object -ExpandProperty Name) -join " + " >> "%PSScript%"
-echo $qr = "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=$sys $serial" >> "%PSScript%"
-
-:: TABLE LAYOUT: 1 Row, 2 Columns (30% QR Left, 70% Text Right)
-echo $html = "<body style='font-family:Arial,sans-serif;width:70mm;margin:0;padding:2px;font-size:9pt'><h3 style='margin:0;text-align:center;border-bottom:1px solid #000'>$brand</h3><table style='width:100%%;margin-top:5px'><tr><td style='width:30%%;vertical-align:top'><img src='$qr' style='width:100%%'></td><td style='width:70%%;padding-left:5px;vertical-align:top;line-height:1.2'><b>$sys</b><br>$cpu<br><b>RAM: $ram GB</b><br><b>SSD: $disk GB</b><br><span style='font-size:8pt'>$gpu</span></td></tr></table><script>window.print()</script></body>" >> "%PSScript%"
-
-echo $html ^| Out-File "$env:TEMP\Label.html" >> "%PSScript%"
-echo Start-Process "$env:TEMP\Label.html" >> "%PSScript%"
-
-powershell -ExecutionPolicy Bypass -File "%PSScript%"
-del "%PSScript%"
-
+powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "Label"
 echo.
 echo %PAD%%Green%[OK] Label sent to printer.%Reset%
 timeout /t 3 >nul
@@ -1029,7 +924,6 @@ call :SilentIconSetup
 call :ApplyBranding
 call :AddContextSupport
 
-:: Build Detailed Status String with Checkmarks (Using [OK] to prevent crash)
 set "TEST_LOG="
 if "!mark_Key!"=="[OK]" set "TEST_LOG=!TEST_LOG! Key:OK"
 if "!mark_Screen!"=="[OK]" set "TEST_LOG=!TEST_LOG! Screen:OK"
@@ -1052,7 +946,6 @@ if "!mark_OffClean!"=="[OK]" set "TEST_LOG=!TEST_LOG! OffScrub:OK"
 
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 
-:: --- USE THE UNIFIED ENGINE IN 'REPORT' MODE ---
 powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "Report" -TesterName "User" -StatusLog "%TEST_LOG%" -FormID "%GFormID%"
 
 echo.
@@ -1099,26 +992,103 @@ exit /b
 :Speak
 powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
 exit /b
-
 :: ============================================================
-::  UNIFIED POWERSHELL ENGINE (NO ECHO HAZARDS)
+::  UNIFIED POWERSHELL ENGINE
 :: ============================================================
-:::__ENGINE_START__:::
-param($Task, $TesterName, $StatusLog, $FormID)
+:::__POWERSHELL_START__:::
+param($Task, $TesterName, $StatusLog, $FormID, $Version)
 $ErrorActionPreference = 'SilentlyContinue'
+$WorkDir = "$env:SystemDrive\MontagOffice"
+if (!(Test-Path $WorkDir)) { New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null }
 
-# --- 1. WINDOWS CHECKER MODE ---
+# =======================================================
+# OFFICE INSTALLATION (SMART TRIPLE MIRROR)
+# =======================================================
+if ($Task -eq 'InstallOnline') {
+    $OdtPath = "$WorkDir\odt.exe"
+    $SetupPath = "$WorkDir\setup.exe"
+    
+    # 1. DOWNLOAD ODT (Microsoft LinkID - Permanent)
+    if (!(Test-Path $SetupPath)) {
+        Write-Host "   [1/3] Downloading ODT..." -ForegroundColor Cyan
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            $WebClient = New-Object System.Net.WebClient
+            $WebClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+            $WebClient.DownloadFile("https://go.microsoft.com/fwlink/p/?LinkID=626065", $OdtPath)
+            
+            Write-Host "   [2/3] Extracting..." -ForegroundColor Yellow
+            $proc = Start-Process -FilePath $OdtPath -ArgumentList "/quiet /extract:`"$WorkDir`"" -Wait -PassThru
+        } catch {
+            Write-Host "   [!] Download Error. Check Internet." -ForegroundColor Red; return
+        }
+    }
+
+    if (!(Test-Path $SetupPath)) { Write-Host "   [!] Setup.exe missing." -ForegroundColor Red; return }
+
+    Write-Host "   [3/3] Installing Office $Version..." -ForegroundColor Green
+    $PIDKey = if ($Version -eq "2019") { "ProPlus2019Volume" } else { "ProPlus2021Volume" }
+    $ChnKey = if ($Version -eq "2019") { "PerpetualVL2019" } else { "PerpetualVL2021" }
+    
+    $ConfigContent = @"
+<Configuration>
+  <Add OfficeClientEdition="64" Channel="$ChnKey">
+    <Product ID="$PIDKey"><Language ID="en-us" /><ExcludeApp ID="Lync" /></Product>
+  </Add>
+  <Display Level="Full" AcceptEULA="TRUE" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
+</Configuration>
+"@
+    [IO.File]::WriteAllText("$WorkDir\config.xml", $ConfigContent)
+    Start-Process -FilePath $SetupPath -ArgumentList "/configure `"$WorkDir\config.xml`"" -Wait
+}
+
+# =======================================================
+# OFFICE OFFLINE (USB HUNTER)
+# =======================================================
+if ($Task -eq 'InstallOffline') {
+    Write-Host "   [1/2] Scanning Drives..." -ForegroundColor Cyan
+    $Drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Name -match '^[D-Z]$' }
+    foreach ($d in $Drives) {
+        $Test = "$($d.Root)Office\Setup.exe"
+        if (Test-Path $Test) {
+            Write-Host "   [2/2] Installing from $Test..." -ForegroundColor Green
+            Start-Process -FilePath $Test -Wait
+            return
+        }
+    }
+    Write-Host "   [!] Setup.exe not found on any drive." -ForegroundColor Red
+}
+
+# =======================================================
+# OFFICE UNINSTALL (NUCLEAR)
+# =======================================================
+if ($Task -eq 'NukeOffice') {
+    Write-Host "   [1/2] Stopping Services..." -ForegroundColor Yellow
+    $procs = "WINWORD","EXCEL","POWERPNT","OUTLOOK","OFFICECLICKTORUN"
+    foreach ($p in $procs) { Stop-Process -Name $p -Force }
+    
+    $c2r = "${env:ProgramFiles}\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe"
+    if (Test-Path $c2r) {
+        Write-Host "   [2/2] Force Uninstalling..." -ForegroundColor Green
+        Start-Process -FilePath $c2r -ArgumentList "/origin7 /forceuninstall" -Wait 
+    }
+    
+    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Office" -Recurse -Force
+    Remove-Item -Path "${env:ProgramFiles}\Microsoft Office" -Recurse -Force
+}
+
+# =======================================================
+# CHECK WIN
+# =======================================================
 if ($Task -eq 'CheckWin') {
     $score = 0
     $lic = Get-CimInstance SoftwareLicensingProduct | Where-Object {$_.PartialProductKey -and $_.Name -like "*Windows*"} | Select-Object -ExpandProperty Name -First 1
     
     if ($lic -match "Volume" -or $lic -match "KMS") { 
-        $status = "FAKE/VOLUME (Modified)"
-        $color = "Red"
-        $score++ 
+        $status = "FAKE/VOLUME (Modified)"; $color = "Red"; $score++ 
     } else { 
-        $status = "OEM/RETAIL (Original)"
-        $color = "Green" 
+        $status = "OEM/RETAIL (Original)"; $color = "Green" 
     }
     Write-Host "   [1/4] License Channel : $status" -ForegroundColor $color
 
@@ -1136,78 +1106,28 @@ if ($Task -eq 'CheckWin') {
         Write-Host "   [4/4] Recovery System : MISSING (Modified)" -ForegroundColor Red; $score++
     }
 
-    if ($score -eq 0) { 
-        Write-Host "`n   [VERDICT] ORIGINAL (STOCK) WINDOWS - SAFE" -ForegroundColor Green 
-    } else { 
-        Write-Host "`n   [VERDICT] MODIFIED / FAKE DETECTED - FORMAT RECOMMENDED" -ForegroundColor Red 
-    }
+    if ($score -eq 0) { Write-Host "`n   [VERDICT] ORIGINAL (STOCK) WINDOWS - SAFE" -ForegroundColor Green } 
+    else { Write-Host "`n   [VERDICT] MODIFIED / FAKE DETECTED" -ForegroundColor Red }
     exit
 }
 
-# --- 2. REPORT GENERATOR MODE ---
+# =======================================================
+# REPORT GENERATOR
+# =======================================================
 if ($Task -eq 'Report') {
-    # Gather Specs
     $sys = Get-CimInstance Win32_ComputerSystem
+    $bio = Get-CimInstance Win32_Bios
     $cpu = Get-CimInstance Win32_Processor
-    $bios = Get-CimInstance Win32_Bios
-    $Man = $sys.Manufacturer.Trim()
-    $Mod = $sys.Model.Trim()
-    if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" }
-    $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
-    $cacheMB = [int]($cpu.L3CacheSize / 1024)
-    if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
-    $cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache"
+    $ram = [math]::Round((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1GB)
+    $dsk = [math]::Round((Get-CimInstance Win32_DiskDrive | Select-Object -First 1).Size / 1GB)
+    $gpu = Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name -First 1
+    
+    $FullModel = "$($sys.Manufacturer) $($sys.Model)".Trim()
+    $cpuDetails = "$($cpu.Name)"
+    $ramDetails = "$ram GB"
+    $storageString = "$($dsk) GB"
+    $gpuString = "$gpu"
 
-    $mem = Get-CimInstance Win32_PhysicalMemory
-    $memArray = @($mem)
-    $stickCount = $memArray.Count
-    $totalRam = [math]::Round(($memArray | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
-    $ramSpeed = 0
-    foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }
-    if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" }
-    $ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz"
-
-    $disks = Get-CimInstance Win32_DiskDrive
-    $diskList = @()
-foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }
-    $storageString = $diskList -join " | "
-
-    $gpuList = @()
-    $regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-    Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
-        $props = Get-ItemProperty $_.PSPath
-        if ($props.DriverDesc) {
-            $size = 0
-            if ($props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
-            elseif ($props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
-            $gb = [math]::Round($size / 1GB)
-            if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" }
-            else {
-                $wmi = Get-CimInstance Win32_VideoController | Where-Object { $_.Description -eq $props.DriverDesc } | Select-Object -First 1
-                if ($wmi.AdapterRAM -gt 0) {
-                    $wmiGB = [math]::Round($wmi.AdapterRAM / 1GB)
-                    if($wmiGB -gt 0) { $gpuList += "$($props.DriverDesc) ($wmiGB GB)" } else { $gpuList += $props.DriverDesc }
-                } else { $gpuList += $props.DriverDesc }
-            }
-        }
-    }
-    $gpuString = ($gpuList | Select-Object -Unique) -join " + "
-
-    # Generate Text Report
-    $txtReport = "MONTAG STORE - SYSTEM INFO`r`n"
-    $txtReport += "----------------------------------------`r`n"
-    $txtReport += "DATE   : " + (Get-Date).ToString() + "`r`n"
-    $txtReport += "MODEL  : $FullModel`r`n"
-    $txtReport += "SERIAL : $($bios.SerialNumber)`r`n"
-    $txtReport += "CPU    : $cpuDetails`r`n"
-    $txtReport += "RAM    : $ramDetails`r`n"
-    $txtReport += "GPU    : $gpuString`r`n"
-    $txtReport += "DISK   : $storageString`r`n"
-    $txtReport += "STATUS : $StatusLog`r`n"
-    $txtReport += "----------------------------------------`r`n"
-    $txtReport | Out-File "$([Environment]::GetFolderPath('Desktop'))\Montag_Specs.txt" -Encoding UTF8
-
-    # Generate HTML
     $htmlContent = @"
 <!DOCTYPE html>
 <html lang="en">
@@ -1291,31 +1211,14 @@ foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($
     Start-Process "$env:TEMP\SystemReport.html"
 }
 
-# --- 3. NUCLEAR OFFICE REMOVAL MODE ---
-if ($Task -eq 'NukeOffice') {
-    # 1. Kill All Office Processes
-    $procs = "WINWORD","EXCEL","POWERPNT","OUTLOOK","ONENOTE","LYNC","MSACCESS","OFFICECLICKTORUN"
-    foreach ($p in $procs) { Stop-Process -Name $p -Force -ErrorAction SilentlyContinue }
-
-    # 2. Try Native Uninstall First
-    $c2r = "${env:ProgramFiles}\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe"
-    if (Test-Path $c2r) {
-        Write-Host "   [+] Found Native Uninstaller. Executing Force Remove..." -ForegroundColor Green
-        Start-Process -FilePath $c2r -ArgumentList "/origin7 /forceuninstall" -Wait 
-    }
-
-    # 3. Clean Registry Keys (The Nuclear Part)
-    Write-Host "   [+] Cleaning Registry Keys..." -ForegroundColor Yellow
-    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\OfficeSoftwareProtectionPlatform" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
-
-    # 4. Clean File System
-    Write-Host "   [+] Cleaning Program Files..." -ForegroundColor Yellow
-    Remove-Item -Path "${env:ProgramFiles}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "${env:ProgramFiles(x86)}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
-    
-    # 5. Clean Store Apps
-    Get-AppxPackage -Name *Office* | Remove-AppxPackage -ErrorAction SilentlyContinue
-    Get-AppxPackage -Name *Outlook* | Remove-AppxPackage -ErrorAction SilentlyContinue
+if ($Task -eq 'Label') {
+    $sys = Get-CimInstance Win32_ComputerSystem
+    $bio = Get-CimInstance Win32_Bios
+    $ram = [math]::Round((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1GB)
+    $dsk = [math]::Round((Get-CimInstance Win32_DiskDrive | Select-Object -First 1).Size / 1GB)
+    $gpu = (Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name -First 1) -replace "Intel\(R\) ","" -replace "NVIDIA ",""
+    $qr = "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=$($sys.Model) $($bio.SerialNumber)"
+    $HTML = "<body style='font-family:Arial;width:60mm'><h3>Montag Store</h3><img src='$qr'><br><b>$($sys.Model)</b><br>$($bio.SerialNumber)<script>window.print()</script></body>"
+    $HTML | Out-File "$env:TEMP\Label.html"
+    Start-Process "$env:TEMP\Label.html"
 }
