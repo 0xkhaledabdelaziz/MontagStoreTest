@@ -1,8 +1,6 @@
 <# :
 @echo off
 setlocal EnableDelayedExpansion
-title Montag Store - Office Module (V 1.0)
-color 0F
 
 :: ============================================================
 :: [0] PREPARATION & ADMIN CHECK
@@ -14,39 +12,55 @@ if %errorlevel% neq 0 (
     exit
 )
 
-:: Whitelist Temp Folder
+:: Whitelist Temp Folder & Visuals
 if not exist "%SystemDrive%\MontagOffice" mkdir "%SystemDrive%\MontagOffice" >nul 2>&1
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%SystemDrive%\MontagOffice'" >nul 2>&1
+mode con: cols=120 lines=40
+title Montag Store - Office Specialist (V 2.0)
+color 0B
 
 :: --- EXTRACT POWERSHELL ENGINE ---
 set "EngineScript=%TEMP%\MontagOfficeEngine.ps1"
+if exist "%EngineScript%" del "%EngineScript%"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%EngineScript%"
 
 :: ============================================================
-:: [1] OFFICE MENU
+:: [1] OFFICE MENU (INSTANT SELECT)
 :: ============================================================
 :OfficeMenu
 cls
 echo.
-echo      [ MONTAG STORE - OFFICE MANAGER ]
+echo  [95m███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ██████╗ ███████╗███████╗██╗ ██████╗███████╗[0m
+echo  [95m████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝     ██╔═══██╗██╔════╝██╔════╝██║██╔════╝██╔════╝[0m
+echo  [95m██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗    ██║   ██║█████╗  █████╗  ██║██║     █████╗  [0m
+echo  [95m██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║    ██║   ██║██╔══╝  ██╔══╝  ██║██║     ██╔══╝  [0m
+echo  [95m██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝    ╚██████╔╝██║     ██║     ██║╚██████╗███████╗[0m
+echo  [95m╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═════╝╚══════╝[0m
 echo.
-echo      [1] INSTALL FROM USB (OFFLINE)      ^<-- Scans all drives for 'Office\Setup.exe'
-echo      [2] INSTALL OFFICE 2019 (ONLINE)    ^<-- Stable Download (Egypt Fix)
-echo      [3] INSTALL OFFICE 2021 (ONLINE)    ^<-- Latest Version (Egypt Fix)
+echo  [36m========================================================================================================[0m
 echo.
-echo      [4] FORCE UNINSTALL (DEEP CLEAN)    ^<-- Removes old traces
+echo      [1m[1][0m INSTALL FROM USB (OFFLINE)      [90m<-- Scans all drives for 'Office\Setup.exe'[0m
 echo.
-echo      [0] EXIT
+echo      [1m[2][0m INSTALL OFFICE 2019 (ONLINE)    [90m<-- Stable Download (Egypt Fix)[0m
+echo      [1m[3][0m INSTALL OFFICE 2021 (ONLINE)    [90m<-- Latest Version (Egypt Fix)[0m
 echo.
-set /p "choice=^> Select Option: "
+echo      [31m[4] FORCE UNINSTALL (DEEP CLEAN)[0m    [90m<-- Removes Roots (Registry/Files)[0m
+echo.
+echo      [1m[0][0m EXIT
+echo.
+echo  [36m========================================================================================================[0m
+echo.
+echo  [33m^> Press a number to start immediately...[0m
 
-if "%choice%"=="0" exit
-if "%choice%"=="4" goto Uninstall
-if "%choice%"=="3" set "Ver=2021" & goto InstallOnline
-if "%choice%"=="2" set "Ver=2019" & goto InstallOnline
-if "%choice%"=="1" goto InstallOffline
-goto OfficeMenu
+:: THIS COMMAND REMOVES THE NEED FOR ENTER
+choice /c 12340 /n
+
+if %errorlevel%==5 exit
+if %errorlevel%==4 goto Uninstall
+if %errorlevel%==3 set "Ver=2021" & goto InstallOnline
+if %errorlevel%==2 set "Ver=2019" & goto InstallOnline
+if %errorlevel%==1 goto InstallOffline
 
 :: ============================================================
 :: [2] EXECUTION LOGIC
@@ -54,30 +68,33 @@ goto OfficeMenu
 :InstallOffline
 cls
 echo.
-echo      [!] SEARCHING FOR OFFLINE INSTALLER...
+echo      [33m[!] SEARCHING FOR OFFLINE INSTALLER...[0m
 echo      --------------------------------------
 powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "InstallOffline"
 echo.
+echo      [32m[OK] Job Finished.[0m
 pause
 goto OfficeMenu
 
 :InstallOnline
 cls
 echo.
-echo      [!] STARTING DOWNLOAD ENGINE (%Ver%)...
+echo      [33m[!] STARTING DOWNLOAD ENGINE (%Ver%)...[0m
 echo      --------------------------------------
 powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "InstallOnline" -Version "%Ver%"
 echo.
+echo      [32m[OK] Job Finished.[0m
 pause
 goto OfficeMenu
 
 :Uninstall
 cls
 echo.
-echo      [!] STARTING NUCLEAR CLEANER...
+echo      [31m[!] STARTING NUCLEAR CLEANER...[0m
 echo      --------------------------------------
 powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "NukeOffice"
 echo.
+echo      [32m[OK] Office has been removed from roots.[0m
 pause
 goto OfficeMenu
 
@@ -90,7 +107,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 $WorkDir = "$env:SystemDrive\MontagOffice"
 if (!(Test-Path $WorkDir)) { New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null }
 
-# --- 1. OFFLINE INSTALLER (USB HUNTER) ---
+# --- 1. OFFLINE INSTALLER (USB HUNTER) - UNTOUCHED AS REQUESTED ---
 if ($Task -eq 'InstallOffline') {
     Write-Host "   [1/2] Scanning Drives (D: to Z:)..." -ForegroundColor Cyan
     $Drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Name -match '^[D-Z]$' }
@@ -162,18 +179,28 @@ if ($Task -eq 'InstallOnline') {
     Write-Host "   [DONE] Installation Cycle Complete." -ForegroundColor Green
 }
 
-# --- 3. UNINSTALLER (NUCLEAR) ---
+# --- 3. UNINSTALLER (NUCLEAR CLEAN) ---
 if ($Task -eq 'NukeOffice') {
-    Write-Host "   [1/2] Stopping Services..." -ForegroundColor Yellow
-    Get-Process "WINWORD","EXCEL","POWERPNT","OUTLOOK","OFFICECLICKTORUN" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Write-Host "   [1/4] Stopping Office Services..." -ForegroundColor Yellow
+    Get-Process "WINWORD","EXCEL","POWERPNT","OUTLOOK","OFFICECLICKTORUN","ONENOTE","MSACCESS" -ErrorAction SilentlyContinue | Stop-Process -Force
 
+    Write-Host "   [2/4] Running Microsoft Force Uninstall..." -ForegroundColor Cyan
     $c2r = "${env:ProgramFiles}\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe"
     if (Test-Path $c2r) {
-        Write-Host "   [2/2] Running Microsoft Force Uninstall..." -ForegroundColor Green
         Start-Process -FilePath $c2r -ArgumentList "/origin7 /forceuninstall" -Wait 
-    } else {
-        Write-Host "   [!] Native tool not found. Cleaning Registry..." -ForegroundColor Red
-        Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
     }
-    Write-Host "   [OK] Cleaned." -ForegroundColor Green
+
+    Write-Host "   [3/4] Cleaning Registry (Roots)..." -ForegroundColor Magenta
+    # Clean 64-bit keys
+    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\OfficeSoftwareProtectionPlatform" -Recurse -Force -ErrorAction SilentlyContinue
+    # Clean 32-bit keys (Wow6432Node)
+    Remove-Item -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
+    
+    Write-Host "   [4/4] Removing Files..." -ForegroundColor Magenta
+    Remove-Item -Path "${env:ProgramFiles}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "${env:ProgramFiles(x86)}\Microsoft Office" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "${env:ProgramData}\Microsoft\Office" -Recurse -Force -ErrorAction SilentlyContinue
+    
+    Write-Host "   [SUCCESS] System Cleaned Successfully." -ForegroundColor Green
 }
