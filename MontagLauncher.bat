@@ -3,7 +3,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] ADMIN FORCE + FORCE MAXIMIZE
+:: [0] ADMIN FORCE & PREP
 :: ============================================================
 cd /d "%~dp0"
 FSUTIL dirty query %systemdrive% >nul
@@ -12,6 +12,11 @@ if %errorlevel% neq 0 (
     exit
 )
 
+:: Whitelist Working Directory
+if not exist "%SystemDrive%\MontagOffice" mkdir "%SystemDrive%\MontagOffice" >nul 2>&1
+powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%~dp0'" >nul 2>&1
+powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%SystemDrive%\MontagOffice'" >nul 2>&1
+
 :: ============================================================
 :: [1] VISUAL SETUP
 :: ============================================================
@@ -19,7 +24,7 @@ chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-title Montag Store - System (V 410.0 Modular)
+title Montag Store - System (V 6.0 Master Modular)
 color 05
 
 :: ============================================================
@@ -38,10 +43,12 @@ set "BrandURL=https://montagstore.com"
 set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
 set "TechSupportNumber=201040901444"
 
-:: --- EXTERNAL OFFICE SCRIPT LINK ---
+:: --- GITHUB LINKS (MODULAR SYSTEM) ---
+set "UrlReportScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagReport.bat"
 set "UrlOfficeScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagOffice.bat"
+set "UrlAppsScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagApps.bat"
 
-:: --- URLS ---
+:: --- TOOLS URLS ---
 set "UrlKey=https://www.dropbox.com/scl/fi/onvccubmkxicdtvecdqvq/KeyboardTestUtility.exe?rlkey=62ag37rdvhp45iuzlk8261yus&st=k6li1383&dl=1"
 set "UrlScr=https://www.dropbox.com/scl/fi/b63drni7qk3t8f0wudnk7/defpix.exe?rlkey=ir9k1d9gi99dwunjmqtnvtq7n&st=6etkm6wa&dl=1"
 set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headphones-Trim.mp4?rlkey=mw5md1jthagl3nfu3yfumulri&st=5xo6k9gg&dl=1"
@@ -65,10 +72,10 @@ set "Yellow=%ESC%[33m"
 set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
 
-:: Checkmarks Initialization
-for %%i in (WiFi Key Screen Cam Audio Batt Specs Sensor WinUpd OEM Arab DriverBack DriverRest HighPerf Label WinRAR DefCont Revo Brand Apps Disk Mic Intake Clean Name Warranty Active Bloat Stress MAS Boost Icons Auto Game BrandClick CheckWin Office OffClean) do if not defined mark_%%i set "mark_%%i=   "
+:: Checkmarks Init
+for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf WinRAR DefCont Revo Apps Game MAS Office Report) do if not defined mark_%%i set "mark_%%i=   "
 
-:: --- EXTRACT ENGINE ONCE ---
+:: --- EXTRACT LIGHTWEIGHT ENGINE ---
 set "EngineScript=%ToolDir%\MontagEngine.ps1"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__ENGINE_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%EngineScript%"
@@ -82,7 +89,6 @@ if %errorlevel% equ 0 (
     cls
     call :DrawHeader
     echo.
-    echo.
     echo %PAD%%Green%      Welcome to Montag Store System...%Reset%
     call :Speak "Welcome to Montag Store System."
     timeout /t 1 >nul
@@ -91,15 +97,7 @@ if %errorlevel% equ 0 (
 
 :WifiMenu
 cls
-echo.
-echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
+call :DrawHeader
 echo.
 echo %PAD%%Red%    [!] NO INTERNET DETECTED. PLEASE CONNECT:%Reset%
 echo.
@@ -165,19 +163,13 @@ exit /b
 :: ============================================================
 :MainMenu
 cls
-echo.
-echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
+call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%    %Bold%%White%[1]%Reset% %Cyan%HARDWARE TESTS%Reset%      %Gray%(Key/Screen)%Reset%            %Bold%%White%[2]%Reset% %Cyan%WINDOWS SETUP%Reset%       %Gray%(Perf/Name)%Reset%
 echo.
-echo %PAD%    %Bold%%White%[3]%Reset% %Cyan%DRIVERS CENTER%Reset%      %Gray%(Back/Rest)%Reset%             %Bold%%White%[4]%Reset% %Cyan%SOFTWARE HUB%Reset%        %Gray%(Apps/Winget)%Reset%
+echo %PAD%    %Bold%%White%[3]%Reset% %Cyan%DRIVERS CENTER%Reset%      %Gray%(Back/Rest)%Reset%             %Bold%%White%[4]%Reset% %Cyan%SOFTWARE HUB%Reset%        %Gray%(Apps/Office)%Reset%
 echo.
 echo %PAD%    %Bold%%White%[5]%Reset% %Cyan%PRINT SPEC LABEL%Reset%    %Gray%(ZPL/Side)%Reset%
 echo.
@@ -281,12 +273,10 @@ cls
 call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ WINDOWS DETECTIVE - ORIGINALITY CHECK ]
+echo %PAD%                              [ WINDOWS DETECTIVE ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-:: --- CRASH PROOF METHOD: USE THE UNIFIED ENGINE IN 'CHECK' MODE ---
 powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "CheckWin"
-
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 set "mark_CheckWin=[OK]"
@@ -368,89 +358,69 @@ cls
 call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ AUTO-PILOT: PREPARE FOR SALE ]
+echo %PAD%                              [ AUTO-PILOT: SYSTEM PREP ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%%Red%[WARNING] This will run ALL setup steps automatically.%Reset%
-echo %PAD%Please do not touch the mouse or keyboard.
+echo %PAD%Apps & Games are SKIPPED (Install them from Software Hub).
 echo.
-echo %PAD%%Green%   Initiating Auto-Pilot Mode. Please stand by.%Reset%
-call :Speak "Initiating Auto-Pilot Mode. Please stand by."
+echo %PAD%%Green%   Initiating Auto-Pilot Mode...%Reset%
+call :Speak "Initiating System Preparation."
 echo.
 timeout /t 2 >nul
 
-:: --- STEP 1: RESTORE POINT (Safety) ---
-echo %PAD%%Yellow%[1/9] Creating Backup Point...%Reset%
-powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_AutoPilot' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
+:: --- STEP 1: RESTORE POINT ---
+echo %PAD%%Yellow%[1/7] Creating Backup Point...%Reset%
+powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_Prep' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 
 :: --- STEP 2: BOOST & TIME ---
-echo %PAD%%Yellow%[2/9] Tuning System (Time/Hibernate)...%Reset%
+echo %PAD%%Yellow%[2/7] Tuning System (Time/Hibernate)...%Reset%
 powercfg -h off >nul 2>&1
 net start w32time >nul 2>&1
 w32tm /resync >nul 2>&1
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
 
 :: --- STEP 3: BLOATWARE ---
-echo %PAD%%Yellow%[3/9] Removing Bloatware...%Reset%
-echo %PAD%%Green%   Removing unnecessary system applications.%Reset%
-call :Speak "Removing unnecessary system applications."
+echo %PAD%%Yellow%[3/7] Removing Bloatware...%Reset%
+echo %PAD%%Green%   Removing Xbox, Solitaire, Skype, Bing...%Reset%
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 
-:: --- STEP 4: APPS ---
-set "Args=-e --accept-source-agreements --accept-package-agreements"
-echo %PAD%%Yellow%[4/9] Installing Apps (Chrome/VLC/etc)...%Reset%
-echo %PAD%%Green%   Installing basic applications.%Reset%
-call :Speak "Installing basic applications."
-winget install --id Google.Chrome %Args% >nul 2>&1
-winget install --id VideoLAN.VLC %Args% >nul 2>&1
-winget install --id WhatsApp.WhatsApp %Args% >nul 2>&1
-winget install --id AnyDeskSoftwareEvents.AnyDesk %Args% >nul 2>&1
-winget install --id Adobe.Acrobat.Reader.64-bit %Args% >nul 2>&1
-
-:: --- STEP 5: GAMING PACK ---
-echo %PAD%%Yellow%[5/9] Installing Gaming Essentials...%Reset%
-winget install --id Microsoft.VCRedist.2015+.x64 %Args% >nul 2>&1
-winget install --id Microsoft.VCRedist.2015+.x86 %Args% >nul 2>&1
-
-:: --- STEP 6: ACTIVATION (OEM) ---
-echo %PAD%%Yellow%[6/9] Checking Activation...%Reset%
+:: --- STEP 4: ACTIVATION (OEM) ---
+echo %PAD%%Yellow%[4/7] Checking Original Activation...%Reset%
 set "BiosKey="
 for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
 if not "%BiosKey%"=="" (
+    echo %PAD%      Key Found. Activating...
     cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1
     cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1
+) else (
+    echo %PAD%      No OEM Key found. Skipping.
 )
 
-:: --- STEP 7: ICONS & BRANDING ---
-echo %PAD%%Yellow%[7/9] Showing Desktop Icons...%Reset%
+:: --- STEP 5: ICONS & BRANDING ---
+echo %PAD%%Yellow%[5/7] Applying Desktop Icons & Branding...%Reset%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
-
-echo %PAD%%Yellow%[8/9] Applying Right-Click Branding...%Reset%
 call :AddContextSupport >nul 2>&1
 
-:: --- STEP 8: CLEANUP ---
-echo %PAD%%Yellow%[9/9] Cleaning Temp Files...%Reset%
+:: --- STEP 6: CLEANUP ---
+echo %PAD%%Yellow%[6/7] Cleaning Temp Files...%Reset%
 del /s /f /q %temp%\*.* >nul 2>&1
 
-:: --- STEP 9: RESTART EXPLORER ---
-echo %PAD%%Yellow%Refreshing Interface...%Reset%
+:: --- STEP 7: RESTART EXPLORER ---
+echo %PAD%%Yellow%[7/7] Refreshing Interface...%Reset%
 taskkill /f /im explorer.exe >nul 2>&1
 start explorer.exe
 
 set "mark_Auto=[OK]"
 set "mark_Boost=[OK]"
 set "mark_Bloat=[OK]"
-set "mark_Apps=[OK]"
 set "mark_Icons=[OK]"
-set "mark_Game=[OK]"
 set "mark_BrandClick=[OK]"
 
 echo.
-echo %PAD%%Green%[SUCCESS] Auto-Pilot Completed Successfully!%Reset%
-echo %PAD%System is ready for sale.
-echo %PAD%%Green%   System Ready. Have a nice day.%Reset%
-call :Speak "System Ready. Have a nice day."
+echo %PAD%%Green%[SUCCESS] System Optimized. Install Apps Manually.%Reset%
+call :Speak "System Ready."
 pause
 goto Menu_Windows
 
@@ -467,25 +437,6 @@ call :AddContextSupport
 echo.
 echo %PAD%%Green%[OK] Added successfully! Check your Right-Click.%Reset%
 set "mark_BrandClick=[OK]"
-timeout /t 3 >nul
-goto Menu_Windows
-
-:ShowIcons
-cls
-call :DrawHeader
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ DESKTOP ICONS SETUP ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%Showing 'This PC' and 'User' icons on desktop...%Reset%
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
-taskkill /f /im explorer.exe >nul 2>&1
-start explorer.exe
-echo.
-echo %PAD%%Green%[OK] Icons Visible.%Reset%
-set "mark_Icons=[OK]"
 timeout /t 3 >nul
 goto Menu_Windows
 
@@ -691,7 +642,7 @@ del "%PSDr%"
 goto Menu_Drivers
 
 :: ============================================================
-:: [4] SOFTWARE MENU (LINKED TO YOUR GITHUB)
+:: [4] SOFTWARE MENU (MODULAR & EXTERNAL)
 :: ============================================================
 :Menu_Software
 cls
@@ -705,13 +656,13 @@ echo %PAD%%Pink%╚══════╝ ╚═════╝ ╚═╝        
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% INSTALL WINRAR        %Green%!mark_WinRAR!%Reset%           %Bold%%White%[2]%Reset% INSTALL DEFENDER CTRL %Green%!mark_DefCont!%Reset%
+echo %PAD%    %Bold%%White%[1]%Reset% INSTALL APPS BUNDLE   %Green%!mark_Apps!%Reset%             %Bold%%White%[2]%Reset% OFFICE SUITE (SCRIPT) %Green%!mark_Office!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[3]%Reset% INSTALL REVO UNINSTALL%Green%!mark_Revo!%Reset%             %Bold%%White%[4]%Reset% INSTALL BASIC APPS    %Green%!mark_Apps!%Reset%
+echo %PAD%    %Bold%%White%[3]%Reset% INSTALL WINRAR        %Green%!mark_WinRAR!%Reset%           %Bold%%White%[4]%Reset% INSTALL DEFENDER CTRL %Green%!mark_DefCont!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE              %Green%!mark_MAS!%Reset%             %Bold%%White%[6]%Reset% GAMING ESSENTIALS     %Green%!mark_Game!%Reset%
+echo %PAD%    %Bold%%White%[5]%Reset% INSTALL REVO UNINSTALL%Green%!mark_Revo!%Reset%             %Bold%%White%[6]%Reset% GAMING ESSENTIALS     %Green%!mark_Game!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[7]%Reset% OFFICE SUITE (SCRIPT) %Green%!mark_Office!%Reset%
+echo %PAD%    %Bold%%White%[7]%Reset% ACTIVATE              %Green%!mark_MAS!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
@@ -720,44 +671,46 @@ echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 choice /c 12345670 /n
 if %errorlevel%==8 goto MainMenu
-if %errorlevel%==7 goto LaunchOfficeScript
+if %errorlevel%==7 goto DownloadMAS
 if %errorlevel%==6 goto InstallGaming
-if %errorlevel%==5 goto DownloadMAS
-if %errorlevel%==4 goto InstallWingetApps
-if %errorlevel%==3 (set "mark_Revo=[OK]" & set "ExeName=Revo.rar" & set "TargetUrl=https://www.dropbox.com/scl/fi/e0x2yjrnhi6qgx9k6ltxg/RevoUninstallerPro5.rar?rlkey=vq4zsk9x1uyco7ratzkhw62f1&st=4f0776fb&dl=1" & goto DownloadAndRun)
-if %errorlevel%==2 goto InstallDefControl
-if %errorlevel%==1 (set "mark_WinRAR=[OK]" & set "ExeName=WinRAR.exe" & set "TargetUrl=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1" & goto DownloadAndRun)
+if %errorlevel%==5 (set "mark_Revo=[OK]" & set "ExeName=Revo.rar" & set "TargetUrl=https://www.dropbox.com/scl/fi/e0x2yjrnhi6qgx9k6ltxg/RevoUninstallerPro5.rar?rlkey=vq4zsk9x1uyco7ratzkhw62f1&st=4f0776fb&dl=1" & goto DownloadAndRun)
+if %errorlevel%==4 goto InstallDefControl
+if %errorlevel%==3 (set "mark_WinRAR=[OK]" & set "ExeName=WinRAR.exe" & set "TargetUrl=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1" & goto DownloadAndRun)
+if %errorlevel%==2 goto LaunchOfficeScript
+if %errorlevel%==1 goto LaunchAppsScript
 goto Menu_Software
 
 :LaunchOfficeScript
 cls
 echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ OFFICE MODULE MANAGER ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%Downloading External Script...%Reset%
+echo %PAD%%Yellow%Downloading Office Module...%Reset%
 curl -L -k -# -o "%ToolDir%\MontagOffice.bat" "%UrlOfficeScript%"
 if exist "%ToolDir%\MontagOffice.bat" (
-    echo %PAD%%Green%[OK] Starting Office Module...%Reset%
-    call "%ToolDir%\MontagOffice.bat"
+    echo %PAD%%Green%[OK] Launching in New Window...%Reset%
+    :: !!! EXTERNAL LAUNCH !!!
+    start "Montag Office Suite" cmd /c "%ToolDir%\MontagOffice.bat"
     set "mark_Office=[OK]"
-) else (
-    echo %PAD%%Red%[ERROR] Download Failed.%Reset%
-    pause
-)
+) else ( echo %PAD%%Red%[ERROR] Download Failed.%Reset% & pause )
+goto Menu_Software
+
+:LaunchAppsScript
+cls
+echo.
+echo %PAD%%Yellow%Downloading Apps Module...%Reset%
+curl -L -k -# -o "%ToolDir%\MontagApps.bat" "%UrlAppsScript%"
+if exist "%ToolDir%\MontagApps.bat" (
+    echo %PAD%%Green%[OK] Launching in New Window...%Reset%
+    :: !!! EXTERNAL LAUNCH !!!
+    start "Montag Apps Installer" cmd /c "%ToolDir%\MontagApps.bat"
+    set "mark_Apps=[OK]"
+) else ( echo %PAD%%Red%[ERROR] Download Failed.%Reset% & pause )
 goto Menu_Software
 
 :InstallGaming
 cls
 call :DrawHeader
 echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ GAMING PACK INSTALLER ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
 echo %PAD%%Yellow%[1/2] Installing Visual C++ AIO Runtimes (x64^&x86)...%Reset%
-call :Speak "Installing gaming system components."
 winget install --id Microsoft.VCRedist.2015+.x64 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
 winget install --id Microsoft.VCRedist.2015+.x86 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
 echo %PAD%%Green%      Done.%Reset%
@@ -774,10 +727,6 @@ goto Menu_Software
 cls
 call :DrawHeader
 echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ ACTIVATION MANAGER ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
 echo %PAD%%Yellow%Downloading Activation Script (MAS)...%Reset%
 curl -L -k -# -o "%ToolDir%\MAS_AIO.cmd" "%UrlMAS%"
 if exist "%ToolDir%\MAS_AIO.cmd" (
@@ -789,11 +738,6 @@ goto Menu_Software
 
 :InstallDefControl
 cls
-call :DrawHeader
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ DEFENDER CONTROL ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%%Yellow%[MANUAL STEP] Please disable Real-time protection manually.%Reset%
 echo.
@@ -807,82 +751,39 @@ if exist "%ToolDir%\DefCont.rar" (
 pause
 goto Menu_Software
 
-:InstallWingetApps
-set "Args=-e --accept-source-agreements --accept-package-agreements"
-set "Count=0"
-set "Total=7"
-cls
+:: --- HELPER FUNCTIONS ---
+:DownloadAndRun
+set "Exe=%ToolDir%\%ExeName%"
+if not exist "%ToolDir%" mkdir "%ToolDir%"
+if exist "%Exe%" (start "" "%Exe%" & goto ReturnPoint)
 call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ APP INSTALLER - LIVE PROGRESS ]
+echo %PAD%                              [ DOWNLOAD MANAGER ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Yellow%[1/7] Installing Google Chrome...%Reset%
-winget install --id Google.Chrome %Args%
-echo %PAD%%Yellow%[2/7] Installing Brave Browser...%Reset%
-winget install --id Brave.Brave %Args%
-echo %PAD%%Yellow%[3/7] Installing WhatsApp...%Reset%
-winget install --id WhatsApp.WhatsApp %Args%
-echo %PAD%%Yellow%[4/7] Installing AnyDesk...%Reset%
-winget install --id AnyDeskSoftwareEvents.AnyDesk %Args%
-echo %PAD%%Yellow%[5/7] Installing VLC Media Player...%Reset%
-winget install --id VideoLAN.VLC %Args%
-echo %PAD%%Yellow%[6/7] Installing Adobe Reader...%Reset%
-winget install --id Adobe.Acrobat.Reader.64-bit %Args%
-echo %PAD%%Yellow%[7/7] Installing Zoom...%Reset%
-winget install --id Zoom.Zoom %Args%
-set "mark_Apps=[OK]"
+echo %PAD%%Yellow%Downloading: %White%%ExeName%...
 echo.
-echo %PAD%%Green%[OK] All applications installed successfully.%Reset%
-pause
-goto Menu_Software
+curl -L -k -# -o "%Exe%" "%TargetUrl%"
+if exist "%Exe%" (start "" "%Exe%") else (echo %PAD%%Red%[ERROR] Failed.%Reset% & pause)
+:ReturnPoint
+if "%ExeName%"=="WinRAR.exe" goto Menu_Software
+if "%ExeName%"=="DefCont.rar" goto Menu_Software
+if "%ExeName%"=="Revo.rar" goto Menu_Software
+goto Menu_Hardware
 
-:DrawHeader
-echo.
-echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
-exit /b
-
-:: ============================================================
-:: [5] PRINT LABEL (TABLE LAYOUT - FORCE SIDE BY SIDE)
-:: ============================================================
 :PrintLabel
 cls
 echo.
 echo %PAD%%Cyan%Generating ZPL Label...%Reset%
-set "PSScript=%TEMP%\GenLabel.ps1"
-if exist "%PSScript%" del "%PSScript%"
-
-:: Safe-Write the PowerShell Script line by line
-echo $brand = "%BrandName%" > "%PSScript%"
-echo $sys = (Get-CimInstance Win32_ComputerSystem).Model >> "%PSScript%"
-echo $serial = (Get-CimInstance Win32_Bios).SerialNumber >> "%PSScript%"
-echo $cpu = (Get-CimInstance Win32_Processor).Name.Replace("Intel(R) Core(TM) ", "").Replace("CPU @ ", "") >> "%PSScript%"
-echo $ram = [math]::Round((Get-CimInstance Win32_PhysicalMemory ^| Measure-Object -Property Capacity -Sum).Sum / 1GB) >> "%PSScript%"
-echo $disk = [math]::Round((Get-CimInstance Win32_DiskDrive ^| Select-Object -First 1).Size / 1GB) >> "%PSScript%"
-echo $gpu = (Get-CimInstance Win32_VideoController ^| Select-Object -ExpandProperty Name) -join " + " >> "%PSScript%"
-echo $qr = "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=$sys $serial" >> "%PSScript%"
-
-:: TABLE LAYOUT: 1 Row, 2 Columns (30% QR Left, 70% Text Right)
-echo $html = "<body style='font-family:Arial,sans-serif;width:70mm;margin:0;padding:2px;font-size:9pt'><h3 style='margin:0;text-align:center;border-bottom:1px solid #000'>$brand</h3><table style='width:100%%;margin-top:5px'><tr><td style='width:30%%;vertical-align:top'><img src='$qr' style='width:100%%'></td><td style='width:70%%;padding-left:5px;vertical-align:top;line-height:1.2'><b>$sys</b><br>$cpu<br><b>RAM: $ram GB</b><br><b>SSD: $disk GB</b><br><span style='font-size:8pt'>$gpu</span></td></tr></table><script>window.print()</script></body>" >> "%PSScript%"
-
-echo $html ^| Out-File "$env:TEMP\Label.html" >> "%PSScript%"
-echo Start-Process "$env:TEMP\Label.html" >> "%PSScript%"
-
-powershell -ExecutionPolicy Bypass -File "%PSScript%"
-del "%PSScript%"
-
+powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "Label"
 echo.
 echo %PAD%%Green%[OK] Label sent to printer.%Reset%
 timeout /t 3 >nul
 goto MainMenu
+
 :: ============================================================
-:: REPORT GENERATOR (HYBRID: DEEP SPECS + HTML UI)
+:: REPORT GENERATOR (FIXED: EXTERNAL WINDOW)
 :: ============================================================
 :FinalReport
 echo %PAD%%Cyan%Deep Scanning System Specs...%Reset%
@@ -890,7 +791,6 @@ call :SilentIconSetup
 call :ApplyBranding
 call :AddContextSupport
 
-:: Build Detailed Status String with Checkmarks (Using [OK] to prevent crash)
 set "TEST_LOG="
 if "!mark_Key!"=="[OK]" set "TEST_LOG=!TEST_LOG! Key:OK"
 if "!mark_Screen!"=="[OK]" set "TEST_LOG=!TEST_LOG! Screen:OK"
@@ -908,14 +808,26 @@ if "!mark_Bloat!"=="[OK]" set "TEST_LOG=!TEST_LOG! Debloat:OK"
 if "!mark_Apps!"=="[OK]" set "TEST_LOG=!TEST_LOG! Apps:OK"
 if "!mark_DriverBack!"=="[OK]" set "TEST_LOG=!TEST_LOG! DrvBack:OK"
 if "!mark_CheckWin!"=="[OK]" set "TEST_LOG=!TEST_LOG! WinCheck:OK"
+if "!mark_Office!"=="[OK]" set "TEST_LOG=!TEST_LOG! Office:OK"
+if "!mark_OffClean!"=="[OK]" set "TEST_LOG=!TEST_LOG! OffScrub:OK"
 
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 
-:: --- USE THE UNIFIED ENGINE IN 'REPORT' MODE ---
-powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "Report" -TesterName "User" -StatusLog "%TEST_LOG%" -FormID "%GFormID%"
+:: --- CALL EXTERNAL REPORT (NEW METHOD) ---
+echo.
+echo %PAD%%Yellow%Downloading Report Module...%Reset%
+curl -L -k -# -o "%ToolDir%\MontagReport.bat" "%UrlReportScript%"
+if exist "%ToolDir%\MontagReport.bat" (
+    echo %PAD%%Green%[OK] Opening Report Interface...%Reset%
+    :: This opens a separate window so the main script doesn't glitch
+    start "Montag Report Generator" cmd /c "%ToolDir%\MontagReport.bat" "!TEST_LOG!"
+) else (
+    echo %PAD%%Red%[ERROR] Failed to load Report Module.%Reset%
+    pause
+)
 
 echo.
-echo %PAD%%Green%[OK] Interface Opened. Returning to Menu...%Reset%
+echo %PAD%%Green%[OK] Process Launched in New Window.%Reset%
 timeout /t 3 >nul
 goto MainMenu
 
@@ -959,193 +871,42 @@ exit /b
 powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
 exit /b
 
+:DrawHeader
+echo.
+echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
+echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
+echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
+echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
+echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
+echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
+exit /b
+
 :: ============================================================
 ::  UNIFIED POWERSHELL ENGINE (NO ECHO HAZARDS)
 :: ============================================================
-:::__ENGINE_START__:::
+:::__POWERSHELL_START__:::
 param($Task, $TesterName, $StatusLog, $FormID)
 $ErrorActionPreference = 'SilentlyContinue'
 
-# --- 1. WINDOWS CHECKER MODE ---
 if ($Task -eq 'CheckWin') {
     $score = 0
     $lic = Get-CimInstance SoftwareLicensingProduct | Where-Object {$_.PartialProductKey -and $_.Name -like "*Windows*"} | Select-Object -ExpandProperty Name -First 1
-    
-    if ($lic -match "Volume" -or $lic -match "KMS") { 
-        $status = "FAKE/VOLUME (Modified)"
-        $color = "Red"
-        $score++ 
-    } else { 
-        $status = "OEM/RETAIL (Original)"
-        $color = "Green" 
-    }
-    Write-Host "   [1/4] License Channel : $status" -ForegroundColor $color
-
-    $def = Get-Service windefend -ErrorAction SilentlyContinue
-    if (!$def) { Write-Host "   [2/4] Windows Defender: DELETED (Modified)" -ForegroundColor Red; $score++ } 
-    else { Write-Host "   [2/4] Windows Defender: OK" -ForegroundColor Green }
-
-    $upd = Get-Service wuauserv -ErrorAction SilentlyContinue
-    if (!$upd) { Write-Host "   [3/4] Windows Update  : DELETED (Modified)" -ForegroundColor Red; $score++ } 
-    else { Write-Host "   [3/4] Windows Update  : OK" -ForegroundColor Green }
-
-    if (Test-Path "C:\Windows\System32\Recovery\ReAgent.xml") {
-        Write-Host "   [4/4] Recovery System : OK" -ForegroundColor Green
-    } else {
-        Write-Host "   [4/4] Recovery System : MISSING (Modified)" -ForegroundColor Red; $score++
-    }
-
-    if ($score -eq 0) { 
-        Write-Host "`n   [VERDICT] ORIGINAL (STOCK) WINDOWS - SAFE" -ForegroundColor Green 
-    } else { 
-        Write-Host "`n   [VERDICT] MODIFIED / FAKE DETECTED - FORMAT RECOMMENDED" -ForegroundColor Red 
-    }
+    if ($lic -match "Volume" -or $lic -match "KMS") { Write-Host "   [1/4] License Channel : FAKE/VOLUME (Modified)" -ForegroundColor Red; $score++ } else { Write-Host "   [1/4] License Channel : OEM/RETAIL (Original)" -ForegroundColor Green }
+    if (Get-Service windefend -ErrorAction SilentlyContinue) { Write-Host "   [2/4] Windows Defender: OK" -ForegroundColor Green } else { Write-Host "   [2/4] Windows Defender: DELETED (Modified)" -ForegroundColor Red; $score++ }
+    if (Get-Service wuauserv -ErrorAction SilentlyContinue) { Write-Host "   [3/4] Windows Update  : OK" -ForegroundColor Green } else { Write-Host "   [3/4] Windows Update  : DELETED (Modified)" -ForegroundColor Red; $score++ }
+    if (Test-Path "C:\Windows\System32\Recovery\ReAgent.xml") { Write-Host "   [4/4] Recovery System : OK" -ForegroundColor Green } else { Write-Host "   [4/4] Recovery System : MISSING (Modified)" -ForegroundColor Red; $score++ }
+    if ($score -eq 0) { Write-Host "`n   [VERDICT] ORIGINAL (STOCK) WINDOWS - SAFE" -ForegroundColor Green } else { Write-Host "`n   [VERDICT] MODIFIED / FAKE DETECTED" -ForegroundColor Red }
     exit
 }
 
-# --- 2. REPORT GENERATOR MODE (YOUR ORIGINAL HTML) ---
-if ($Task -eq 'Report') {
-    # Gather Specs
+if ($Task -eq 'Label') {
     $sys = Get-CimInstance Win32_ComputerSystem
-    $cpu = Get-CimInstance Win32_Processor
-    $bios = Get-CimInstance Win32_Bios
-    $Man = $sys.Manufacturer.Trim()
-    $Mod = $sys.Model.Trim()
-    if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" }
-    $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
-    $cacheMB = [int]($cpu.L3CacheSize / 1024)
-    if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
-    $cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache"
-
-    $mem = Get-CimInstance Win32_PhysicalMemory
-    $memArray = @($mem)
-    $stickCount = $memArray.Count
-    $totalRam = [math]::Round(($memArray | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
-    $ramSpeed = 0
-    foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }
-    if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" }
-    $ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz"
-
-    $disks = Get-CimInstance Win32_DiskDrive
-    $diskList = @()
-foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }
-    $storageString = $diskList -join " | "
-
-    $gpuList = @()
-    $regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-    Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
-        $props = Get-ItemProperty $_.PSPath
-        if ($props.DriverDesc) {
-            $size = 0
-            if ($props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
-            elseif ($props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
-            $gb = [math]::Round($size / 1GB)
-            if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" }
-            else {
-                $wmi = Get-CimInstance Win32_VideoController | Where-Object { $_.Description -eq $props.DriverDesc } | Select-Object -First 1
-                if ($wmi.AdapterRAM -gt 0) {
-                    $wmiGB = [math]::Round($wmi.AdapterRAM / 1GB)
-                    if($wmiGB -gt 0) { $gpuList += "$($props.DriverDesc) ($wmiGB GB)" } else { $gpuList += $props.DriverDesc }
-                } else { $gpuList += $props.DriverDesc }
-            }
-        }
-    }
-    $gpuString = ($gpuList | Select-Object -Unique) -join " + "
-
-    # Generate Text Report
-    $txtReport = "MONTAG STORE - SYSTEM INFO`r`n"
-    $txtReport += "----------------------------------------`r`n"
-    $txtReport += "DATE   : " + (Get-Date).ToString() + "`r`n"
-    $txtReport += "MODEL  : $FullModel`r`n"
-    $txtReport += "SERIAL : $($bios.SerialNumber)`r`n"
-    $txtReport += "CPU    : $cpuDetails`r`n"
-    $txtReport += "RAM    : $ramDetails`r`n"
-    $txtReport += "GPU    : $gpuString`r`n"
-    $txtReport += "DISK   : $storageString`r`n"
-    $txtReport += "STATUS : $StatusLog`r`n"
-    $txtReport += "----------------------------------------`r`n"
-    $txtReport | Out-File "$([Environment]::GetFolderPath('Desktop'))\Montag_Specs.txt" -Encoding UTF8
-
-    # Generate HTML
-    $htmlContent = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Montag Store System</title>
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-    body { background-color: #050505; color: #8f00ff; font-family: 'Share Tech Mono', monospace; text-align: center; padding: 20px; overflow-x: hidden; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; }
-    .container { max-width: 700px; margin: auto; background: rgba(20, 20, 20, 0.9); padding: 30px; border: 1px solid #333; box-shadow: 0 0 20px rgba(143, 0, 255, 0.2); border-radius: 10px; position: relative; }
-    .glitch-header { font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff; letter-spacing: 3px; margin-bottom: 20px; animation: glitch 1s infinite alternate; color: #fff; }
-    @keyframes glitch { 0% { text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff; } 100% { text-shadow: -2px -2px 0px #ff00ff, 2px 2px 0px #00ffff; } }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; direction: ltr; margin-bottom: 20px; }
-    .card { background: #111; border: 1px solid #8f00ff; padding: 15px; border-radius: 5px; box-shadow: inset 0 0 10px rgba(143, 0, 255, 0.1); transition: 0.3s; }
-    .card:hover { transform: translateY(-3px); box-shadow: 0 0 15px rgba(143, 0, 255, 0.4); }
-    .card h4 { margin: 0 0 5px 0; color: #fff; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
-    .card p { margin: 0; font-size: 13px; color: #ccc; word-wrap: break-word; }
-    .input-group { margin-bottom: 20px; text-align: left; }
-    label { display: block; color: #fff; margin-bottom: 5px; font-size: 18px; }
-    input, textarea { width: 95%; padding: 15px; background: #000; border: 2px solid #444; color: #8f00ff; font-family: inherit; font-size: 16px; border-radius: 5px; outline: none; transition: 0.3s; }
-    input:focus, textarea:focus { border-color: #8f00ff; box-shadow: 0 0 10px #8f00ff; }
-    .btn-group { display: flex; gap: 20px; }
-    button { flex: 1; padding: 20px; font-size: 20px; font-family: inherit; font-weight: bold; border: none; cursor: pointer; color: #fff; text-transform: uppercase; border-radius: 5px; position: relative; overflow: hidden; transition: 0.3s; }
-    .btn-sell { background: linear-gradient(45deg, #1e7e34, #28a745); box-shadow: 0 5px 0 #155724; }
-    .btn-test { background: linear-gradient(45deg, #117a8b, #17a2b8); box-shadow: 0 5px 0 #0f6674; }
-    button:active { transform: translateY(4px); box-shadow: none; }
-    button:hover { filter: brightness(1.2); }
-</style>
-</head>
-<body>
-    <div class="container">
-        <div class="glitch-header">MONTAG STORE REPORT</div>
-        <div class="input-group">
-            <label>TESTER NAME:</label>
-            <input type="text" id="testerName" placeholder="Type your name here..." autofocus required>
-        </div>
-        <div class="info-grid">
-            <div class="card"><h4>MODEL</h4><p>$FullModel</p></div>
-            <div class="card"><h4>SERIAL</h4><p>$($bios.SerialNumber)</p></div>
-            <div class="card"><h4>CPU</h4><p>$cpuDetails</p></div>
-            <div class="card"><h4>RAM</h4><p>$ramDetails</p></div>
-            <div class="card"><h4>GRAPHICS</h4><p>$gpuString</p></div>
-            <div class="card"><h4>STORAGE</h4><p>$storageString</p></div>
-        </div>
-        <div class="input-group">
-            <label>INSPECTION LOGS (STATUS):</label>
-            <textarea id="status" rows="2">$StatusLog</textarea>
-        </div>
-        <div class="btn-group">
-            <button class="btn-sell" onclick="sendData('SELL')">SELL (CUSTOMER)</button>
-            <button class="btn-test" onclick="sendData('TEST')">TEST (STOCK)</button>
-        </div>
-    </div>
-    <script>
-        function sendData(type) {
-            var testerRaw = document.getElementById('testerName').value;
-            var statusRaw = document.getElementById('status').value;
-            if (testerRaw.trim() === "") { alert("Please enter tester name first!"); return; }
-            
-            var mergedTesterName = testerRaw + " - " + type;
-            var baseURL = "https://docs.google.com/forms/d/e/$FormID/formResponse?usp=pp_url";
-            var finalURL = baseURL + 
-                "&entry.371291262=" + type +
-                "&entry.392302034=" + encodeURIComponent(mergedTesterName) +
-                "&entry.531158115=" + encodeURIComponent("$FullModel") +
-                "&entry.1203480099=" + encodeURIComponent("$($bios.SerialNumber)") +
-                "&entry.1462565184=" + encodeURIComponent("$cpuDetails") +
-                "&entry.212987726=" + encodeURIComponent("$ramDetails") +
-                "&entry.1717831234=" + encodeURIComponent("$storageString") +
-                "&entry.2044586469=" + encodeURIComponent("$gpuString") +
-                "&entry.310563239=" + encodeURIComponent(statusRaw);
-            
-            fetch(finalURL, { mode: 'no-cors' });
-            setTimeout(function(){ window.close(); }, 1000);
-        }
-    </script>
-</body>
-</html>
-"@
-    $htmlContent | Out-File "$env:TEMP\SystemReport.html" -Encoding UTF8
-    Start-Process "$env:TEMP\SystemReport.html"
+    $bio = Get-CimInstance Win32_Bios
+    $ram = [math]::Round((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1GB)
+    $dsk = [math]::Round((Get-CimInstance Win32_DiskDrive | Select-Object -First 1).Size / 1GB)
+    $gpu = (Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name -First 1) -replace "Intel\(R\) ","" -replace "NVIDIA ",""
+    $qr = "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=$($sys.Model) $($bio.SerialNumber)"
+    $HTML = "<body style='font-family:Arial;width:60mm'><h3>Montag Store</h3><img src='$qr'><br><b>$($sys.Model)</b><br>$($bio.SerialNumber)<script>window.print()</script></body>"
+    $HTML | Out-File "$env:TEMP\Label.html"
+    Start-Process "$env:TEMP\Label.html"
 }
