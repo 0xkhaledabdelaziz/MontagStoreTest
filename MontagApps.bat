@@ -8,7 +8,7 @@ setlocal EnableDelayedExpansion
 chcp 65001 >nul
 cd /d "%~dp0"
 mode con: cols=80 lines=40
-title Montag Store - Apps Manager (V 1.1 No PDF)
+title Montag Store - Apps Manager (V 1.2 Stable Fix)
 color 0B
 
 set "Args=-e --accept-source-agreements --accept-package-agreements"
@@ -44,10 +44,11 @@ echo      [90m==========================================[0m
 echo.
 echo      [33m^> Press a number...[0m
 
-:: Choice updated (removed option 9, shifted others)
+:: Choice Logic
 choice /c 123456780 /n
 
-if %errorlevel%==9 exit
+:: Errorlevel 9 corresponds to '0' because it's the 9th character
+if %errorlevel%==9 goto CloseScript
 if %errorlevel%==8 goto InstallBrave
 if %errorlevel%==7 goto InstallZoom
 if %errorlevel%==6 goto InstallWhats
@@ -99,3 +100,7 @@ cls & echo [93mInstalling WhatsApp...[0m & winget install --id WhatsApp.WhatsA
 cls & echo [93mInstalling Zoom...[0m & winget install --id Zoom.Zoom %Args% & pause & goto AppsMenu
 :InstallBrave
 cls & echo [93mInstalling Brave...[0m & winget install --id Brave.Brave %Args% & pause & goto AppsMenu
+
+:CloseScript
+:: This command ensures we return to the Launcher instead of killing the window
+exit /b
