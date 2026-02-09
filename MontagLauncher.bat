@@ -3,9 +3,12 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] ADMIN FORCE & PREP
+:: [0] PREPARATION & ENCODING FIX
 :: ============================================================
 cd /d "%~dp0"
+:: Force UTF-8 Encoding immediately to fix garbled text
+chcp 65001 >nul
+:: Force Admin Rights
 FSUTIL dirty query %systemdrive% >nul
 if %errorlevel% neq 0 (
     powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Maximized"
@@ -18,49 +21,32 @@ powershell -inputformat none -outputformat none -NonInteractive -Command "Add-Mp
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%SystemDrive%\MontagOffice'" >nul 2>&1
 
 :: ============================================================
-:: [1] VISUAL SETUP
+:: [1] CONFIGURATION
 :: ============================================================
-chcp 65001 >nul
 mode con: cols=150 lines=60
 reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
-
-title Montag Store - System (V 6.0 Master Modular)
+title Montag Store - System (V 11.0 Stable)
 color 05
 
-:: ============================================================
-:: [2] CONFIGURATION
-:: ============================================================
 set "ToolDir=%SystemDrive%\MontagTools"
 if not exist "%ToolDir%" mkdir "%ToolDir%" >nul 2>&1
 set "IconDir=%ProgramData%\MontagStore"
 if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
 attrib +h "%IconDir%" >nul 2>&1
 
-:: --- BRANDING ---
-set "BrandName=Montag Store"
-set "BrandPhone=Manager: 01090040022-01144566115 | Tech: 01040901444"
-set "BrandURL=https://montagstore.com"
-set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
-set "TechSupportNumber=201040901444"
-
-:: --- GITHUB LINKS (MODULAR SYSTEM) ---
+:: Links
 set "UrlReportScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagReport.bat"
 set "UrlOfficeScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagOffice.bat"
 set "UrlAppsScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagApps.bat"
-
-:: --- TOOLS URLS ---
+set "UrlHwi=https://www.dropbox.com/scl/fi/fjtwrg3boc8zj88ml2jxs/HWiNFO64.EXE?rlkey=m64f5qxup91iq8ew09imqfcs0&st=9eqs19xe&dl=1"
 set "UrlKey=https://www.dropbox.com/scl/fi/onvccubmkxicdtvecdqvq/KeyboardTestUtility.exe?rlkey=62ag37rdvhp45iuzlk8261yus&st=k6li1383&dl=1"
 set "UrlScr=https://www.dropbox.com/scl/fi/b63drni7qk3t8f0wudnk7/defpix.exe?rlkey=ir9k1d9gi99dwunjmqtnvtq7n&st=6etkm6wa&dl=1"
 set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headphones-Trim.mp4?rlkey=mw5md1jthagl3nfu3yfumulri&st=5xo6k9gg&dl=1"
-set "UrlHwi=https://www.dropbox.com/scl/fi/fjtwrg3boc8zj88ml2jxs/HWiNFO64.EXE?rlkey=m64f5qxup91iq8ew09imqfcs0&st=9eqs19xe&dl=1"
 set "UrlRar=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1"
 set "UrlMAS=https://www.dropbox.com/scl/fi/cnj7x4fp8zqksmeewhsmg/MAS_AIO.cmd?rlkey=1zr26qvm9l7r26iaw52czjmt9&st=7o2zhkih&dl=1"
 
-:: Download Icon
-if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
-
 :: Visuals
-set "PAD=     "
+if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
 set "Reset=%ESC%[0m"
 set "Pink=%ESC%[38;2;255;0;255m"
@@ -69,19 +55,18 @@ set "White=%ESC%[37m"
 set "Green=%ESC%[32m"
 set "Red=%ESC%[31m"
 set "Yellow=%ESC%[33m"
-set "Gray=%ESC%[90m"
 set "Bold=%ESC%[1m"
+set "PAD=     "
 
-:: Checkmarks Init
-for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf WinRAR DefCont Revo Apps Game MAS Office Report) do if not defined mark_%%i set "mark_%%i=   "
+for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf WinRAR DefCont Revo Apps Game MAS Office Report Touch) do if not defined mark_%%i set "mark_%%i=   "
 
-:: --- EXTRACT LIGHTWEIGHT ENGINE ---
+:: Extract Engine
 set "EngineScript=%ToolDir%\MontagEngine.ps1"
-for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__ENGINE_START__:::$" "%~f0"') do set "StartLine=%%a"
+for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%EngineScript%"
 
 :: ============================================================
-:: [2.5] WIFI CHECK & INTRO
+:: [2.5] WIFI CHECK
 :: ============================================================
 :CheckInternet
 ping -n 1 google.com >nul
@@ -110,7 +95,6 @@ echo %PAD%%Cyan%================================================================
 echo.
 echo %PAD%%Yellow%^> Connect to:%Reset% 
 choice /c 1234rx /n
-
 if %errorlevel%==6 goto MainMenu
 if %errorlevel%==5 goto CheckInternet
 if %errorlevel%==4 call :ConnectWifi "Montag reception 5G" "12345_Mont@g" & goto CheckInternet
@@ -120,42 +104,14 @@ if %errorlevel%==1 call :ConnectWifi "MontagStore" "12345_Montag" & goto CheckIn
 goto WifiMenu
 
 :ConnectWifi
-set "SSID=%~1"
-set "PASS=%~2"
-echo.
-echo %PAD%%Cyan%Connecting to %SSID%...%Reset%
-set "WiFiXML=%ToolDir%\wifi_temp.xml"
-(
-    echo ^<?xml version="1.0"?^>
-    echo ^<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1"^>
-    echo     ^<name^>%SSID%^</name^>
-    echo     ^<SSIDConfig^>
-    echo         ^<SSID^>
-    echo             ^<name^>%SSID%^</name^>
-    echo         ^</SSID^>
-    echo     ^</SSIDConfig^>
-    echo     ^<connectionType^>ESS^</connectionType^>
-    echo     ^<connectionMode^>auto^</connectionMode^>
-    echo     ^<MSM^>
-    echo         ^<security^>
-    echo             ^<authEncryption^>
-    echo                 ^<authentication^>WPA2PSK^</authentication^>
-    echo                 ^<encryption^>AES^</encryption^>
-    echo                 ^<useOneX^>false^</useOneX^>
-    echo             ^</authEncryption^>
-    echo             ^<sharedKey^>
-    echo                 ^<keyType^>passPhrase^</keyType^>
-    echo                 ^<protected^>false^</protected^>
-    echo                 ^<keyMaterial^>%PASS%^</keyMaterial^>
-    echo             ^</sharedKey^>
-    echo         ^</security^>
-    echo     ^</MSM^>
-    echo ^</WLANProfile^>
-) > "%WiFiXML%"
+set "SSID=%~1" & set "PASS=%~2"
+echo %PAD%Connecting to %SSID%...
+set "WiFiXML=%ToolDir%\wifi.xml"
+(echo ^<?xml version="1.0"?^>^<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1"^>^<name^>%SSID%^</name^>^<SSIDConfig^>^<SSID^>^<name^>%SSID%^</name^>^</SSID^>^</SSIDConfig^>^<connectionType^>ESS^</connectionType^>^<connectionMode^>auto^</connectionMode^>^<MSM^>^<security^>^<authEncryption^>^<authentication^>WPA2PSK^</authentication^>^<encryption^>AES^</encryption^>^<useOneX^>false^</useOneX^>^</authEncryption^>^<sharedKey^>^<keyType^>passPhrase^</keyType^>^<protected^>false^</protected^>^<keyMaterial^>%PASS%^</keyMaterial^>^</sharedKey^>^</security^>^</MSM^>^</WLANProfile^>) > "%WiFiXML%"
 netsh wlan add profile filename="%WiFiXML%" user=all >nul 2>&1
 netsh wlan connect name="%SSID%" >nul 2>&1
 del "%WiFiXML%" >nul 2>&1
-timeout /t 5 >nul
+timeout /t 4 >nul
 exit /b
 
 :: ============================================================
@@ -190,7 +146,6 @@ if %errorlevel%==3 goto Menu_Drivers
 if %errorlevel%==2 goto Menu_Windows
 if %errorlevel%==1 goto Menu_Hardware
 goto MainMenu
-
 :: ============================================================
 :: [1] HARDWARE MENU
 :: ============================================================
@@ -210,28 +165,29 @@ echo %PAD%    %Bold%%White%[1]%Reset% KEYBOARD TEST       %Green%!mark_Key!%Rese
 echo.
 echo %PAD%    %Bold%%White%[3]%Reset% CAMERA TEST         %Green%!mark_Cam!%Reset%             %Bold%%White%[4]%Reset% AUDIO TEST          %Green%!mark_Audio!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[5]%Reset% BATTERY REPORT      %Green%!mark_Batt!%Reset%             %Bold%%White%[6]%Reset% SENSORS (HWiNFO)    %Green%!mark_Sensor!%Reset%
+echo %PAD%    %Bold%%White%[5]%Reset% BATTERY REPORT      %Green%!mark_Batt!%Reset%             %Bold%%White%[6]%Reset% PRO TOUCH TEST      %Green%!mark_Touch!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%    %Bold%%White%[7]%Reset% CHECK WARRANTY      %Green%!mark_Warranty!%Reset%         %Bold%%White%[8]%Reset% SYSTEM STRESS TEST  %Green%!mark_Stress!%Reset%
 echo.
-echo %PAD%    %Bold%%Red%[9] CHECK WIN INTEGRITY%Reset% %Green%!mark_CheckWin!%Reset%
+echo %PAD%    %Bold%%White%[9]%Reset% CHECK WIN INTEGRITY %Green%!mark_CheckWin!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
-echo %PAD%                                     %Gray%[0] BACK TO MAIN%Reset%
+echo %PAD%    %Bold%%Yellow%[S] SENSORS (HWiNFO)%Reset%   %Green%!mark_Sensor!%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%%Yellow%^> Select Test:%Reset% 
-choice /c 1234567890 /n
+choice /c 123456789s0 /n
 
-if %errorlevel%==10 goto MainMenu
+if %errorlevel%==11 goto MainMenu
+if %errorlevel%==10 (set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun)
 if %errorlevel%==9 goto CheckWinIntegrity
 if %errorlevel%==8 goto StressTest
 if %errorlevel%==7 goto CheckWarranty
-if %errorlevel%==6 (set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun)
+if %errorlevel%==6 goto ProTouchTest
 if %errorlevel%==5 (set "mark_Batt=[OK]" & goto BatteryTest)
 if %errorlevel%==4 (set "mark_Audio=[OK]" & set "ExeName=Audio.mp4" & set "TargetUrl=%UrlAud%" & goto DownloadAndRun)
 if %errorlevel%==3 (set "mark_Cam=[OK]" & goto CamTest)
@@ -240,6 +196,35 @@ if %errorlevel%==1 (set "mark_Key=[OK]" & set "ExeName=KeyTest.exe" & set "Targe
 goto Menu_Hardware
 
 :: --- HARDWARE FUNCTIONS ---
+:ProTouchTest
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ MONTAG PRO TOUCH DIAGNOSTIC ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%Generating Grid...%Reset%
+set "TouchFile=%TEMP%\MontagTouch.html"
+if exist "%TouchFile%" del "%TouchFile%"
+echo ^<!DOCTYPE html^>^<html lang="en"^>^<head^>^<meta charset="UTF-8"^>^<title^>Montag Touch^</title^> > "%TouchFile%"
+echo ^<style^>body{margin:0;background:#000;overflow:hidden;touch-action:none;font-family:sans-serif} >> "%TouchFile%"
+echo #grid{display:grid;grid-template-columns:repeat(20,1fr);grid-template-rows:repeat(12,1fr);width:100vw;height:100vh} >> "%TouchFile%"
+echo .cell{border:1px solid #333;transition:0s}.touched{background:#0f0;box-shadow:0 0 10px #0f0;border-color:#0f0} >> "%TouchFile%"
+echo #info{position:absolute;top:50%%;left:50%%;transform:translate(-50%%,-50%%);color:#fff;pointer-events:none;text-align:center;mix-blend-mode:difference} >> "%TouchFile%"
+echo h1{font-size:40px;margin:0}p{color:#aaa}^</style^>^</head^> >> "%TouchFile%"
+echo ^<body^>^<div id="info"^>^<h1^>TOUCH TEST^</h1^>^<p^>Swipe to fill squares^</p^>^</div^>^<div id="grid"^>^</div^> >> "%TouchFile%"
+echo ^<script^>const grid=document.getElementById('grid');for(let i=0;i^<240;i++){let d=document.createElement('div');d.className='cell';grid.appendChild(d);} >> "%TouchFile%"
+echo function act(e){e.preventDefault();let t=e.touches^|^|[e];for(let i=0;i^<t.length;i++){let el=document.elementFromPoint(t[i].clientX,t[i].clientY);if(el^&^&el.classList.contains('cell'))el.classList.add('touched');}check();} >> "%TouchFile%"
+echo function check(){let t=document.querySelectorAll('.cell').length;let a=document.querySelectorAll('.touched').length;let p=Math.round((a/t)*100);document.querySelector('#info h1').innerText=p+'%%';if(p==100)document.querySelector('#info h1').style.color='#0f0';} >> "%TouchFile%"
+echo window.addEventListener('touchmove',act,{passive:false});window.addEventListener('mousemove',function(e){if(e.buttons==1)act(e);});^</script^>^</body^>^</html^> >> "%TouchFile%"
+
+echo %PAD%%Green%[OK] Launching... Press F11 for Full Screen.%Reset%
+start "" "%TouchFile%"
+set "mark_Touch=[OK]"
+timeout /t 2 >nul
+goto Menu_Hardware
+
 :StressTest
 cls
 echo.
@@ -253,7 +238,7 @@ goto Menu_Hardware
 
 :CheckWarranty
 cls
-echo %PAD%%Cyan%Detecting Serial Number...%Reset%
+echo %PAD%%Cyan%Detecting Serial...%Reset%
 for /f "usebackq delims=" %%a in (`powershell -Command "(Get-WmiObject Win32_Bios).SerialNumber"`) do set "SN=%%a"
 for /f "usebackq delims=" %%a in (`powershell -Command "(Get-WmiObject Win32_ComputerSystem).Manufacturer"`) do set "MFG=%%a"
 echo.
@@ -361,54 +346,41 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ AUTO-PILOT: SYSTEM PREP ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Red%[WARNING] This will run ALL setup steps automatically.%Reset%
-echo %PAD%Apps & Games are SKIPPED (Install them from Software Hub).
-echo.
+echo %PAD%%Red%[WARNING] Optimizing Windows (No Apps)...%Reset%
 echo %PAD%%Green%   Initiating Auto-Pilot Mode...%Reset%
 call :Speak "Initiating System Preparation."
 echo.
 timeout /t 2 >nul
 
 :: --- STEP 1: RESTORE POINT ---
-echo %PAD%%Yellow%[1/7] Creating Backup Point...%Reset%
+echo %PAD%%Yellow%[1/6] Creating Backup...%Reset%
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_Prep' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 
 :: --- STEP 2: BOOST & TIME ---
-echo %PAD%%Yellow%[2/7] Tuning System (Time/Hibernate)...%Reset%
+echo %PAD%%Yellow%[2/6] Tuning System...%Reset%
 powercfg -h off >nul 2>&1
 net start w32time >nul 2>&1
 w32tm /resync >nul 2>&1
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
 
 :: --- STEP 3: BLOATWARE ---
-echo %PAD%%Yellow%[3/7] Removing Bloatware...%Reset%
-echo %PAD%%Green%   Removing Xbox, Solitaire, Skype, Bing...%Reset%
+echo %PAD%%Yellow%[3/6] Removing Bloatware...%Reset%
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 
 :: --- STEP 4: ACTIVATION (OEM) ---
-echo %PAD%%Yellow%[4/7] Checking Original Activation...%Reset%
+echo %PAD%%Yellow%[4/6] Checking OEM Key...%Reset%
 set "BiosKey="
 for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
-if not "%BiosKey%"=="" (
-    echo %PAD%      Key Found. Activating...
-    cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1
-    cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1
-) else (
-    echo %PAD%      No OEM Key found. Skipping.
-)
+if not "%BiosKey%"=="" (cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1 & cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1)
 
 :: --- STEP 5: ICONS & BRANDING ---
-echo %PAD%%Yellow%[5/7] Applying Desktop Icons & Branding...%Reset%
+echo %PAD%%Yellow%[5/6] Branding & Icons...%Reset%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
-call :AddContextSupport >nul 2>&1
 
 :: --- STEP 6: CLEANUP ---
-echo %PAD%%Yellow%[6/7] Cleaning Temp Files...%Reset%
+echo %PAD%%Yellow%[6/6] Cleanup & Restart UI...%Reset%
 del /s /f /q %temp%\*.* >nul 2>&1
-
-:: --- STEP 7: RESTART EXPLORER ---
-echo %PAD%%Yellow%[7/7] Refreshing Interface...%Reset%
 taskkill /f /im explorer.exe >nul 2>&1
 start explorer.exe
 
@@ -419,8 +391,8 @@ set "mark_Icons=[OK]"
 set "mark_BrandClick=[OK]"
 
 echo.
-echo %PAD%%Green%[SUCCESS] System Optimized. Install Apps Manually.%Reset%
-call :Speak "System Ready."
+echo %PAD%%Green%[SUCCESS] System Optimized.%Reset%
+call :Speak "Ready."
 pause
 goto Menu_Windows
 
@@ -432,12 +404,11 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ DESKTOP BRANDING SETUP ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Yellow%Adding 'Contact Montag Support' to context menu...%Reset%
-call :AddContextSupport
+echo %PAD%%Yellow%Note: Branding is now applied automatically during FINAL REPORT.%Reset%
 echo.
-echo %PAD%%Green%[OK] Added successfully! Check your Right-Click.%Reset%
+echo %PAD%%Green%[OK] Ready.%Reset%
 set "mark_BrandClick=[OK]"
-timeout /t 3 >nul
+timeout /t 2 >nul
 goto Menu_Windows
 
 :QuickBoost
@@ -448,18 +419,17 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ QUICK SYSTEM TUNE-UP ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Yellow%[1/3] Disabling Hibernation (Free Space)...%Reset%
+echo %PAD%%Yellow%[1/3] Disabling Hibernation...%Reset%
 powercfg -h off >nul 2>&1
 echo %PAD%%Green%      Done.%Reset%
 echo.
-echo %PAD%%Yellow%[2/3] Syncing Time (Fix SSL Errors)...%Reset%
+echo %PAD%%Yellow%[2/3] Syncing Time...%Reset%
 net start w32time >nul 2>&1
 w32tm /resync >nul 2>&1
 echo %PAD%%Green%      Done.%Reset%
 echo.
 echo %PAD%%Yellow%[3/3] Disabling Sticky Keys...%Reset%
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
-reg add "HKCU\Control Panel\Accessibility\ToggleKeys" /v Flags /t REG_SZ /d "58" /f >nul 2>&1
 echo %PAD%%Green%      Done.%Reset%
 echo.
 set "mark_Boost=[OK]"
@@ -475,30 +445,11 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ SYSTEM CLEANUP MANAGER ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-:: --- 1. SAFETY FIRST ---
-echo %PAD%%Yellow%[1/3] Creating System Restore Point (Safety)...%Reset%
-powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_Clean_Backup' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
-if %errorlevel%==0 (echo %PAD%%Green%      Success! Backup created.%Reset%) else (echo %PAD%%Red%      Skipped (Admin rights needed).%Reset%)
-echo.
-:: --- 2. TEMP CLEANUP ---
-echo %PAD%%Yellow%[2/3] Cleaning Temporary Junk Files...%Reset%
-del /s /f /q %temp%\*.* >nul 2>&1
-rd /s /q %temp% >nul 2>&1
-echo %PAD%%Green%      Temp Files Deleted.%Reset%
-echo.
-:: --- 3. BLOATWARE REMOVAL ---
-echo %PAD%%Yellow%[3/3] Removing Bloatware Apps...%Reset%
-echo %PAD%      - Removing Xbox & Solitaire...
-powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-echo %PAD%      - Removing 3D Viewer & Paint 3D...
-powershell -Command "Get-AppxPackage *3d* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-echo %PAD%      - Removing Maps & News...
-powershell -Command "Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *maps* | Remove-AppxPackage -ErrorAction SilentlyContinue"
-echo %PAD%      - Removing Skype & Feedback...
-powershell -Command "Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *feedback* | Remove-AppxPackage -ErrorAction SilentlyContinue"
+echo %PAD%%Yellow%Removing Bloatware (Xbox, Skype, etc)...%Reset%
+powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue"
 set "mark_Bloat=[OK]"
 echo.
-echo %PAD%%Green%[OK] System Cleaned & Secured.%Reset%
+echo %PAD%%Green%[OK] Cleaned.%Reset%
 timeout /t 3 >nul
 goto Menu_Windows
 
@@ -508,20 +459,11 @@ echo.
 echo %PAD%%Cyan%Searching for BIOS Product Key...%Reset%
 set "BiosKey="
 for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
-
-if "%BiosKey%"=="" (
-    echo.
-    echo %PAD%%Red%[ERROR] No Original BIOS Key Found.%Reset%
-    pause
-) else (
-    echo.
-    echo %PAD%%Green%[OK] Key Found: %White%%BiosKey%%Reset%
-    echo %PAD%Installing Key...
+if "%BiosKey%"=="" (echo %PAD%%Red%[ERROR] No Key Found.%Reset% & pause) else (
+    echo %PAD%%Green%[OK] Key Found.%Reset%
     cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey%
-    echo %PAD%Activating Online...
     cscript //nologo %windir%\system32\slmgr.vbs /ato
-    echo.
-    echo %PAD%%Green%[SUCCESS] Activation Command Sent.%Reset%
+    echo %PAD%%Green%[SUCCESS] Activated.%Reset%
     set "mark_Active=[OK]"
     timeout /t 3 >nul
 )
@@ -534,7 +476,6 @@ echo %PAD%%Magenta%[ CLIENT PERSONALIZATION ]%Reset%
 set "ClientName="
 set /p ClientName="%PAD%Enter Client Name: "
 if "%ClientName%"=="" goto Menu_Windows
-echo %PAD%Processing...
 powershell -Command "Rename-Computer -NewName '%ClientName%-PC' -Force -ErrorAction SilentlyContinue"
 net user "%USERNAME%" /fullname:"%ClientName%" >nul 2>&1
 wmic useraccount where name="%USERNAME%" rename "%ClientName%" >nul 2>&1
@@ -558,7 +499,6 @@ goto Menu_Windows
 
 :WinUpdate
 start ms-settings:windowsupdate & goto Menu_Windows
-
 :: ============================================================
 :: [3] DRIVERS MENU
 :: ============================================================
@@ -599,15 +539,9 @@ set "PSDr=%TEMP%\DrvBack.ps1"
 if exist "%PSDr%" del "%PSDr%"
 echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Backup' >> "%PSDr%"
 echo Write-Host "`n   DRIVER BACKUP" -ForegroundColor Magenta >> "%PSDr%"
-echo $model = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
-echo Write-Host "   Detected: $model" -ForegroundColor Yellow >> "%PSDr%"
 echo $drv = Read-Host "`n   Enter Drive (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
-echo $name = "$model".Replace(" ", "_") + "_Drivers" >> "%PSDr%"
-echo $finalPath = "$($drv):\$name" >> "%PSDr%"
-echo New-Item -ItemType Directory -Force -Path $finalPath ^| Out-Null >> "%PSDr%"
-echo Write-Host "`n   Backing up..." -ForegroundColor Green >> "%PSDr%"
-echo pnputil /export-driver * "$finalPath" >> "%PSDr%"
+echo pnputil /export-driver * "$($drv):\Drivers_Backup" >> "%PSDr%"
 echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
 echo Read-Host "`n   Press Enter..." >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
@@ -622,27 +556,15 @@ echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Restore' >> "%PSDr%"
 echo Write-Host "`n   DRIVER RESTORE" -ForegroundColor Magenta >> "%PSDr%"
 echo $drv = Read-Host "   Enter Source Drive (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
-echo $term = Read-Host "   Search Term (empty for auto)" >> "%PSDr%"
-echo if (-not $term) { $term = (Get-WmiObject Win32_ComputerSystem).Model.Trim() } >> "%PSDr%"
-echo $pattern = "*" + $term.Replace(" ", "*") + "*" >> "%PSDr%"
-echo Write-Host "   Searching..." -ForegroundColor Yellow >> "%PSDr%"
-echo try { $folder = Get-ChildItem -Path "$($drv):\" -Directory -Recurse -Filter $pattern -ErrorAction SilentlyContinue ^| Select-Object -First 1 } catch { $folder = $null } >> "%PSDr%"
-echo if ($folder) { >> "%PSDr%"
-echo     Write-Host "   [FOUND] $($folder.FullName)" -ForegroundColor Green >> "%PSDr%"
-echo     $conf = Read-Host "   Install? (Y/N)" >> "%PSDr%"
-echo     if ($conf -eq 'Y' -or $conf -eq 'y') { >> "%PSDr%"
-echo         Write-Host "   Installing..." -ForegroundColor Magenta >> "%PSDr%"
-echo         Start-Process pnputil -ArgumentList "/add-driver `"$($folder.FullName)\*.inf`" /subdirs /install" -NoNewWindow -Wait >> "%PSDr%"
-echo         Write-Host "   [OK] Done." -ForegroundColor Green >> "%PSDr%"
-echo         Read-Host "   Press Enter to restart later..." >> "%PSDr%"
-echo     } >> "%PSDr%"
-echo } else { Write-Host "   [ERROR] Not found." -ForegroundColor Red; Read-Host "   Press Enter..." } >> "%PSDr%"
+echo pnputil /add-driver "$($drv):\Drivers_Backup\*.inf" /subdirs /install >> "%PSDr%"
+echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
+echo Read-Host "`n   Press Enter..." >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%"
 goto Menu_Drivers
 
 :: ============================================================
-:: [4] SOFTWARE MENU (MODULAR & EXTERNAL)
+:: [4] SOFTWARE MENU
 :: ============================================================
 :Menu_Software
 cls
@@ -687,7 +609,6 @@ echo %PAD%%Yellow%Downloading Office Module...%Reset%
 curl -L -k -# -o "%ToolDir%\MontagOffice.bat" "%UrlOfficeScript%"
 if exist "%ToolDir%\MontagOffice.bat" (
     echo %PAD%%Green%[OK] Launching in New Window...%Reset%
-    :: !!! EXTERNAL LAUNCH !!!
     start "Montag Office Suite" cmd /c "%ToolDir%\MontagOffice.bat"
     set "mark_Office=[OK]"
 ) else ( echo %PAD%%Red%[ERROR] Download Failed.%Reset% & pause )
@@ -700,7 +621,6 @@ echo %PAD%%Yellow%Downloading Apps Module...%Reset%
 curl -L -k -# -o "%ToolDir%\MontagApps.bat" "%UrlAppsScript%"
 if exist "%ToolDir%\MontagApps.bat" (
     echo %PAD%%Green%[OK] Launching in New Window...%Reset%
-    :: !!! EXTERNAL LAUNCH !!!
     start "Montag Apps Installer" cmd /c "%ToolDir%\MontagApps.bat"
     set "mark_Apps=[OK]"
 ) else ( echo %PAD%%Red%[ERROR] Download Failed.%Reset% & pause )
@@ -783,14 +703,12 @@ timeout /t 3 >nul
 goto MainMenu
 
 :: ============================================================
-:: REPORT GENERATOR (FIXED: EXTERNAL WINDOW)
+:: REPORT GENERATOR (SAFE LAUNCH METHOD)
 :: ============================================================
 :FinalReport
-echo %PAD%%Cyan%Deep Scanning System Specs...%Reset%
-call :SilentIconSetup
-call :ApplyBranding
-call :AddContextSupport
+echo %PAD%%Cyan%Collecting Test Results...%Reset%
 
+:: --- 1. BUILD STATUS STRING ---
 set "TEST_LOG="
 if "!mark_Key!"=="[OK]" set "TEST_LOG=!TEST_LOG! Key:OK"
 if "!mark_Screen!"=="[OK]" set "TEST_LOG=!TEST_LOG! Screen:OK"
@@ -810,25 +728,29 @@ if "!mark_DriverBack!"=="[OK]" set "TEST_LOG=!TEST_LOG! DrvBack:OK"
 if "!mark_CheckWin!"=="[OK]" set "TEST_LOG=!TEST_LOG! WinCheck:OK"
 if "!mark_Office!"=="[OK]" set "TEST_LOG=!TEST_LOG! Office:OK"
 if "!mark_OffClean!"=="[OK]" set "TEST_LOG=!TEST_LOG! OffScrub:OK"
+if "!mark_Touch!"=="[OK]" set "TEST_LOG=!TEST_LOG! Touch:OK"
 
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 
-:: --- CALL EXTERNAL REPORT (NEW METHOD) ---
+:: --- 2. SAVE STATUS TO FILE (PREVENTS CRASHES) ---
+echo !TEST_LOG! > "%ToolDir%\MontagLog.txt"
+
+:: --- 3. DOWNLOAD & RUN REPORT SCRIPT ---
 echo.
-echo %PAD%%Yellow%Downloading Report Module...%Reset%
+echo %PAD%%Yellow%Loading Montag Report System...%Reset%
 curl -L -k -# -o "%ToolDir%\MontagReport.bat" "%UrlReportScript%"
+
 if exist "%ToolDir%\MontagReport.bat" (
-    echo %PAD%%Green%[OK] Opening Report Interface...%Reset%
-    :: This opens a separate window so the main script doesn't glitch
-    start "Montag Report Generator" cmd /c "%ToolDir%\MontagReport.bat" "!TEST_LOG!"
+    echo %PAD%%Green%[OK] Handing over control...%Reset%
+    :: Launch without arguments (it reads the file now)
+    start "Montag Report" "%ToolDir%\MontagReport.bat"
 ) else (
     echo %PAD%%Red%[ERROR] Failed to load Report Module.%Reset%
     pause
 )
 
 echo.
-echo %PAD%%Green%[OK] Process Launched in New Window.%Reset%
-timeout /t 3 >nul
+timeout /t 2 >nul
 goto MainMenu
 
 :ExitCleanup
@@ -837,36 +759,6 @@ start "" /Min cmd /C "timeout /t 2 >nul & rmdir /s /q "%ToolDir%""
 exit
 
 :: --- SUB-FUNCTIONS ---
-:SilentIconSetup
-set "SLink=%USERPROFILE%\Desktop\Montag Support.url"
-set "IconPath=%IconDir%\Montag.ico"
-(
-echo [InternetShortcut]
-echo URL=https://wa.me/%TechSupportNumber%
-if exist "%IconPath%" (
-    echo IconIndex=0
-    echo IconFile=%IconPath%
-) else (
-    echo IconIndex=23
-    echo IconFile=C:\Windows\System32\shell32.dll
-)
-) > "%SLink%"
-exit /b
-
-:AddContextSupport
-reg add "HKCR\DesktopBackground\Shell\MontagSupport" /ve /t REG_SZ /d "Contact Montag Support" /f >nul 2>&1
-reg add "HKCR\DesktopBackground\Shell\MontagSupport" /v "Icon" /t REG_SZ /d "%IconDir%\Montag.ico" /f >nul 2>&1
-reg add "HKCR\DesktopBackground\Shell\MontagSupport\command" /ve /t REG_SZ /d "explorer \"https://wa.me/%TechSupportNumber%\"" /f >nul 2>&1
-exit /b
-
-:ApplyBranding
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v Manufacturer /t REG_SZ /d "%BrandName%" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v Model /t REG_SZ /d "Certified Refurbished" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportPhone /t REG_SZ /d "%BrandPhone%" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportURL /t REG_SZ /d "%BrandURL%" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v SupportHours /t REG_SZ /d "%BrandHours%" /f >nul 2>&1
-exit /b
-
 :Speak
 powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
 exit /b
@@ -882,7 +774,7 @@ echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═�
 exit /b
 
 :: ============================================================
-::  UNIFIED POWERSHELL ENGINE (NO ECHO HAZARDS)
+::  UNIFIED POWERSHELL ENGINE
 :: ============================================================
 :::__POWERSHELL_START__:::
 param($Task, $TesterName, $StatusLog, $FormID)
