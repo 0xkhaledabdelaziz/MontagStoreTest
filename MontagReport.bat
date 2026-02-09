@@ -3,18 +3,19 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] PREP & ARGS
+:: [0] PREPARATION & CONFIG
 :: ============================================================
 chcp 65001 >nul
 cd /d "%~dp0"
 mode con: cols=100 lines=30
-title Montag Store - Report Generator
+title Montag Store - Report Generator (Original Design)
 color 0B
 
-:: Receive Status Log from Main Script
+:: Receive Status Log from Main Script (Passed as Argument)
 set "IncomingLog=%~1"
-if "%IncomingLog%"=="" set "IncomingLog=Manual Run - No Data"
+if "%IncomingLog%"=="" set "IncomingLog=Manual Inspection - No Data"
 
+:: Google Form ID (From your original script)
 set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
 
 :: --- EXTRACT REPORT ENGINE ---
@@ -29,43 +30,90 @@ more +%StartLine% "%~f0" > "%ReportEngine%"
 cls
 echo.
 echo      [96m=============================================[0m
-echo      [97m        GENERATING SYSTEM REPORT...          [0m
+echo      [95m      MONTAG STORE - SYSTEM INSPECTION       [0m
 echo      [96m=============================================[0m
 echo.
-echo      [93m[!] Gathering Hardware IDs...[0m
-echo      [93m[!] Analyzing Performance...[0m
-echo      [93m[!] Preparing Google Form...[0m
+echo      [93m[!] Analyzing Processor & Cache...[0m
+echo      [93m[!] scanning Memory Modules...[0m
+echo      [93m[!] Reading GPU Registry Keys...[0m
+echo      [93m[!] Building HTML Interface...[0m
 echo.
 
 powershell -ExecutionPolicy Bypass -File "%ReportEngine%" -StatusLog "%IncomingLog%" -FormID "%GFormID%"
 
-echo.
-echo      [92m[OK] Report Interface Closed.[0m
-timeout /t 2 >nul
-exit /b
+:: Close window automatically after report is generated/closed
+exit
 
 :: ============================================================
-::  POWERSHELL REPORT ENGINE
+::  POWERSHELL REPORT ENGINE (ORIGINAL LOGIC)
 :: ============================================================
 :::__REPORT_START__:::
 param($StatusLog, $FormID)
 $ErrorActionPreference = 'SilentlyContinue'
 
-# --- GATHER SPECS ---
+# --- 1. GATHER SPECS (EXACTLY AS IN ORIGINAL SCRIPT) ---
 $sys = Get-CimInstance Win32_ComputerSystem
-$bios = Get-CimInstance Win32_Bios
 $cpu = Get-CimInstance Win32_Processor
-$mem = Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum
-$ram = [math]::Round($mem.Sum / 1GB, 1)
-$dsk = [math]::Round((Get-CimInstance Win32_DiskDrive | Select-Object -First 1).Size / 1GB)
-$gpu = Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name -First 1
-$FullModel = "$($sys.Manufacturer) $($sys.Model)".Trim()
-$cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores"
-$ramDetails = "$ram GB"
-$storageString = "$($dsk) GB"
-$gpuString = "$gpu"
+$bios = Get-CimInstance Win32_Bios
 
-# --- GENERATE HTML UI ---
+# Model Logic
+$Man = $sys.Manufacturer.Trim()
+$Mod = $sys.Model.Trim()
+if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" }
+
+# CPU Logic (Detailed)
+$maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
+$cacheMB = [int]($cpu.L3CacheSize / 1024)
+if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
+$cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache"
+
+# RAM Logic (Detailed Speed & Count)
+$mem = Get-CimInstance Win32_PhysicalMemory
+$memArray = @($mem)
+$stickCount = $memArray.Count
+$totalRam = [math]::Round(($memArray | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
+$ramSpeed = 0
+foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }
+if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" }
+$ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz"
+
+# Storage Logic (All Drives)
+$disks = Get-CimInstance Win32_DiskDrive
+$diskList = @()
+foreach ($d in $disks) { 
+    $s = [math]::Round($d.Size / 1GB, 0)
+    $diskList += "$($d.Model) ($s GB)" 
+}
+$storageString = $diskList -join " | "
+
+# GPU Logic (Registry Deep Scan - The "Original" Method)
+$gpuList = @()
+$regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
+    $props = Get-ItemProperty $_.PSPath
+    if ($props.DriverDesc) {
+        $size = 0
+        if ($props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
+        elseif ($props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
+        $gb = [math]::Round($size / 1GB)
+        
+        if ($gb -gt 0) { 
+            $gpuList += "$($props.DriverDesc) ($gb GB)" 
+        } else {
+            # Fallback to WMI if Registry size is missing
+            $wmi = Get-CimInstance Win32_VideoController | Where-Object { $_.Description -eq $props.DriverDesc } | Select-Object -First 1
+            if ($wmi.AdapterRAM -gt 0) {
+                $wmiGB = [math]::Round($wmi.AdapterRAM / 1GB)
+                if($wmiGB -gt 0) { $gpuList += "$($props.DriverDesc) ($wmiGB GB)" } else { $gpuList += $props.DriverDesc }
+            } else { 
+                $gpuList += $props.DriverDesc 
+            }
+        }
+    }
+}
+$gpuString = ($gpuList | Select-Object -Unique) -join " + "
+
+# --- 2. GENERATE HTML UI (ORIGINAL CYBERPUNK DESIGN) ---
 $htmlContent = @"
 <!DOCTYPE html>
 <html lang="en">
@@ -74,8 +122,7 @@ $htmlContent = @"
 <title>Montag Store System</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-    body { background-color: #050505; color: #8f00ff; font-family: 'Share Tech Mono', monospace; text-align: center; padding: 20px; overflow-x: hidden; 
-           background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; }
+    body { background-color: #050505; color: #8f00ff; font-family: 'Share Tech Mono', monospace; text-align: center; padding: 20px; overflow-x: hidden; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; }
     .container { max-width: 700px; margin: auto; background: rgba(20, 20, 20, 0.9); padding: 30px; border: 1px solid #333; box-shadow: 0 0 20px rgba(143, 0, 255, 0.2); border-radius: 10px; position: relative; }
     .glitch-header { font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff; letter-spacing: 3px; margin-bottom: 20px; animation: glitch 1s infinite alternate; color: #fff; }
     @keyframes glitch { 0% { text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff; } 100% { text-shadow: -2px -2px 0px #ff00ff, 2px 2px 0px #00ffff; } }
@@ -146,5 +193,5 @@ $htmlContent = @"
 </body>
 </html>
 "@
-$htmlContent | Out-File "$env:TEMP\SystemReport.html" -Encoding UTF8
-Start-Process "$env:TEMP\SystemReport.html"
+$htmlContent | Out-File "$env:TEMP\MontagReport.html" -Encoding UTF8
+Start-Process "$env:TEMP\MontagReport.html"
