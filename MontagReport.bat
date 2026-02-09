@@ -8,12 +8,8 @@ setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 chcp 65001 >nul
 mode con: cols=80 lines=25
-title Montag Store - Sales & Finishing System
+title Montag Store - Sales & Finishing System (Reading Logs)
 color 0B
-
-:: Receive Status Log from Main Script
-set "IncomingLog=%~1"
-if "%IncomingLog%"=="" set "IncomingLog=Manual Inspection"
 
 :: Google Form ID
 set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
@@ -22,8 +18,16 @@ set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
 set "IconPath=%ProgramData%\MontagStore\Montag.ico"
 set "SupportNum=201040901444"
 
+:: --- [CRITICAL FIX] READ STATUS FROM LOG FILE ---
+set "LogFile=%SystemDrive%\MontagTools\MontagLog.txt"
+set "IncomingLog=Manual Inspection"
+
+if exist "%LogFile%" (
+    set /p IncomingLog=<"%LogFile%"
+)
+
 :: ============================================================
-:: [1] APPLY SYSTEM BRANDING (CLEAN)
+:: [1] APPLY SYSTEM BRANDING
 :: ============================================================
 cls
 echo.
@@ -53,6 +57,7 @@ more +%StartLine% "%~f0" > "%ReportEngine%"
 echo      [3/3] Launching Sales Interface...
 echo.
 
+:: Pass the read log to PowerShell
 powershell -ExecutionPolicy Bypass -File "%ReportEngine%" -StatusLog "%IncomingLog%" -FormID "%GFormID%" -IconPath "%IconPath%"
 
 exit
@@ -73,7 +78,7 @@ $Man = $sys.Manufacturer.Trim()
 $Mod = $sys.Model.Trim()
 if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" }
 
-# CPU (Full Details)
+# CPU
 $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
 $cacheMB = [int]($cpu.L3CacheSize / 1024)
 if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
@@ -89,7 +94,7 @@ foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSp
 if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" }
 $ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz"
 
-# Storage (STRICT FILTER: Fixed Hard Disk + NO USB)
+# Storage
 $disks = Get-CimInstance Win32_DiskDrive | Where-Object { 
     ($_.MediaType -eq 'Fixed hard disk media') -and 
     ($_.InterfaceType -ne 'USB') -and 
