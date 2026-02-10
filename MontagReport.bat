@@ -8,23 +8,29 @@ setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 chcp 65001 >nul
 mode con: cols=80 lines=25
-title Montag Store - Sales & Finishing System (Reading Logs)
+title Montag Store - Sales & Finishing System (Purple Logo)
 color 0B
 
 :: Google Form ID
 set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
 
-:: Path to Montag Icon
-set "IconPath=%ProgramData%\MontagStore\Montag.ico"
+:: Paths & URLs
+set "IconDir=%ProgramData%\MontagStore"
+set "IconPath=%IconDir%\Montag.ico"
+set "LogoPath=%IconDir%\Logo.png"
 set "SupportNum=201040901444"
 
-:: --- [CRITICAL FIX] READ STATUS FROM LOG FILE ---
+:: New Logo URL (Purple)
+set "UrlLogo=https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.png?rlkey=b8n5e732fsepkadzg7y10gj1k&st=7q4k6jll&dl=1"
+
+:: --- DOWNLOAD ASSETS (Icon + New Logo) ---
+if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
+if not exist "%LogoPath%" curl -L -k -s -o "%LogoPath%" "%UrlLogo%" >nul 2>&1
+
+:: --- READ STATUS FROM LOG FILE ---
 set "LogFile=%SystemDrive%\MontagTools\MontagLog.txt"
 set "IncomingLog=Manual Inspection"
-
-if exist "%LogFile%" (
-    set /p IncomingLog=<"%LogFile%"
-)
+if exist "%LogFile%" (set /p IncomingLog=<"%LogFile%")
 
 :: ============================================================
 :: [1] APPLY SYSTEM BRANDING
@@ -57,15 +63,14 @@ more +%StartLine% "%~f0" > "%ReportEngine%"
 echo      [3/3] Launching Sales Interface...
 echo.
 
-:: Pass the read log to PowerShell
-powershell -ExecutionPolicy Bypass -File "%ReportEngine%" -StatusLog "%IncomingLog%" -FormID "%GFormID%" -IconPath "%IconPath%"
+powershell -ExecutionPolicy Bypass -File "%ReportEngine%" -StatusLog "%IncomingLog%" -FormID "%GFormID%" -IconPath "%IconPath%" -LogoPath "%LogoPath%"
 
 exit
 :: ============================================================
 ::  POWERSHELL REPORT ENGINE
 :: ============================================================
 :::__REPORT_START__:::
-param($StatusLog, $FormID, $IconPath)
+param($StatusLog, $FormID, $IconPath, $LogoPath)
 $ErrorActionPreference = 'SilentlyContinue'
 
 # --- 1. GATHER SPECS ---
@@ -120,7 +125,7 @@ Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
 }
 $gpuString = ($gpuList | Select-Object -Unique) -join " + "
 
-# Branding Logic
+# Laptop Brand Logo Logic
 $LaptopLogo = "https://cdn-icons-png.flaticon.com/512/900/900782.png"
 $WarrantyLink = "https://www.google.com/search?q=$($bios.SerialNumber)+warranty"
 if ($Man -match "Dell") { 
@@ -222,10 +227,11 @@ if (-not (Test-Path $ReportDir)) { New-Item -ItemType Directory -Path $ReportDir
 # This file stays hidden in C:
 $RealHtmlFile = "$ReportDir\Montag_$($bios.SerialNumber).html"
 
-# SANITIZE MODEL NAME (Remove illegal chars for filename safety)
+# SANITIZE MODEL NAME
 $SafeModel = $FullModel -replace '[\\/:*?"<>|]',' '
 $DesktopShortcut = "$env:USERPROFILE\Desktop\Report - $SafeModel.url"
 
+# IMPORTANT: Increased Both Logos Sizes
 $ClientReport = @"
 <!DOCTYPE html>
 <html lang="en">
@@ -237,8 +243,8 @@ $ClientReport = @"
 body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 40px; }
 .container { max-width: 700px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
 .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
-.laptop-logo { height: 40px; opacity: 0.8; }
-.montag-title { color: #333; font-size: 24px; font-weight: bold; }
+.brand-logo { height: 100px; width: auto; } /* Montag Logo */
+.laptop-logo { height: 90px; width: auto; } /* Laptop Brand Logo (Increased to 90px) */
 .specs-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 .specs-table td { padding: 12px; border-bottom: 1px solid #eee; }
 .specs-table td:first-child { font-weight: bold; color: #666; width: 140px; }
@@ -254,8 +260,8 @@ body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 40px; 
 <body>
 <div class="container">
     <div class="header">
-        <div class="montag-title">MONTAG STORE</div>
-        <img src="$LaptopLogo" class="laptop-logo">
+        <img src="$LogoPath" class="brand-logo" alt="Montag Store">
+        <img src="$LaptopLogo" class="laptop-logo" alt="$Man">
     </div>
     <table class="specs-table">
         <tr><td>Model</td><td>$FullModel</td></tr>
