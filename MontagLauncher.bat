@@ -353,12 +353,11 @@ echo.
 timeout /t 2 >nul
 
 :: --- STEP 1: RESTORE POINT ---
-echo %PAD%%Yellow%[1/6] Creating Backup...%Reset%
+echo %PAD%%Yellow%[1/7] Creating Backup...%Reset%
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_Prep' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 
 :: --- STEP 2: HIGH PERFORMANCE & NO SLEEP ---
-:: Using ^& to prevent batch error
-echo %PAD%%Yellow%[2/6] Power ^& Performance...%Reset%
+echo %PAD%%Yellow%[2/7] Power ^& Performance...%Reset%
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0
 powercfg /change standby-timeout-ac 0
@@ -366,43 +365,46 @@ powercfg -h off >nul 2>&1
 set "mark_HighPerf=[OK]"
 
 :: --- STEP 3: ARABIC KEYBOARD & EGYPT REGION ---
-echo %PAD%%Yellow%[3/6] Language ^& Region...%Reset%
+echo %PAD%%Yellow%[3/7] Language ^& Region...%Reset%
 powershell -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}" >nul 2>&1
 tzutil /s "Egypt Standard Time" >nul 2>&1
 set "mark_Arab=[OK]"
 
 :: --- STEP 4: REMOVE BLOATWARE ---
-echo %PAD%%Yellow%[4/6] Removing Bloatware...%Reset%
+echo %PAD%%Yellow%[4/7] Removing Bloatware...%Reset%
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 set "mark_Bloat=[OK]"
 
 :: --- STEP 5: ACTIVATE ORIGINAL KEY (OEM) ---
-echo %PAD%%Yellow%[5/6] Checking Activation...%Reset%
+echo %PAD%%Yellow%[5/7] Checking Activation...%Reset%
 set "BiosKey="
 for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
 if not "%BiosKey%"=="" (cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1 & cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1)
 set "mark_Active=[OK]"
 
-:: --- STEP 6: ICONS & BRANDING PREP ---
-echo %PAD%%Yellow%[6/6] Finishing Touches...%Reset%
-:: Desktop Icons
+:: --- STEP 6: ICONS & RIGHT-CLICK BRAND ---
+echo %PAD%%Yellow%[6/7] Branding ^& Icons...%Reset%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
-:: Note: Right Click Brand is applied in the Final Report, but we mark it here as planned
+:: Force add right click branding here
+call :AddContextSupport >nul 2>&1
 set "mark_BrandClick=[OK]"
 
-:: Cleanup & Restart UI
+:: --- STEP 7: CLEANUP ---
+echo %PAD%%Yellow%[7/7] Cleanup ^& Restart UI...%Reset%
 del /s /f /q %temp%\*.* >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1
-start explorer.exe
+start "" explorer.exe
 
 set "mark_Auto=[OK]"
 set "mark_Boost=[OK]"
+set "mark_Icons=[OK]"
 
 echo.
 echo %PAD%%Green%[SUCCESS] System Optimized.%Reset%
 call :Speak "Ready."
-pause
+echo %PAD%%Yellow%Returning to menu in 3 seconds...%Reset%
+timeout /t 3 >nul
 goto Menu_Windows
 
 :AddRightClickBrand
@@ -413,9 +415,10 @@ echo %PAD%%Cyan%================================================================
 echo %PAD%                              [ DESKTOP BRANDING SETUP ]
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Yellow%Note: Branding is now applied automatically during FINAL REPORT.%Reset%
+echo %PAD%%Yellow%Adding 'Contact Montag Support' to context menu...%Reset%
+call :AddContextSupport
 echo.
-echo %PAD%%Green%[OK] Ready.%Reset%
+echo %PAD%%Green%[OK] Added successfully! Check your Right-Click.%Reset%
 set "mark_BrandClick=[OK]"
 timeout /t 2 >nul
 goto Menu_Windows
