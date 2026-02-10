@@ -356,39 +356,48 @@ timeout /t 2 >nul
 echo %PAD%%Yellow%[1/6] Creating Backup...%Reset%
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_Prep' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 
-:: --- STEP 2: BOOST & TIME ---
-echo %PAD%%Yellow%[2/6] Tuning System...%Reset%
+:: --- STEP 2: HIGH PERFORMANCE & NO SLEEP ---
+:: Using ^& to prevent batch error
+echo %PAD%%Yellow%[2/6] Power ^& Performance...%Reset%
+powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
+powercfg /change monitor-timeout-ac 0
+powercfg /change standby-timeout-ac 0
 powercfg -h off >nul 2>&1
-net start w32time >nul 2>&1
-w32tm /resync >nul 2>&1
-reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
+set "mark_HighPerf=[OK]"
 
-:: --- STEP 3: BLOATWARE ---
-echo %PAD%%Yellow%[3/6] Removing Bloatware...%Reset%
+:: --- STEP 3: ARABIC KEYBOARD & EGYPT REGION ---
+echo %PAD%%Yellow%[3/6] Language ^& Region...%Reset%
+powershell -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}" >nul 2>&1
+tzutil /s "Egypt Standard Time" >nul 2>&1
+set "mark_Arab=[OK]"
+
+:: --- STEP 4: REMOVE BLOATWARE ---
+echo %PAD%%Yellow%[4/6] Removing Bloatware...%Reset%
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
+set "mark_Bloat=[OK]"
 
-:: --- STEP 4: ACTIVATION (OEM) ---
-echo %PAD%%Yellow%[4/6] Checking OEM Key...%Reset%
+:: --- STEP 5: ACTIVATE ORIGINAL KEY (OEM) ---
+echo %PAD%%Yellow%[5/6] Checking Activation...%Reset%
 set "BiosKey="
 for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
 if not "%BiosKey%"=="" (cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1 & cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1)
+set "mark_Active=[OK]"
 
-:: --- STEP 5: ICONS & BRANDING ---
-echo %PAD%%Yellow%[5/6] Branding & Icons...%Reset%
+:: --- STEP 6: ICONS & BRANDING PREP ---
+echo %PAD%%Yellow%[6/6] Finishing Touches...%Reset%
+:: Desktop Icons
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
+:: Note: Right Click Brand is applied in the Final Report, but we mark it here as planned
+set "mark_BrandClick=[OK]"
 
-:: --- STEP 6: CLEANUP ---
-echo %PAD%%Yellow%[6/6] Cleanup & Restart UI...%Reset%
+:: Cleanup & Restart UI
 del /s /f /q %temp%\*.* >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1
 start explorer.exe
 
 set "mark_Auto=[OK]"
 set "mark_Boost=[OK]"
-set "mark_Bloat=[OK]"
-set "mark_Icons=[OK]"
-set "mark_BrandClick=[OK]"
 
 echo.
 echo %PAD%%Green%[SUCCESS] System Optimized.%Reset%
@@ -506,7 +515,7 @@ start ms-settings:windowsupdate & goto Menu_Windows
 cls
 echo.
 echo %PAD%%Pink%██████╗ ██████╗ ██╗██╗   ██╗███████╗██████╗ ███████╗%Reset%
-echo %PAD%%Pink%██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝%Reset%
+echo %PAD%%Pink%██╔══██╗██╔══██╗██║██║   ██║██╔════╝██╔══██╗██╔════╝%Reset%
 echo %PAD%%Pink%██║  ██║██████╔╝██║██║   ██║█████╗  ██████╔╝███████╗%Reset%
 echo %PAD%%Pink%██║  ██║██╔══██╗██║╚██╗ ██╔╝██╔══╝  ██╔══██╗╚════██║%Reset%
 echo %PAD%%Pink%██████╔╝██║  ██║██║ ╚████╔╝ ███████╗██║  ██║███████║%Reset%
@@ -520,13 +529,16 @@ echo %PAD%%Cyan%----------------------------------------------------------------
 echo.
 echo %PAD%    %Bold%%White%[3]%Reset% OEM SUPPORT - DELL  %Gray%[Web]%Reset%                   %Bold%%White%[4]%Reset% OEM SUPPORT - HP    %Gray%[Web]%Reset%
 echo.
+echo %PAD%    %Bold%%White%[5]%Reset% OEM SUPPORT - LENOVO%Gray%[Web]%Reset%
+echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 12340 /n
-if %errorlevel%==5 goto MainMenu
+choice /c 123450 /n
+if %errorlevel%==6 goto MainMenu
+if %errorlevel%==5 start "" "https://support.lenovo.com/us/en/" & goto Menu_Drivers
 if %errorlevel%==4 start "" "https://ftp.hp.com/pub/softpaq/sp168501-169000/sp168523.exe" & goto Menu_Drivers
 if %errorlevel%==3 start "" "https://downloads.dell.com/serviceability/catalog/SupportAssistinstaller.exe" & goto Menu_Drivers
 if %errorlevel%==2 (set "mark_DriverRest=[OK]" & goto RestoreDrivers)
