@@ -509,7 +509,7 @@ goto Menu_Windows
 :WinUpdate
 start ms-settings:windowsupdate & goto Menu_Windows
 :: ============================================================
-:: [3] DRIVERS MENU
+:: [3] DRIVERS MENU (WITH PROGRESS & TIMER)
 :: ============================================================
 :Menu_Drivers
 cls
@@ -550,12 +550,24 @@ cls
 set "PSDr=%TEMP%\DrvBack.ps1"
 if exist "%PSDr%" del "%PSDr%"
 echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Backup' >> "%PSDr%"
-echo Write-Host "`n   DRIVER BACKUP" -ForegroundColor Magenta >> "%PSDr%"
-echo $drv = Read-Host "`n   Enter Drive (e.g. D)" >> "%PSDr%"
+echo Write-Host "`n   DRIVER BACKUP (SMART)" -ForegroundColor Magenta >> "%PSDr%"
+echo $model = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
+echo Write-Host "   Detected Model: $model" -ForegroundColor Yellow >> "%PSDr%"
+echo $drv = Read-Host "`n   Enter Target Drive Letter (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
-echo pnputil /export-driver * "$($drv):\Drivers_Backup" >> "%PSDr%"
-echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
-echo Read-Host "`n   Press Enter..." >> "%PSDr%"
+:: Create folder with Model Name
+echo $name = "$model".Replace(" ", "_") + "_Drivers" >> "%PSDr%"
+echo $finalPath = "$($drv):\$name" >> "%PSDr%"
+echo New-Item -ItemType Directory -Force -Path $finalPath ^| Out-Null >> "%PSDr%"
+echo Write-Host "   Destination: $finalPath" -ForegroundColor Cyan >> "%PSDr%"
+echo Write-Host "`n   Exporting Drivers... (This allows you to see progress)" -ForegroundColor Yellow >> "%PSDr%"
+echo $s = [System.Diagnostics.Stopwatch]::StartNew() >> "%PSDr%"
+:: The magic line: NoNewWindow + Wait allows seeing pnputil output live
+echo Start-Process pnputil -ArgumentList "/export-driver * `"$finalPath`"" -NoNewWindow -Wait >> "%PSDr%"
+echo $s.Stop() >> "%PSDr%"
+echo Write-Host "`n   [OK] Drivers Saved Successfully." -ForegroundColor Green >> "%PSDr%"
+echo Write-Host "   Time Taken: $($s.Elapsed.ToString('mm\:ss'))" -ForegroundColor White >> "%PSDr%"
+echo Read-Host "`n   Press Enter to return..." >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%"
 goto Menu_Drivers
@@ -565,12 +577,31 @@ cls
 set "PSDr=%TEMP%\DrvRest.ps1"
 if exist "%PSDr%" del "%PSDr%"
 echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Restore' >> "%PSDr%"
-echo Write-Host "`n   DRIVER RESTORE" -ForegroundColor Magenta >> "%PSDr%"
-echo $drv = Read-Host "   Enter Source Drive (e.g. D)" >> "%PSDr%"
+echo Write-Host "`n   DRIVER RESTORE (SMART)" -ForegroundColor Magenta >> "%PSDr%"
+echo $drv = Read-Host "   Enter Source Drive Letter (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
-echo pnputil /add-driver "$($drv):\Drivers_Backup\*.inf" /subdirs /install >> "%PSDr%"
-echo Write-Host "`n   [OK] Done." -ForegroundColor Green >> "%PSDr%"
-echo Read-Host "`n   Press Enter..." >> "%PSDr%"
+:: Auto-detect model to search for
+echo $term = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
+echo $pattern = "*" + $term.Replace(" ", "*") + "*" >> "%PSDr%"
+echo Write-Host "   Searching for drivers matching: $term ..." -ForegroundColor Yellow >> "%PSDr%"
+echo try { $folder = Get-ChildItem -Path "$($drv):\" -Directory -Recurse -Filter $pattern -ErrorAction SilentlyContinue ^| Select-Object -First 1 } catch { $folder = $null } >> "%PSDr%"
+echo if ($folder) { >> "%PSDr%"
+echo     Write-Host "   [FOUND] $($folder.FullName)" -ForegroundColor Green >> "%PSDr%"
+echo     $conf = Read-Host "   Install these drivers? (Y/N)" >> "%PSDr%"
+echo     if ($conf -eq 'Y' -or $conf -eq 'y') { >> "%PSDr%"
+echo         Write-Host "   Installing... Please watch the progress below..." -ForegroundColor Magenta >> "%PSDr%"
+echo         $s = [System.Diagnostics.Stopwatch]::StartNew() >> "%PSDr%"
+echo         Start-Process pnputil -ArgumentList "/add-driver `"$($folder.FullName)\*.inf`" /subdirs /install" -NoNewWindow -Wait >> "%PSDr%"
+echo         $s.Stop() >> "%PSDr%"
+echo         Write-Host "`n   [OK] Installation Complete." -ForegroundColor Green >> "%PSDr%"
+echo         Write-Host "   Time Taken: $($s.Elapsed.ToString('mm\:ss'))" -ForegroundColor White >> "%PSDr%"
+echo         Read-Host "   Press Enter to restart later..." >> "%PSDr%"
+echo     } >> "%PSDr%"
+echo } else { >> "%PSDr%"
+echo     Write-Host "   [ERROR] No driver folder found for this model on $drv drive." -ForegroundColor Red >> "%PSDr%"
+echo     Write-Host "   Tip: Ensure the folder name contains the laptop model." -ForegroundColor Gray >> "%PSDr%"
+echo     Read-Host "   Press Enter..." >> "%PSDr%"
+echo } >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%"
 goto Menu_Drivers
