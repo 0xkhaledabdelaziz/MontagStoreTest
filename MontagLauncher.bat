@@ -3,19 +3,21 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] PREPARATION & ENCODING FIX
+:: [0] ADMIN & PREP
 :: ============================================================
 cd /d "%~dp0"
-:: Force UTF-8 Encoding immediately to fix garbled text
 chcp 65001 >nul
-:: Force Admin Rights
+mode con: cols=150 lines=60
+reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
+
+:: Force Admin
 FSUTIL dirty query %systemdrive% >nul
 if %errorlevel% neq 0 (
     powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Maximized"
     exit
 )
 
-:: Whitelist Working Directory
+:: Whitelist
 if not exist "%SystemDrive%\MontagOffice" mkdir "%SystemDrive%\MontagOffice" >nul 2>&1
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%~dp0'" >nul 2>&1
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%SystemDrive%\MontagOffice'" >nul 2>&1
@@ -23,9 +25,7 @@ powershell -inputformat none -outputformat none -NonInteractive -Command "Add-Mp
 :: ============================================================
 :: [1] CONFIGURATION
 :: ============================================================
-mode con: cols=150 lines=60
-reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
-title Montag Store - System (V 11.0 Stable)
+title Montag Store - System (V 16.5 Final Stable)
 color 05
 
 set "ToolDir=%SystemDrive%\MontagTools"
@@ -33,8 +33,9 @@ if not exist "%ToolDir%" mkdir "%ToolDir%" >nul 2>&1
 set "IconDir=%ProgramData%\MontagStore"
 if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
 attrib +h "%IconDir%" >nul 2>&1
+set "SupportNum=201040901444"
 
-:: Links
+:: --- ONLINE RESOURCES ---
 set "UrlReportScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagReport.bat"
 set "UrlOfficeScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagOffice.bat"
 set "UrlAppsScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagApps.bat"
@@ -44,9 +45,13 @@ set "UrlScr=https://www.dropbox.com/scl/fi/b63drni7qk3t8f0wudnk7/defpix.exe?rlke
 set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headphones-Trim.mp4?rlkey=mw5md1jthagl3nfu3yfumulri&st=5xo6k9gg&dl=1"
 set "UrlRar=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1"
 set "UrlMAS=https://www.dropbox.com/scl/fi/cnj7x4fp8zqksmeewhsmg/MAS_AIO.cmd?rlkey=1zr26qvm9l7r26iaw52czjmt9&st=7o2zhkih&dl=1"
+set "UrlLogo=https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.png?rlkey=b8n5e732fsepkadzg7y10gj1k&st=7q4k6jll&dl=1"
 
-:: Visuals
+:: Visuals Downloader
 if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
+if not exist "%IconDir%\Logo.png" curl -L -k -s -o "%IconDir%\Logo.png" "%UrlLogo%" >nul 2>&1
+
+:: Colors & Pad
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
 set "Reset=%ESC%[0m"
 set "Pink=%ESC%[38;2;255;0;255m"
@@ -58,15 +63,16 @@ set "Yellow=%ESC%[33m"
 set "Bold=%ESC%[1m"
 set "PAD=     "
 
+:: Initialize Status Marks
 for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf WinRAR DefCont Revo Apps Game MAS Office Report Touch) do if not defined mark_%%i set "mark_%%i=   "
 
-:: Extract Engine
+:: Extract Helper Engine (PowerShell)
 set "EngineScript=%ToolDir%\MontagEngine.ps1"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%EngineScript%"
 
 :: ============================================================
-:: [2.5] WIFI CHECK
+:: [2] WIFI CHECK
 :: ============================================================
 :CheckInternet
 ping -n 1 google.com >nul
@@ -375,20 +381,33 @@ echo %PAD%%Yellow%[4/7] Removing Bloatware...%Reset%
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 set "mark_Bloat=[OK]"
 
-:: --- STEP 5: ACTIVATE ORIGINAL KEY (SAFE MODE) ---
+:: --- STEP 5: ACTIVATE ORIGINAL KEY (DEEP SEARCH) ---
 echo %PAD%%Yellow%[5/7] Checking Activation...%Reset%
-:: Save key to file first to avoid parsing errors
-powershell -Command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey" > "%TEMP%\oemkey.txt"
-set /p BiosKey=<"%TEMP%\oemkey.txt"
+:: Create Temp PS Script to Find Key (Nuclear Method)
+set "KeyScript=%TEMP%\FindKey.ps1"
+(
+echo $key = ""
+echo try { $key = (Get-WmiObject -query 'select * from SoftwareLicensingService'^).OA3xOriginalProductKey } catch {}
+echo if ([string]::IsNullOrWhiteSpace($key^)^) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BackupProductKeyDefault } catch {} }
+echo if ([string]::IsNullOrWhiteSpace($key^)^) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BootDeviceProductKey } catch {} }
+echo $key ^| Out-File "$env:TEMP\oemkey.txt" -Encoding ASCII
+) > "%KeyScript%"
+
+powershell -ExecutionPolicy Bypass -File "%KeyScript%" >nul 2>&1
+set "BiosKey="
+if exist "%TEMP%\oemkey.txt" ( set /p BiosKey=<"%TEMP%\oemkey.txt" )
+
 if not "%BiosKey%"=="" (
     cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1 
     cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1
-    echo %PAD%%Green%      Found & Applied.%Reset%
+    echo %PAD%%Green%      Found ^& Applied: %BiosKey%%Reset%
+    set "mark_Active=[OK]"
 ) else (
     echo %PAD%%Red%      No Key Found.%Reset%
 )
+:: Cleanup key files
+if exist "%KeyScript%" del "%KeyScript%"
 if exist "%TEMP%\oemkey.txt" del "%TEMP%\oemkey.txt"
-set "mark_Active=[OK]"
 
 :: --- STEP 6: ICONS & RIGHT-CLICK BRAND ---
 echo %PAD%%Yellow%[6/7] Branding ^& Icons...%Reset%
@@ -397,9 +416,9 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcon
 call :AddContextSupport >nul 2>&1
 set "mark_BrandClick=[OK]"
 
-:: --- STEP 7: CLEANUP (SAFE) ---
+:: --- STEP 7: CLEANUP (SAFE REFRESH) ---
 echo %PAD%%Yellow%[7/7] Refreshing System...%Reset%
-:: Removed "del %temp%" and "taskkill explorer" to prevent "Batch file not found" error
+:: Use RUNDLL32 to refresh icons without killing Explorer (Fixes 'Batch not found')
 RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters >nul 2>&1
 
 set "mark_Auto=[OK]"
@@ -475,19 +494,45 @@ goto Menu_Windows
 cls
 echo.
 echo %PAD%%Cyan%Searching for BIOS Product Key...%Reset%
-:: Safer Method using File
-powershell -Command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey" > "%TEMP%\oemkey.txt"
-set /p BiosKey=<"%TEMP%\oemkey.txt"
-if "%BiosKey%"=="" (
-    echo %PAD%%Red%[ERROR] No Key Found.%Reset% 
-) else (
-    echo %PAD%%Green%[OK] Key Found: %BiosKey%%Reset%
+
+:: Create Temp PS Script to Find Key (Nuclear Method - 3 Ways)
+set "KeyScript=%TEMP%\FindKey.ps1"
+(
+echo $key = ""
+echo try { $key = (Get-WmiObject -query 'select * from SoftwareLicensingService'^).OA3xOriginalProductKey } catch {}
+echo if ([string]::IsNullOrWhiteSpace($key^)^) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BackupProductKeyDefault } catch {} }
+echo if ([string]::IsNullOrWhiteSpace($key^)^) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BootDeviceProductKey } catch {} }
+echo $key ^| Out-File "$env:TEMP\oemkey.txt" -Encoding ASCII
+) > "%KeyScript%"
+
+:: Run Search
+echo %PAD%%Yellow%Scanning BIOS and Registry...%Reset%
+powershell -ExecutionPolicy Bypass -File "%KeyScript%" >nul 2>&1
+
+:: Read Result
+set "BiosKey="
+if exist "%TEMP%\oemkey.txt" ( set /p BiosKey=<"%TEMP%\oemkey.txt" )
+
+:: Act
+if not "%BiosKey%"=="" (
+    echo %PAD%%Green%[OK] Key Found: %White%%BiosKey%%Reset%
+    echo %PAD%Installing License...
     cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey%
+    echo %PAD%Activating Online...
     cscript //nologo %windir%\system32\slmgr.vbs /ato
+    echo.
     echo %PAD%%Green%[SUCCESS] Activation Command Sent.%Reset%
     set "mark_Active=[OK]"
+) else (
+    echo.
+    echo %PAD%%Red%[ERROR] Could not find any Original Key on this device.%Reset%
+    echo %PAD%%Gray%NOTE: This unit might not have a built-in Windows License.%Reset%
 )
+
+:: Cleanup
+if exist "%KeyScript%" del "%KeyScript%"
 if exist "%TEMP%\oemkey.txt" del "%TEMP%\oemkey.txt"
+
 pause
 goto Menu_Windows
 
@@ -522,18 +567,18 @@ goto Menu_Windows
 :WinUpdate
 start ms-settings:windowsupdate & goto Menu_Windows
 
-:: --- LOCAL HELPER FUNCTIONS (REQUIRED FOR THIS SECTION) ---
+:: --- LOCAL HELPER FUNCTIONS ---
 :AddContextSupport
 reg add "HKCR\DesktopBackground\Shell\MontagSupport" /ve /t REG_SZ /d "Contact Montag Support" /f >nul 2>&1
 reg add "HKCR\DesktopBackground\Shell\MontagSupport" /v "Icon" /t REG_SZ /d "%IconDir%\Montag.ico" /f >nul 2>&1
-reg add "HKCR\DesktopBackground\Shell\MontagSupport\command" /ve /t REG_SZ /d "explorer \"https://wa.me/%TechSupportNumber%\"" /f >nul 2>&1
+reg add "HKCR\DesktopBackground\Shell\MontagSupport\command" /ve /t REG_SZ /d "explorer \"https://wa.me/%SupportNum%\"" /f >nul 2>&1
 exit /b
 
 :Speak
 powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
 exit /b
 :: ============================================================
-:: [3] DRIVERS MENU (WITH PROGRESS & TIMER)
+:: [3] DRIVERS MENU (SMART DETECTION & PROGRESS)
 :: ============================================================
 :Menu_Drivers
 cls
@@ -579,14 +624,12 @@ echo $model = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
 echo Write-Host "   Detected Model: $model" -ForegroundColor Yellow >> "%PSDr%"
 echo $drv = Read-Host "`n   Enter Target Drive Letter (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
-:: Create folder with Model Name
 echo $name = "$model".Replace(" ", "_") + "_Drivers" >> "%PSDr%"
 echo $finalPath = "$($drv):\$name" >> "%PSDr%"
 echo New-Item -ItemType Directory -Force -Path $finalPath ^| Out-Null >> "%PSDr%"
 echo Write-Host "   Destination: $finalPath" -ForegroundColor Cyan >> "%PSDr%"
 echo Write-Host "`n   Exporting Drivers... (This allows you to see progress)" -ForegroundColor Yellow >> "%PSDr%"
 echo $s = [System.Diagnostics.Stopwatch]::StartNew() >> "%PSDr%"
-:: The magic line: NoNewWindow + Wait allows seeing pnputil output live
 echo Start-Process pnputil -ArgumentList "/export-driver * `"$finalPath`"" -NoNewWindow -Wait >> "%PSDr%"
 echo $s.Stop() >> "%PSDr%"
 echo Write-Host "`n   [OK] Drivers Saved Successfully." -ForegroundColor Green >> "%PSDr%"
@@ -604,7 +647,6 @@ echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Restore' >> "%PSDr%"
 echo Write-Host "`n   DRIVER RESTORE (SMART)" -ForegroundColor Magenta >> "%PSDr%"
 echo $drv = Read-Host "   Enter Source Drive Letter (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
-:: Auto-detect model to search for
 echo $term = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
 echo $pattern = "*" + $term.Replace(" ", "*") + "*" >> "%PSDr%"
 echo Write-Host "   Searching for drivers matching: $term ..." -ForegroundColor Yellow >> "%PSDr%"
@@ -799,7 +841,7 @@ if "!mark_Touch!"=="[OK]" set "TEST_LOG=!TEST_LOG! Touch:OK"
 
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 
-:: --- 2. SAVE STATUS TO FILE (PREVENTS CRASHES) ---
+:: --- 2. SAVE STATUS TO FILE ---
 echo !TEST_LOG! > "%ToolDir%\MontagLog.txt"
 
 :: --- 3. DOWNLOAD & RUN REPORT SCRIPT ---
@@ -825,7 +867,7 @@ cd /d "C:\"
 start "" /Min cmd /C "timeout /t 2 >nul & rmdir /s /q "%ToolDir%""
 exit
 
-:: --- SUB-FUNCTIONS ---
+:: --- GLOBAL SUB-FUNCTIONS ---
 :Speak
 powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
 exit /b
@@ -841,7 +883,7 @@ echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═�
 exit /b
 
 :: ============================================================
-::  UNIFIED POWERSHELL ENGINE
+::  UNIFIED POWERSHELL ENGINE (FOR HELPERS)
 :: ============================================================
 :::__POWERSHELL_START__:::
 param($Task, $TesterName, $StatusLog, $FormID)
