@@ -375,26 +375,32 @@ echo %PAD%%Yellow%[4/7] Removing Bloatware...%Reset%
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 set "mark_Bloat=[OK]"
 
-:: --- STEP 5: ACTIVATE ORIGINAL KEY (OEM) ---
+:: --- STEP 5: ACTIVATE ORIGINAL KEY (SAFE MODE) ---
 echo %PAD%%Yellow%[5/7] Checking Activation...%Reset%
-set "BiosKey="
-for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
-if not "%BiosKey%"=="" (cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1 & cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1)
+:: Save key to file first to avoid parsing errors
+powershell -Command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey" > "%TEMP%\oemkey.txt"
+set /p BiosKey=<"%TEMP%\oemkey.txt"
+if not "%BiosKey%"=="" (
+    cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1 
+    cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1
+    echo %PAD%%Green%      Found & Applied.%Reset%
+) else (
+    echo %PAD%%Red%      No Key Found.%Reset%
+)
+if exist "%TEMP%\oemkey.txt" del "%TEMP%\oemkey.txt"
 set "mark_Active=[OK]"
 
 :: --- STEP 6: ICONS & RIGHT-CLICK BRAND ---
 echo %PAD%%Yellow%[6/7] Branding ^& Icons...%Reset%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
-:: Force add right click branding here
 call :AddContextSupport >nul 2>&1
 set "mark_BrandClick=[OK]"
 
-:: --- STEP 7: CLEANUP ---
-echo %PAD%%Yellow%[7/7] Cleanup ^& Restart UI...%Reset%
-del /s /f /q %temp%\*.* >nul 2>&1
-taskkill /f /im explorer.exe >nul 2>&1
-start "" explorer.exe
+:: --- STEP 7: CLEANUP (SAFE) ---
+echo %PAD%%Yellow%[7/7] Refreshing System...%Reset%
+:: Removed "del %temp%" and "taskkill explorer" to prevent "Batch file not found" error
+RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters >nul 2>&1
 
 set "mark_Auto=[OK]"
 set "mark_Boost=[OK]"
@@ -469,16 +475,20 @@ goto Menu_Windows
 cls
 echo.
 echo %PAD%%Cyan%Searching for BIOS Product Key...%Reset%
-set "BiosKey="
-for /f "tokens=*" %%a in ('powershell -command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey"') do set "BiosKey=%%a"
-if "%BiosKey%"=="" (echo %PAD%%Red%[ERROR] No Key Found.%Reset% & pause) else (
-    echo %PAD%%Green%[OK] Key Found.%Reset%
+:: Safer Method using File
+powershell -Command "(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey" > "%TEMP%\oemkey.txt"
+set /p BiosKey=<"%TEMP%\oemkey.txt"
+if "%BiosKey%"=="" (
+    echo %PAD%%Red%[ERROR] No Key Found.%Reset% 
+) else (
+    echo %PAD%%Green%[OK] Key Found: %BiosKey%%Reset%
     cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey%
     cscript //nologo %windir%\system32\slmgr.vbs /ato
-    echo %PAD%%Green%[SUCCESS] Activated.%Reset%
+    echo %PAD%%Green%[SUCCESS] Activation Command Sent.%Reset%
     set "mark_Active=[OK]"
-    timeout /t 3 >nul
 )
+if exist "%TEMP%\oemkey.txt" del "%TEMP%\oemkey.txt"
+pause
 goto Menu_Windows
 
 :RenameUser
@@ -511,6 +521,17 @@ goto Menu_Windows
 
 :WinUpdate
 start ms-settings:windowsupdate & goto Menu_Windows
+
+:: --- LOCAL HELPER FUNCTIONS (REQUIRED FOR THIS SECTION) ---
+:AddContextSupport
+reg add "HKCR\DesktopBackground\Shell\MontagSupport" /ve /t REG_SZ /d "Contact Montag Support" /f >nul 2>&1
+reg add "HKCR\DesktopBackground\Shell\MontagSupport" /v "Icon" /t REG_SZ /d "%IconDir%\Montag.ico" /f >nul 2>&1
+reg add "HKCR\DesktopBackground\Shell\MontagSupport\command" /ve /t REG_SZ /d "explorer \"https://wa.me/%TechSupportNumber%\"" /f >nul 2>&1
+exit /b
+
+:Speak
+powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
+exit /b
 :: ============================================================
 :: [3] DRIVERS MENU (WITH PROGRESS & TIMER)
 :: ============================================================
