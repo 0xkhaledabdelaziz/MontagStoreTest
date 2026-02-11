@@ -3,7 +3,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] ADMIN & PREP
+:: [0] PREPARATION & CONFIG
 :: ============================================================
 cd /d "%~dp0"
 chcp 65001 >nul
@@ -23,9 +23,9 @@ powershell -inputformat none -outputformat none -NonInteractive -Command "Add-Mp
 powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%SystemDrive%\MontagOffice'" >nul 2>&1
 
 :: ============================================================
-:: [1] CONFIGURATION
+:: [1] CONFIGURATION & OFFLINE SYNC
 :: ============================================================
-title Montag Store - System (V 16.5 Final Stable)
+title Montag Store - System (V 30.0 Final Master)
 color 05
 
 set "ToolDir=%SystemDrive%\MontagTools"
@@ -35,7 +35,16 @@ if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
 attrib +h "%IconDir%" >nul 2>&1
 set "SupportNum=201040901444"
 
-:: --- ONLINE RESOURCES ---
+:: --- OFFLINE ASSET LOADER (SMART COPY) ---
+:: If files exist on Flash Drive (Next to script), Copy them to System
+if exist "%~dp0MontagReport.bat" copy /y "%~dp0MontagReport.bat" "%ToolDir%\" >nul 2>&1
+if exist "%~dp0Montag.ico" copy /y "%~dp0Montag.ico" "%IconDir%\" >nul 2>&1
+if exist "%~dp0Logo.png" copy /y "%~dp0Logo.png" "%IconDir%\" >nul 2>&1
+if exist "%~dp0HWiNFO64.exe" copy /y "%~dp0HWiNFO64.exe" "%ToolDir%\HWiNFO.exe" >nul 2>&1
+if exist "%~dp0defpix.exe" copy /y "%~dp0defpix.exe" "%ToolDir%\ScreenTest.exe" >nul 2>&1
+if exist "%~dp0KeyboardTestUtility.exe" copy /y "%~dp0KeyboardTestUtility.exe" "%ToolDir%\KeyTest.exe" >nul 2>&1
+
+:: --- ONLINE RESOURCES (FALLBACK) ---
 set "UrlReportScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagReport.bat"
 set "UrlOfficeScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagOffice.bat"
 set "UrlAppsScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagApps.bat"
@@ -51,7 +60,6 @@ set "UrlLogo=https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.pn
 if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
 if not exist "%IconDir%\Logo.png" curl -L -k -s -o "%IconDir%\Logo.png" "%UrlLogo%" >nul 2>&1
 
-:: Colors & Pad
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
 set "Reset=%ESC%[0m"
 set "Pink=%ESC%[38;2;255;0;255m"
@@ -63,10 +71,9 @@ set "Yellow=%ESC%[33m"
 set "Bold=%ESC%[1m"
 set "PAD=     "
 
-:: Initialize Status Marks
-for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf WinRAR DefCont Revo Apps Game MAS Office Report Touch) do if not defined mark_%%i set "mark_%%i=   "
+for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf WinRAR DefCont Revo Apps Game MAS Office Report Touch RealBatt) do if not defined mark_%%i set "mark_%%i=   "
 
-:: Extract Helper Engine (PowerShell)
+:: Extract PowerShell Engine
 set "EngineScript=%ToolDir%\MontagEngine.ps1"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%EngineScript%"
@@ -152,18 +159,19 @@ if %errorlevel%==3 goto Menu_Drivers
 if %errorlevel%==2 goto Menu_Windows
 if %errorlevel%==1 goto Menu_Hardware
 goto MainMenu
+
 :: ============================================================
 :: [1] HARDWARE MENU
 :: ============================================================
 :Menu_Hardware
 cls
 echo.
-echo %PAD%%Pink%██╗  ██╗ █████╗ ██████╗ ██╗    ██╗ █████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%██║  ██║██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%███████║███████║██████╔╝██║ █╗ ██║███████║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%██╔══██║██╔══██║██╔══██╗██║███╗██║██╔══██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║  ██║██║  ██║██║  ██║╚███╔███╔╝██║  ██║██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝%Reset%
+echo %PAD%%Pink%██╗  ██╗ █████╗ ██████╗ ██████╗ ██╗    ██╗ █████╗ ██████╗ ███████╗%Reset%
+echo %PAD%%Pink%██║  ██║██╔══██╗██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔════╝%Reset%
+echo %PAD%%Pink%███████║███████║██████╔╝██║  ██║██║ █╗ ██║███████║██████╔╝█████╗  %Reset%
+echo %PAD%%Pink%██╔══██║██╔══██║██╔══██╗██║  ██║██║███╗██║██╔══██║██╔══██╗██╔══╝  %Reset%
+echo %PAD%%Pink%██║  ██║██║  ██║██║  ██║██████╔╝╚███╔███╔╝██║  ██║██║  ██║███████╗%Reset%
+echo %PAD%%Pink%╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
@@ -173,11 +181,13 @@ echo %PAD%    %Bold%%White%[3]%Reset% CAMERA TEST         %Green%!mark_Cam!%Rese
 echo.
 echo %PAD%    %Bold%%White%[5]%Reset% BATTERY REPORT      %Green%!mark_Batt!%Reset%             %Bold%%White%[6]%Reset% PRO TOUCH TEST      %Green%!mark_Touch!%Reset%
 echo.
+echo %PAD%    %Bold%%Yellow%[B] REAL BATTERY TEST (OFFLINE)%Reset%    %Green%!mark_RealBatt!%Reset%
+echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
 echo %PAD%    %Bold%%White%[7]%Reset% CHECK WARRANTY      %Green%!mark_Warranty!%Reset%         %Bold%%White%[8]%Reset% SYSTEM STRESS TEST  %Green%!mark_Stress!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[9]%Reset% CHECK WIN INTEGRITY %Green%!mark_CheckWin!%Reset%
+echo %PAD%                     %Bold%%White%[9]%Reset% CHECK WIN INTEGRITY %Green%!mark_CheckWin!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
@@ -186,10 +196,11 @@ echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
 echo %PAD%%Yellow%^> Select Test:%Reset% 
-choice /c 123456789s0 /n
+choice /c 123456789b0s /n
 
+if %errorlevel%==12 (set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun)
 if %errorlevel%==11 goto MainMenu
-if %errorlevel%==10 (set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun)
+if %errorlevel%==10 (goto RealBatteryTest)
 if %errorlevel%==9 goto CheckWinIntegrity
 if %errorlevel%==8 goto StressTest
 if %errorlevel%==7 goto CheckWarranty
@@ -202,6 +213,114 @@ if %errorlevel%==1 (set "mark_Key=[OK]" & set "ExeName=KeyTest.exe" & set "Targe
 goto Menu_Hardware
 
 :: --- HARDWARE FUNCTIONS ---
+:RealBatteryTest
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ REAL BATTERY DRAIN TEST ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%Starting Auto-Test:%Reset%
+echo %PAD% 1. Prevent Sleep Mode...
+echo %PAD% 2. Searching for 'BatteryTest.mp4' on ALL drives...
+echo.
+
+:: 1. High Performance (No Sleep)
+powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
+powercfg /change monitor-timeout-ac 0
+powercfg /change standby-timeout-ac 0
+powercfg -h off >nul 2>&1
+
+:: 2. RADAR SEARCH (FLAT LOGIC - NO CRASH)
+set "DestVid=%ToolDir%\BatteryTest.mp4"
+set "FoundSource="
+
+:: Check next to script
+if exist "%~dp0BatteryTest.mp4" set "FoundSource=%~dp0BatteryTest.mp4" & goto FoundVideo
+
+:: Scan drives D through Z
+for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+    if exist "%%d:\BatteryTest.mp4" (
+        set "FoundSource=%%d:\BatteryTest.mp4"
+        goto FoundVideo
+    )
+)
+
+:: If we are here, video is missing
+goto VideoNotFound
+
+:FoundVideo
+echo %PAD%%Green%[FOUND] %FoundSource%%Reset%
+echo %PAD%%Yellow%Copying to System (C:) - Please Wait...%Reset%
+echo.
+:: Using /z for restartable mode (shows progress percentage)
+copy /z /y "%FoundSource%" "%DestVid%"
+
+:: Verification Check
+if not exist "%DestVid%" goto CopyError
+
+echo.
+echo %PAD%%Green%[OK] Copy Complete. Starting Test...%Reset%
+echo %PAD%%Gray%(Safe to remove Flash Drive now)%Reset%
+timeout /t 2 >nul
+start "" "%DestVid%"
+goto StartLogger
+
+:CopyError
+echo.
+echo %PAD%%Red%[ERROR] Copy Failed. Trying to play directly from USB...%Reset%
+start "" "%FoundSource%"
+goto StartLogger
+
+:VideoNotFound
+echo.
+echo %PAD%%Red%[ERROR] 'BatteryTest.mp4' NOT FOUND on any drive!%Reset%
+echo.
+echo %PAD%Please ensure the file is named exactly 'BatteryTest.mp4'
+echo %PAD%and is placed on the ROOT of your Flash Drive (e.g. D:\BatteryTest.mp4).
+echo.
+echo %PAD%Press any key to return...
+pause >nul
+goto Menu_Hardware
+
+:StartLogger
+:: 3. Create Logger Script (SAFE MODE - NO PIPES)
+set "BatScript=%TEMP%\BatLogger.ps1"
+if exist "%BatScript%" del "%BatScript%"
+
+echo $log = "C:\MontagBatteryLog.txt" >> "%BatScript%"
+echo $start = Get-Date >> "%BatScript%"
+echo Add-Content $log "==========================================" >> "%BatScript%"
+echo Add-Content $log "TEST STARTED: $start" >> "%BatScript%"
+echo $model = (Get-CimInstance Win32_ComputerSystem).Model >> "%BatScript%"
+echo Add-Content $log "MODEL: $model" >> "%BatScript%"
+echo Add-Content $log "MODE: Offline Video Test" >> "%BatScript%"
+echo Add-Content $log "==========================================" >> "%BatScript%"
+echo Write-Host "`n   MONTAG STORE - BATTERY STOPWATCH" -ForegroundColor Magenta >> "%BatScript%"
+echo Write-Host "   --------------------------------" -ForegroundColor Gray >> "%BatScript%"
+echo Write-Host "   Video is running..." -ForegroundColor Yellow >> "%BatScript%"
+echo Write-Host "   Do not close this window until test is done." -ForegroundColor Yellow >> "%BatScript%"
+echo Write-Host "`n   [CTRL+C] to Stop.`n" -ForegroundColor Red >> "%BatScript%"
+echo Write-Host "   TIME ELAPSED      BATTERY %%" -ForegroundColor White >> "%BatScript%"
+echo Write-Host "   ------------      ---------" -ForegroundColor White >> "%BatScript%"
+echo while ($true) { >> "%BatScript%"
+echo     $now = Get-Date >> "%BatScript%"
+echo     $diff = $now - $start >> "%BatScript%"
+echo     $bat = (Get-WmiObject Win32_Battery).EstimatedChargeRemaining >> "%BatScript%"
+echo     $str = "{0:hh\:mm\:ss}          {1}%%" -f $diff, $bat >> "%BatScript%"
+echo     Write-Host "   $str" -ForegroundColor Cyan >> "%BatScript%"
+echo     $logLine = "$($now.ToString('HH:mm:ss')) | Elapsed: $($diff.ToString('hh\:mm')) | Battery: $bat%%" >> "%BatScript%"
+echo     Add-Content $log $logLine >> "%BatScript%"
+echo     Start-Sleep -Seconds 60 >> "%BatScript%"
+echo } >> "%BatScript%"
+
+:: Launch Stopwatch
+start "Montag Battery Timer" powershell -NoProfile -ExecutionPolicy Bypass -File "%BatScript%"
+
+set "mark_RealBatt=[OK]"
+goto Menu_Hardware
+
 :ProTouchTest
 cls
 call :DrawHeader
@@ -400,7 +519,7 @@ if exist "%TEMP%\oemkey.txt" ( set /p BiosKey=<"%TEMP%\oemkey.txt" )
 if not "%BiosKey%"=="" (
     cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1 
     cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1
-    echo %PAD%%Green%      Found ^& Applied: %BiosKey%%Reset%
+    echo %PAD%%Green%      Found ^& Applied.%Reset%
     set "mark_Active=[OK]"
 ) else (
     echo %PAD%%Red%      No Key Found.%Reset%
@@ -418,7 +537,7 @@ set "mark_BrandClick=[OK]"
 
 :: --- STEP 7: CLEANUP (SAFE REFRESH) ---
 echo %PAD%%Yellow%[7/7] Refreshing System...%Reset%
-:: Use RUNDLL32 to refresh icons without killing Explorer (Fixes 'Batch not found')
+:: Use RUNDLL32 to refresh icons without killing Explorer
 RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters >nul 2>&1
 
 set "mark_Auto=[OK]"
@@ -574,9 +693,6 @@ reg add "HKCR\DesktopBackground\Shell\MontagSupport" /v "Icon" /t REG_SZ /d "%Ic
 reg add "HKCR\DesktopBackground\Shell\MontagSupport\command" /ve /t REG_SZ /d "explorer \"https://wa.me/%SupportNum%\"" /f >nul 2>&1
 exit /b
 
-:Speak
-powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
-exit /b
 :: ============================================================
 :: [3] DRIVERS MENU (SMART DETECTION & PROGRESS)
 :: ============================================================
@@ -838,6 +954,7 @@ if "!mark_CheckWin!"=="[OK]" set "TEST_LOG=!TEST_LOG! WinCheck:OK"
 if "!mark_Office!"=="[OK]" set "TEST_LOG=!TEST_LOG! Office:OK"
 if "!mark_OffClean!"=="[OK]" set "TEST_LOG=!TEST_LOG! OffScrub:OK"
 if "!mark_Touch!"=="[OK]" set "TEST_LOG=!TEST_LOG! Touch:OK"
+if "!mark_RealBatt!"=="[OK]" set "TEST_LOG=!TEST_LOG! RealBatt:OK"
 
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 
