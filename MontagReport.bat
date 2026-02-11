@@ -62,7 +62,6 @@ more +%StartLine% "%~f0" > "%ReportEngine%"
 
 echo      [3/3] Launching Sales Interface...
 echo.
-
 powershell -ExecutionPolicy Bypass -File "%ReportEngine%" -StatusLog "%IncomingLog%" -FormID "%GFormID%" -IconPath "%IconPath%" -LogoPath "%LogoPath%"
 
 exit
@@ -125,21 +124,29 @@ Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
 }
 $gpuString = ($gpuList | Select-Object -Unique) -join " + "
 
-# Laptop Brand Logo Logic
+# --- FIXED LOGO LOGIC START ---
 $LaptopLogo = "https://cdn-icons-png.flaticon.com/512/900/900782.png"
 $WarrantyLink = "https://www.google.com/search?q=$($bios.SerialNumber)+warranty"
+
 if ($Man -match "Dell") { 
     $LaptopLogo = "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Dell_Logo.svg/1024px-Dell_Logo.svg.png"
     $WarrantyLink = "https://www.dell.com/support/home/en-us/product-support/servicetag/$($bios.SerialNumber)/overview"
 }
-if ($Man -match "HP") { 
+elseif ($Man -match "HP" -or $Man -match "Hewlett") { 
     $LaptopLogo = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/HP_logo_2012.svg/1024px-HP_logo_2012.svg.png" 
     $WarrantyLink = "https://support.hp.com/us-en/checkwarranty"
 }
-if ($Man -match "Lenovo") { 
-    $LaptopLogo = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Lenovo_logo_2015.svg/1024px-Lenovo_logo_2015.svg.png" 
+elseif ($Man -match "Lenovo") { 
+    # Updated Link for Stability
+    $LaptopLogo = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Lenovo_logo_2015.svg/1280px-Lenovo_logo_2015.svg.png" 
     $WarrantyLink = "https://pcsupport.lenovo.com/us/en/warrantylookup"
 }
+elseif ($Man -match "Microsoft" -or $Man -match "Surface") {
+    $LaptopLogo = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/1024px-Microsoft_logo_%282012%29.svg.png"
+    $WarrantyLink = "https://mybusinessservice.surface.com/en-US/CheckWarranty/CheckWarranty"
+}
+# --- FIXED LOGO LOGIC END ---
+
 # --- 2. GENERATE HTML UI (SALES INTERFACE) ---
 $htmlContent = @"
 <!DOCTYPE html>
@@ -197,7 +204,8 @@ $htmlContent = @"
             var section = document.getElementById('clientSection');
             var btn = document.getElementById('btnSell');
             if (section.style.display === 'none' || section.style.display === '') {
-                section.style.display = 'block'; btn.innerText = "CONFIRM & UPLOAD"; btn.className = "btn-confirm"; document.getElementById('clientName').focus();
+                section.style.display = 'block';
+                btn.innerText = "CONFIRM & UPLOAD"; btn.className = "btn-confirm"; document.getElementById('clientName').focus();
             } else {
                 if (!document.getElementById('clientName').value || !document.getElementById('clientPhone').value) { alert("Enter Client Details!"); return; }
                 sendData('SELL');
