@@ -3,31 +3,20 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] PREPARATION & CONFIG
+:: [0] FORCE ADMIN & CONFIG (INSTANT START)
 :: ============================================================
-cd /d "%~dp0"
-chcp 65001 >nul
-mode con: cols=150 lines=60
-reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
-
-:: Force Admin
 FSUTIL dirty query %systemdrive% >nul
 if %errorlevel% neq 0 (
     powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Maximized"
     exit
 )
 
-:: Whitelist
-if not exist "%SystemDrive%\MontagOffice" mkdir "%SystemDrive%\MontagOffice" >nul 2>&1
-powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%~dp0'" >nul 2>&1
-powershell -inputformat none -outputformat none -NonInteractive -Command "Add-MpPreference -ExclusionPath '%SystemDrive%\MontagOffice'" >nul 2>&1
+cd /d "%~dp0"
+chcp 65001 >nul
+mode con: cols=150 lines=60
+reg add "HKCU\CONSOLE" /v "VirtualTerminalLevel" /t REG_DWORD /d 1 /f >nul 2>&1
 
-:: ============================================================
-:: [1] CONFIGURATION & OFFLINE SYNC
-:: ============================================================
-title Montag Store - System (V 30.0 Final Master)
-color 05
-
+:: Paths & Vars
 set "ToolDir=%SystemDrive%\MontagTools"
 if not exist "%ToolDir%" mkdir "%ToolDir%" >nul 2>&1
 set "IconDir=%ProgramData%\MontagStore"
@@ -35,31 +24,19 @@ if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
 attrib +h "%IconDir%" >nul 2>&1
 set "SupportNum=201040901444"
 
-:: --- OFFLINE ASSET LOADER (SMART COPY) ---
-:: If files exist on Flash Drive (Next to script), Copy them to System
-if exist "%~dp0MontagReport.bat" copy /y "%~dp0MontagReport.bat" "%ToolDir%\" >nul 2>&1
-if exist "%~dp0Montag.ico" copy /y "%~dp0Montag.ico" "%IconDir%\" >nul 2>&1
-if exist "%~dp0Logo.png" copy /y "%~dp0Logo.png" "%IconDir%\" >nul 2>&1
-if exist "%~dp0HWiNFO64.exe" copy /y "%~dp0HWiNFO64.exe" "%ToolDir%\HWiNFO.exe" >nul 2>&1
-if exist "%~dp0defpix.exe" copy /y "%~dp0defpix.exe" "%ToolDir%\ScreenTest.exe" >nul 2>&1
-if exist "%~dp0KeyboardTestUtility.exe" copy /y "%~dp0KeyboardTestUtility.exe" "%ToolDir%\KeyTest.exe" >nul 2>&1
-
-:: --- ONLINE RESOURCES (FALLBACK) ---
+:: --- URL DEFINITIONS (Variables Only) ---
 set "UrlReportScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagReport.bat"
 set "UrlOfficeScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagOffice.bat"
 set "UrlAppsScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagApps.bat"
+set "UrlLabelScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagLabel.bat"
 set "UrlHwi=https://www.dropbox.com/scl/fi/fjtwrg3boc8zj88ml2jxs/HWiNFO64.EXE?rlkey=m64f5qxup91iq8ew09imqfcs0&st=9eqs19xe&dl=1"
 set "UrlKey=https://www.dropbox.com/scl/fi/onvccubmkxicdtvecdqvq/KeyboardTestUtility.exe?rlkey=62ag37rdvhp45iuzlk8261yus&st=k6li1383&dl=1"
 set "UrlScr=https://www.dropbox.com/scl/fi/b63drni7qk3t8f0wudnk7/defpix.exe?rlkey=ir9k1d9gi99dwunjmqtnvtq7n&st=6etkm6wa&dl=1"
 set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headphones-Trim.mp4?rlkey=mw5md1jthagl3nfu3yfumulri&st=5xo6k9gg&dl=1"
 set "UrlRar=https://www.dropbox.com/scl/fi/w8aw1ymsgtrd4oz46kd8m/winrar-x64-713.exe?rlkey=od8tf0lfmg50a6neh1xc672ja&st=pb6xko3k&dl=1"
 set "UrlMAS=https://www.dropbox.com/scl/fi/cnj7x4fp8zqksmeewhsmg/MAS_AIO.cmd?rlkey=1zr26qvm9l7r26iaw52czjmt9&st=7o2zhkih&dl=1"
-set "UrlLogo=https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.png?rlkey=b8n5e732fsepkadzg7y10gj1k&st=7q4k6jll&dl=1"
 
-:: Visuals Downloader
-if not exist "%IconDir%\Montag.ico" curl -L -k -s -o "%IconDir%\Montag.ico" "https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1" >nul 2>&1
-if not exist "%IconDir%\Logo.png" curl -L -k -s -o "%IconDir%\Logo.png" "%UrlLogo%" >nul 2>&1
-
+:: Colors
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
 set "Reset=%ESC%[0m"
 set "Pink=%ESC%[38;2;255;0;255m"
@@ -73,65 +50,39 @@ set "PAD=     "
 
 for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf WinRAR DefCont Revo Apps Game MAS Office Report Touch RealBatt) do if not defined mark_%%i set "mark_%%i=   "
 
-:: Extract PowerShell Engine
+:: Extract Engine (Lazy)
 set "EngineScript=%ToolDir%\MontagEngine.ps1"
-for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a"
-more +%StartLine% "%~f0" > "%EngineScript%"
 
 :: ============================================================
-:: [2] WIFI CHECK
+:: [1] INSTANT LOGO & START
 :: ============================================================
-:CheckInternet
-ping -n 1 google.com >nul
-if %errorlevel% equ 0 (
-    cls
-    call :DrawHeader
-    echo.
-    echo %PAD%%Green%      Welcome to Montag Store System...%Reset%
-    call :Speak "Welcome to Montag Store System."
-    timeout /t 1 >nul
-    goto MainMenu
-)
-
-:WifiMenu
+title Montag Store - System (V 58.0 Async Voice)
 cls
-call :DrawHeader
 echo.
-echo %PAD%%Red%    [!] NO INTERNET DETECTED. PLEASE CONNECT:%Reset%
+:: --- THE BIG BLOCK LOGO ---
+echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
+echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
+echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
+echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
+echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
+echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% MontagStore               %Bold%%White%[2]%Reset% MontagStore 5G
-echo %PAD%    %Bold%%White%[3]%Reset% Montag Reception          %Bold%%White%[4]%Reset% Montag Reception 5G
-echo.
-echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
-echo %PAD%    %Gray%[R] RETRY CONNECTION          [X] SKIP (OFFLINE MODE)%Reset%
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%^> Connect to:%Reset% 
-choice /c 1234rx /n
-if %errorlevel%==6 goto MainMenu
-if %errorlevel%==5 goto CheckInternet
-if %errorlevel%==4 call :ConnectWifi "Montag reception 5G" "12345_Mont@g" & goto CheckInternet
-if %errorlevel%==3 call :ConnectWifi "Montag reception" "12345_Mont@g" & goto CheckInternet
-if %errorlevel%==2 call :ConnectWifi "MontagStore5G" "12345_Montag" & goto CheckInternet
-if %errorlevel%==1 call :ConnectWifi "MontagStore" "12345_Montag" & goto CheckInternet
-goto WifiMenu
 
-:ConnectWifi
-set "SSID=%~1" & set "PASS=%~2"
-echo %PAD%Connecting to %SSID%...
-set "WiFiXML=%ToolDir%\wifi.xml"
-(echo ^<?xml version="1.0"?^>^<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1"^>^<name^>%SSID%^</name^>^<SSIDConfig^>^<SSID^>^<name^>%SSID%^</name^>^</SSID^>^</SSIDConfig^>^<connectionType^>ESS^</connectionType^>^<connectionMode^>auto^</connectionMode^>^<MSM^>^<security^>^<authEncryption^>^<authentication^>WPA2PSK^</authentication^>^<encryption^>AES^</encryption^>^<useOneX^>false^</useOneX^>^</authEncryption^>^<sharedKey^>^<keyType^>passPhrase^</keyType^>^<protected^>false^</protected^>^<keyMaterial^>%PASS%^</keyMaterial^>^</sharedKey^>^</security^>^</MSM^>^</WLANProfile^>) > "%WiFiXML%"
-netsh wlan add profile filename="%WiFiXML%" user=all >nul 2>&1
-netsh wlan connect name="%SSID%" >nul 2>&1
-del "%WiFiXML%" >nul 2>&1
-timeout /t 4 >nul
-exit /b
+:: SPEAK IN BACKGROUND (NO WAITING)
+call :Speak "Montag System"
 
 :: ============================================================
-:: [3] MAIN MENU
+:: [2] MAIN MENU
 :: ============================================================
 :MainMenu
 cls
+:: Extract Engine if missing (Fast)
+if not exist "%EngineScript%" (
+    (for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__POWERSHELL_START__:::$" "%~f0"') do set "StartLine=%%a" & goto :ExtractNow)
+    :ExtractNow
+    more +%StartLine% "%~f0" > "%EngineScript%"
+)
+
 call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
@@ -165,13 +116,7 @@ goto MainMenu
 :: ============================================================
 :Menu_Hardware
 cls
-echo.
-echo %PAD%%Pink%██╗  ██╗ █████╗ ██████╗ ██████╗ ██╗    ██╗ █████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%██║  ██║██╔══██╗██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%███████║███████║██████╔╝██║  ██║██║ █╗ ██║███████║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%██╔══██║██╔══██║██╔══██╗██║  ██║██║███╗██║██╔══██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║  ██║██║  ██║██║  ██║██████╔╝╚███╔███╔╝██║  ██║██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝%Reset%
+call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
@@ -194,6 +139,8 @@ echo.
 echo %PAD%    %Bold%%Yellow%[S] SENSORS (HWiNFO)%Reset%   %Green%!mark_Sensor!%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Yellow%^> Select Test:%Reset% 
 choice /c 123456789b0s /n
@@ -232,37 +179,26 @@ powercfg /change monitor-timeout-ac 0
 powercfg /change standby-timeout-ac 0
 powercfg -h off >nul 2>&1
 
-:: 2. RADAR SEARCH (FLAT LOGIC - NO CRASH)
+:: 2. RADAR SEARCH (FLAT LOGIC)
 set "DestVid=%ToolDir%\BatteryTest.mp4"
 set "FoundSource="
 
-:: Check next to script
 if exist "%~dp0BatteryTest.mp4" set "FoundSource=%~dp0BatteryTest.mp4" & goto FoundVideo
-
-:: Scan drives D through Z
 for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
     if exist "%%d:\BatteryTest.mp4" (
         set "FoundSource=%%d:\BatteryTest.mp4"
         goto FoundVideo
     )
 )
-
-:: If we are here, video is missing
 goto VideoNotFound
 
 :FoundVideo
 echo %PAD%%Green%[FOUND] %FoundSource%%Reset%
 echo %PAD%%Yellow%Copying to System (C:) - Please Wait...%Reset%
-echo.
-:: Using /z for restartable mode (shows progress percentage)
 copy /z /y "%FoundSource%" "%DestVid%"
-
-:: Verification Check
 if not exist "%DestVid%" goto CopyError
-
 echo.
 echo %PAD%%Green%[OK] Copy Complete. Starting Test...%Reset%
-echo %PAD%%Gray%(Safe to remove Flash Drive now)%Reset%
 timeout /t 2 >nul
 start "" "%DestVid%"
 goto StartLogger
@@ -276,34 +212,18 @@ goto StartLogger
 :VideoNotFound
 echo.
 echo %PAD%%Red%[ERROR] 'BatteryTest.mp4' NOT FOUND on any drive!%Reset%
-echo.
-echo %PAD%Please ensure the file is named exactly 'BatteryTest.mp4'
-echo %PAD%and is placed on the ROOT of your Flash Drive (e.g. D:\BatteryTest.mp4).
-echo.
-echo %PAD%Press any key to return...
+echo %PAD%Please ensure the file is named exactly 'BatteryTest.mp4'.
 pause >nul
 goto Menu_Hardware
 
 :StartLogger
-:: 3. Create Logger Script (SAFE MODE - NO PIPES)
 set "BatScript=%TEMP%\BatLogger.ps1"
 if exist "%BatScript%" del "%BatScript%"
-
 echo $log = "C:\MontagBatteryLog.txt" >> "%BatScript%"
 echo $start = Get-Date >> "%BatScript%"
 echo Add-Content $log "==========================================" >> "%BatScript%"
 echo Add-Content $log "TEST STARTED: $start" >> "%BatScript%"
-echo $model = (Get-CimInstance Win32_ComputerSystem).Model >> "%BatScript%"
-echo Add-Content $log "MODEL: $model" >> "%BatScript%"
-echo Add-Content $log "MODE: Offline Video Test" >> "%BatScript%"
-echo Add-Content $log "==========================================" >> "%BatScript%"
 echo Write-Host "`n   MONTAG STORE - BATTERY STOPWATCH" -ForegroundColor Magenta >> "%BatScript%"
-echo Write-Host "   --------------------------------" -ForegroundColor Gray >> "%BatScript%"
-echo Write-Host "   Video is running..." -ForegroundColor Yellow >> "%BatScript%"
-echo Write-Host "   Do not close this window until test is done." -ForegroundColor Yellow >> "%BatScript%"
-echo Write-Host "`n   [CTRL+C] to Stop.`n" -ForegroundColor Red >> "%BatScript%"
-echo Write-Host "   TIME ELAPSED      BATTERY %%" -ForegroundColor White >> "%BatScript%"
-echo Write-Host "   ------------      ---------" -ForegroundColor White >> "%BatScript%"
 echo while ($true) { >> "%BatScript%"
 echo     $now = Get-Date >> "%BatScript%"
 echo     $diff = $now - $start >> "%BatScript%"
@@ -314,51 +234,8 @@ echo     $logLine = "$($now.ToString('HH:mm:ss')) | Elapsed: $($diff.ToString('h
 echo     Add-Content $log $logLine >> "%BatScript%"
 echo     Start-Sleep -Seconds 60 >> "%BatScript%"
 echo } >> "%BatScript%"
-
-:: Launch Stopwatch
 start "Montag Battery Timer" powershell -NoProfile -ExecutionPolicy Bypass -File "%BatScript%"
-
 set "mark_RealBatt=[OK]"
-goto Menu_Hardware
-
-:ProTouchTest
-cls
-call :DrawHeader
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ MONTAG PRO TOUCH DIAGNOSTIC ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%Generating Grid...%Reset%
-set "TouchFile=%TEMP%\MontagTouch.html"
-if exist "%TouchFile%" del "%TouchFile%"
-echo ^<!DOCTYPE html^>^<html lang="en"^>^<head^>^<meta charset="UTF-8"^>^<title^>Montag Touch^</title^> > "%TouchFile%"
-echo ^<style^>body{margin:0;background:#000;overflow:hidden;touch-action:none;font-family:sans-serif} >> "%TouchFile%"
-echo #grid{display:grid;grid-template-columns:repeat(20,1fr);grid-template-rows:repeat(12,1fr);width:100vw;height:100vh} >> "%TouchFile%"
-echo .cell{border:1px solid #333;transition:0s}.touched{background:#0f0;box-shadow:0 0 10px #0f0;border-color:#0f0} >> "%TouchFile%"
-echo #info{position:absolute;top:50%%;left:50%%;transform:translate(-50%%,-50%%);color:#fff;pointer-events:none;text-align:center;mix-blend-mode:difference} >> "%TouchFile%"
-echo h1{font-size:40px;margin:0}p{color:#aaa}^</style^>^</head^> >> "%TouchFile%"
-echo ^<body^>^<div id="info"^>^<h1^>TOUCH TEST^</h1^>^<p^>Swipe to fill squares^</p^>^</div^>^<div id="grid"^>^</div^> >> "%TouchFile%"
-echo ^<script^>const grid=document.getElementById('grid');for(let i=0;i^<240;i++){let d=document.createElement('div');d.className='cell';grid.appendChild(d);} >> "%TouchFile%"
-echo function act(e){e.preventDefault();let t=e.touches^|^|[e];for(let i=0;i^<t.length;i++){let el=document.elementFromPoint(t[i].clientX,t[i].clientY);if(el^&^&el.classList.contains('cell'))el.classList.add('touched');}check();} >> "%TouchFile%"
-echo function check(){let t=document.querySelectorAll('.cell').length;let a=document.querySelectorAll('.touched').length;let p=Math.round((a/t)*100);document.querySelector('#info h1').innerText=p+'%%';if(p==100)document.querySelector('#info h1').style.color='#0f0';} >> "%TouchFile%"
-echo window.addEventListener('touchmove',act,{passive:false});window.addEventListener('mousemove',function(e){if(e.buttons==1)act(e);});^</script^>^</body^>^</html^> >> "%TouchFile%"
-
-echo %PAD%%Green%[OK] Launching... Press F11 for Full Screen.%Reset%
-start "" "%TouchFile%"
-set "mark_Touch=[OK]"
-timeout /t 2 >nul
-goto Menu_Hardware
-
-:StressTest
-cls
-echo.
-echo %PAD%%Red%[CAUTION] STARTING STRESS TEST (60 SECONDS)%Reset%
-echo %PAD%This will push CPU to 100%% usage.
-pause >nul
-powershell -Command "$s=[System.Diagnostics.Stopwatch]::StartNew();$j=@();1..[Environment]::ProcessorCount|%%{$j+=Start-Job -ScriptBlock{$r=1;while($true){$r=$r*1.000001}}};Write-Host ' [!] CPU 100% Load Active...';while($s.Elapsed.TotalSeconds -lt 60){Start-Sleep 1};$j|Stop-Job|Remove-Job"
-set "mark_Stress=[OK]"
-timeout /t 2 >nul
 goto Menu_Hardware
 
 :CheckWarranty
@@ -396,6 +273,7 @@ goto Menu_Hardware
 :DownloadAndRun
 set "Exe=%ToolDir%\%ExeName%"
 if not exist "%ToolDir%" mkdir "%ToolDir%"
+if exist "%~dp0%ExeName%" copy /y "%~dp0%ExeName%" "%Exe%" >nul 2>&1
 if exist "%Exe%" (start "" "%Exe%" & goto ReturnPoint)
 call :DrawHeader
 echo.
@@ -425,13 +303,7 @@ goto Menu_Hardware
 :: ============================================================
 :Menu_Windows
 cls
-echo.
-echo %PAD%%Pink%██╗    ██╗██╗███╗   ██╗██████╗  ██████╗ ██╗    ██╗███████╗%Reset%
-echo %PAD%%Pink%██║    ██║██║████╗  ██║██╔══██╗██╔═══██╗██║    ██║██╔════╝%Reset%
-echo %PAD%%Pink%██║ █╗ ██║██║██╔██╗ ██║██║  ██║██║   ██║██║ █╗ ██║███████╗%Reset%
-echo %PAD%%Pink%██║███╗██║██║██║╚██╗██║██║  ██║██║   ██║██║███╗██║╚════██║%Reset%
-echo %PAD%%Pink%╚███╔███╔╝██║██║ ╚████║██████╔╝╚██████╔╝╚███╔███╔╝███████║%Reset%
-echo %PAD%%Pink% ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚══════╝%Reset%
+call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
@@ -441,7 +313,7 @@ echo %PAD%    %Bold%%White%[3]%Reset% CHECK WINDOWS UPDATE  %Green%!mark_WinUpd!
 echo.
 echo %PAD%    %Bold%%White%[5]%Reset% ACTIVATE ORIGINAL KEY %Green%!mark_Active!%Reset%          %Bold%%White%[6]%Reset% REMOVE BLOATWARE      %Green%!mark_Bloat!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[7]%Reset% QUICK BOOST ^& FIX    %Green%!mark_Boost!%Reset%          %Bold%%White%[8]%Reset% ADD RIGHT-CLICK BRAND %Green%!mark_BrandClick!%Reset%
+echo %PAD%    %Bold%%White%[7]%Reset% QUICK BOOST ^& FIX    %Green%!mark_Boost!%Reset%
 echo.
 echo %PAD%    %Bold%%Yellow%[9] PREPARE FOR SALE (AUTO-PILOT)%Reset% %Green%!mark_Auto!%Reset%
 echo.
@@ -450,10 +322,9 @@ echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 1234567890 /n
-if %errorlevel%==10 goto MainMenu
-if %errorlevel%==9 goto AutoPilot
-if %errorlevel%==8 goto AddRightClickBrand
+choice /c 123456790 /n
+if %errorlevel%==9 goto MainMenu
+if %errorlevel%==8 goto AutoPilot
 if %errorlevel%==7 goto QuickBoost
 if %errorlevel%==6 goto RemoveBloatware
 if %errorlevel%==5 goto ActivateOEM
@@ -476,33 +347,22 @@ echo %PAD%%Green%   Initiating Auto-Pilot Mode...%Reset%
 call :Speak "Initiating System Preparation."
 echo.
 timeout /t 2 >nul
-
-:: --- STEP 1: RESTORE POINT ---
 echo %PAD%%Yellow%[1/7] Creating Backup...%Reset%
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_Prep' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
-
-:: --- STEP 2: HIGH PERFORMANCE & NO SLEEP ---
 echo %PAD%%Yellow%[2/7] Power ^& Performance...%Reset%
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0
 powercfg /change standby-timeout-ac 0
 powercfg -h off >nul 2>&1
 set "mark_HighPerf=[OK]"
-
-:: --- STEP 3: ARABIC KEYBOARD & EGYPT REGION ---
 echo %PAD%%Yellow%[3/7] Language ^& Region...%Reset%
 powershell -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}" >nul 2>&1
 tzutil /s "Egypt Standard Time" >nul 2>&1
 set "mark_Arab=[OK]"
-
-:: --- STEP 4: REMOVE BLOATWARE ---
 echo %PAD%%Yellow%[4/7] Removing Bloatware...%Reset%
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 set "mark_Bloat=[OK]"
-
-:: --- STEP 5: ACTIVATE ORIGINAL KEY (DEEP SEARCH) ---
 echo %PAD%%Yellow%[5/7] Checking Activation...%Reset%
-:: Create Temp PS Script to Find Key (Nuclear Method)
 set "KeyScript=%TEMP%\FindKey.ps1"
 (
 echo $key = ""
@@ -511,11 +371,9 @@ echo if ([string]::IsNullOrWhiteSpace($key^)^) { try { $key = (Get-ItemProperty 
 echo if ([string]::IsNullOrWhiteSpace($key^)^) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BootDeviceProductKey } catch {} }
 echo $key ^| Out-File "$env:TEMP\oemkey.txt" -Encoding ASCII
 ) > "%KeyScript%"
-
 powershell -ExecutionPolicy Bypass -File "%KeyScript%" >nul 2>&1
 set "BiosKey="
 if exist "%TEMP%\oemkey.txt" ( set /p BiosKey=<"%TEMP%\oemkey.txt" )
-
 if not "%BiosKey%"=="" (
     cscript //nologo %windir%\system32\slmgr.vbs /ipk %BiosKey% >nul 2>&1 
     cscript //nologo %windir%\system32\slmgr.vbs /ato >nul 2>&1
@@ -524,47 +382,17 @@ if not "%BiosKey%"=="" (
 ) else (
     echo %PAD%%Red%      No Key Found.%Reset%
 )
-:: Cleanup key files
 if exist "%KeyScript%" del "%KeyScript%"
 if exist "%TEMP%\oemkey.txt" del "%TEMP%\oemkey.txt"
-
-:: --- STEP 6: ICONS & RIGHT-CLICK BRAND ---
-echo %PAD%%Yellow%[6/7] Branding ^& Icons...%Reset%
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{59031a47-3f72-44a7-89c5-5595fe6b30ee}" /t REG_DWORD /d 0 /f >nul 2>&1
-call :AddContextSupport >nul 2>&1
-set "mark_BrandClick=[OK]"
-
-:: --- STEP 7: CLEANUP (SAFE REFRESH) ---
 echo %PAD%%Yellow%[7/7] Refreshing System...%Reset%
-:: Use RUNDLL32 to refresh icons without killing Explorer
 RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters >nul 2>&1
-
 set "mark_Auto=[OK]"
 set "mark_Boost=[OK]"
-set "mark_Icons=[OK]"
-
 echo.
 echo %PAD%%Green%[SUCCESS] System Optimized.%Reset%
 call :Speak "Ready."
 echo %PAD%%Yellow%Returning to menu in 3 seconds...%Reset%
 timeout /t 3 >nul
-goto Menu_Windows
-
-:AddRightClickBrand
-cls
-call :DrawHeader
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ DESKTOP BRANDING SETUP ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%Adding 'Contact Montag Support' to context menu...%Reset%
-call :AddContextSupport
-echo.
-echo %PAD%%Green%[OK] Added successfully! Check your Right-Click.%Reset%
-set "mark_BrandClick=[OK]"
-timeout /t 2 >nul
 goto Menu_Windows
 
 :QuickBoost
@@ -613,8 +441,6 @@ goto Menu_Windows
 cls
 echo.
 echo %PAD%%Cyan%Searching for BIOS Product Key...%Reset%
-
-:: Create Temp PS Script to Find Key (Nuclear Method - 3 Ways)
 set "KeyScript=%TEMP%\FindKey.ps1"
 (
 echo $key = ""
@@ -623,16 +449,10 @@ echo if ([string]::IsNullOrWhiteSpace($key^)^) { try { $key = (Get-ItemProperty 
 echo if ([string]::IsNullOrWhiteSpace($key^)^) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BootDeviceProductKey } catch {} }
 echo $key ^| Out-File "$env:TEMP\oemkey.txt" -Encoding ASCII
 ) > "%KeyScript%"
-
-:: Run Search
 echo %PAD%%Yellow%Scanning BIOS and Registry...%Reset%
 powershell -ExecutionPolicy Bypass -File "%KeyScript%" >nul 2>&1
-
-:: Read Result
 set "BiosKey="
 if exist "%TEMP%\oemkey.txt" ( set /p BiosKey=<"%TEMP%\oemkey.txt" )
-
-:: Act
 if not "%BiosKey%"=="" (
     echo %PAD%%Green%[OK] Key Found: %White%%BiosKey%%Reset%
     echo %PAD%Installing License...
@@ -647,11 +467,8 @@ if not "%BiosKey%"=="" (
     echo %PAD%%Red%[ERROR] Could not find any Original Key on this device.%Reset%
     echo %PAD%%Gray%NOTE: This unit might not have a built-in Windows License.%Reset%
 )
-
-:: Cleanup
 if exist "%KeyScript%" del "%KeyScript%"
 if exist "%TEMP%\oemkey.txt" del "%TEMP%\oemkey.txt"
-
 pause
 goto Menu_Windows
 
@@ -686,25 +503,12 @@ goto Menu_Windows
 :WinUpdate
 start ms-settings:windowsupdate & goto Menu_Windows
 
-:: --- LOCAL HELPER FUNCTIONS ---
-:AddContextSupport
-reg add "HKCR\DesktopBackground\Shell\MontagSupport" /ve /t REG_SZ /d "Contact Montag Support" /f >nul 2>&1
-reg add "HKCR\DesktopBackground\Shell\MontagSupport" /v "Icon" /t REG_SZ /d "%IconDir%\Montag.ico" /f >nul 2>&1
-reg add "HKCR\DesktopBackground\Shell\MontagSupport\command" /ve /t REG_SZ /d "explorer \"https://wa.me/%SupportNum%\"" /f >nul 2>&1
-exit /b
-
 :: ============================================================
 :: [3] DRIVERS MENU (SMART DETECTION & PROGRESS)
 :: ============================================================
 :Menu_Drivers
 cls
-echo.
-echo %PAD%%Pink%██████╗ ██████╗ ██╗██╗   ██╗███████╗██████╗ ███████╗%Reset%
-echo %PAD%%Pink%██╔══██╗██╔══██╗██║██║   ██║██╔════╝██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%██║  ██║██████╔╝██║██║   ██║█████╗  ██████╔╝███████╗%Reset%
-echo %PAD%%Pink%██║  ██║██╔══██╗██║╚██╗ ██╔╝██╔══╝  ██╔══██╗╚════██║%Reset%
-echo %PAD%%Pink%██████╔╝██║  ██║██║ ╚████╔╝ ███████╗██║  ██║███████║%Reset%
-echo %PAD%%Pink%╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝%Reset%
+call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
@@ -793,13 +597,7 @@ goto Menu_Drivers
 :: ============================================================
 :Menu_Software
 cls
-echo.
-echo %PAD%%Pink%███████╗ ██████╗ ███████╗████████╗██╗    ██╗ █████╗ ██████╗ ███████╗%Reset%
-echo %PAD%%Pink%██╔════╝██╔═══██╗██╔════╝╚══██╔══╝██║    ██║██╔══██╗██╔══██╗██╔════╝%Reset%
-echo %PAD%%Pink%███████╗██║   ██║█████╗     ██║   ██║ █╗ ██║███████║██████╔╝█████╗  %Reset%
-echo %PAD%%Pink%╚════██║██║   ██║██╔══╝     ██║   ██║███╗██║██╔══██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%███████║╚██████╔╝██║        ██║   ╚███╔███╔╝██║  ██║██║  ██║███████╗%Reset%
-echo %PAD%%Pink%╚══════╝ ╚═════╝ ╚═╝        ╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝%Reset%
+call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
@@ -920,11 +718,22 @@ goto Menu_Hardware
 :PrintLabel
 cls
 echo.
-echo %PAD%%Cyan%Generating ZPL Label...%Reset%
-powershell -ExecutionPolicy Bypass -File "%EngineScript%" -Task "Label"
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ LABEL PRINTING SYSTEM ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%%Green%[OK] Label sent to printer.%Reset%
-timeout /t 3 >nul
+echo %PAD%%Yellow%Downloading Label Module...%Reset%
+curl -L -k -# -o "%ToolDir%\MontagLabel.bat" "%UrlLabelScript%"
+if exist "%ToolDir%\MontagLabel.bat" (
+    echo.
+    echo %PAD%%Green%[OK] Launching Label Printer...%Reset%
+    start "" "%ToolDir%\MontagLabel.bat"
+) else (
+    echo.
+    echo %PAD%%Red%[ERROR] Failed to download Label Script.%Reset%
+    echo %PAD%Check internet connection.
+    pause
+)
 goto MainMenu
 
 :: ============================================================
@@ -932,8 +741,6 @@ goto MainMenu
 :: ============================================================
 :FinalReport
 echo %PAD%%Cyan%Collecting Test Results...%Reset%
-
-:: --- 1. BUILD STATUS STRING ---
 set "TEST_LOG="
 if "!mark_Key!"=="[OK]" set "TEST_LOG=!TEST_LOG! Key:OK"
 if "!mark_Screen!"=="[OK]" set "TEST_LOG=!TEST_LOG! Screen:OK"
@@ -955,26 +762,18 @@ if "!mark_Office!"=="[OK]" set "TEST_LOG=!TEST_LOG! Office:OK"
 if "!mark_OffClean!"=="[OK]" set "TEST_LOG=!TEST_LOG! OffScrub:OK"
 if "!mark_Touch!"=="[OK]" set "TEST_LOG=!TEST_LOG! Touch:OK"
 if "!mark_RealBatt!"=="[OK]" set "TEST_LOG=!TEST_LOG! RealBatt:OK"
-
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
-
-:: --- 2. SAVE STATUS TO FILE ---
 echo !TEST_LOG! > "%ToolDir%\MontagLog.txt"
-
-:: --- 3. DOWNLOAD & RUN REPORT SCRIPT ---
 echo.
 echo %PAD%%Yellow%Loading Montag Report System...%Reset%
 curl -L -k -# -o "%ToolDir%\MontagReport.bat" "%UrlReportScript%"
-
 if exist "%ToolDir%\MontagReport.bat" (
     echo %PAD%%Green%[OK] Handing over control...%Reset%
-    :: Launch without arguments (it reads the file now)
     start "Montag Report" "%ToolDir%\MontagReport.bat"
 ) else (
     echo %PAD%%Red%[ERROR] Failed to load Report Module.%Reset%
     pause
 )
-
 echo.
 timeout /t 2 >nul
 goto MainMenu
@@ -986,7 +785,7 @@ exit
 
 :: --- GLOBAL SUB-FUNCTIONS ---
 :Speak
-powershell -Command "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
+start /b powershell -nop -c "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
 exit /b
 
 :DrawHeader
