@@ -3,18 +3,15 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] SELF-PROTECTION (ANTI-DELETE FIX)
+:: [0] SELF-PROTECTION & CONFIG
 :: ============================================================
-:: This block copies the script to TEMP to survive when MontagLauncher deletes MontagTools
+:: Copy to TEMP to survive folder deletion
 if /i "%~dp0" neq "%TEMP%\" (
     copy /y "%~f0" "%TEMP%\%~nx0" >nul
     "%TEMP%\%~nx0"
     exit
 )
 
-:: ============================================================
-:: [1] FORCE ADMIN & CONFIG
-:: ============================================================
 FSUTIL dirty query %systemdrive% >nul
 if %errorlevel% neq 0 (
     powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Maximized"
@@ -24,7 +21,7 @@ if %errorlevel% neq 0 (
 cd /d "%~dp0"
 chcp 65001 >nul
 mode con: cols=80 lines=25
-title Montag Store - Sales System (V 125.0 Anti-Crash)
+title Montag Store - Sales System (V 130.0 Integrated Cleanup)
 color 0B
 
 :: --- BRANDING DATA ---
@@ -35,7 +32,7 @@ set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
 set "TechSupportNumber=201040901444"
 set "WorkHours=12 PM - 9 PM"
 
-:: Paths (Assets are in ProgramData, so they are SAFE from deletion)
+:: Paths
 set "IconDir=%ProgramData%\MontagStore"
 set "IconPath=%IconDir%\Montag.ico"
 set "LogoPath=%IconDir%\Logo.png"
@@ -49,7 +46,7 @@ if not exist "%IconDir%" mkdir "%IconDir%" >nul 2>&1
 if not exist "%IconPath%" curl -L -k -s -o "%IconPath%" "%UrlIcon%" >nul 2>&1
 if not exist "%LogoPath%" curl -L -k -s -o "%LogoPath%" "%UrlLogo%" >nul 2>&1
 
-:: --- GENERATE SPLASH SCRIPT (CINEMATIC ENGINE) ---
+:: --- GENERATE SPLASH SCRIPT ---
 set "SplashScript=%TEMP%\MontagSplash.ps1"
 (
 echo Add-Type -AssemblyName System.Windows.Forms
@@ -77,20 +74,20 @@ echo $form.Dispose^(^)
 ) > "%SplashScript%"
 
 :: ============================================================
-:: [2] CINEMATIC START
+:: [1] CINEMATIC START
 :: ============================================================
 cls
 if exist "%LogoPath%" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
 )
 
-:: --- READ LOG (From original location if exists, else default) ---
+:: --- READ LOG ---
 set "LogFile=%SystemDrive%\MontagTools\MontagLog.txt"
 set "IncomingLog=Manual Inspection"
 if exist "%LogFile%" (set /p IncomingLog=<"%LogFile%")
 
 :: ============================================================
-:: [3] PREPARE SYSTEM
+:: [2] PREPARE SYSTEM
 :: ============================================================
 echo.
 echo      =============================================
@@ -120,19 +117,23 @@ for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__REPORT_START__:::$" "%~f0"
 more +%StartLine% "%~f0" > "%ReportEngine%"
 
 echo      [3/3] Waiting for User Input...
-:: Launch PowerShell which manages the Browser Lifecycle
+:: Launch PowerShell
 powershell -ExecutionPolicy Bypass -File "%ReportEngine%" -StatusLog "%IncomingLog%" -FormID "%GFormID%" -IconPath "%IconPath%" -LogoPath "%LogoPath%" -TechNum "%TechSupportNumber%"
 
 :: ============================================================
-:: [4] CINEMATIC EXIT
+:: [3] CINEMATIC EXIT & FINAL CLEANUP
 :: ============================================================
 cls
 color 00
-:: Force kill Edge just in case
 taskkill /f /im msedge.exe >nul 2>&1
 if exist "%LogoPath%" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
 )
+
+:: --- THE CLEANUP (MOVED HERE) ---
+:: Now that Report is done, we safely remove the tools folder
+rmdir /s /q "%SystemDrive%\MontagTools" >nul 2>&1
+
 exit
 
 :: ============================================================
@@ -270,40 +271,31 @@ $htmlContent = @"
 "@
 $htmlContent | Out-File "$env:TEMP\MontagSales.html" -Encoding UTF8
 
-# 3. Launch UI via Edge App Mode & SMART WATCHER
+# 3. Launch UI & SMART WATCHER
 Start-Process "msedge" -ArgumentList "--new-window --app=$env:TEMP\MontagSales.html --start-fullscreen"
 
-# SMART WATCHER LOOP (Wait for trigger OR manual close)
+# WATCHER
 $foundWindow = $false
 $maxWait = 0
 while ($true) {
-    # Find Edge Window with our Title
     $w = Get-Process | Where-Object { $_.MainWindowTitle -eq 'Montag Sales' -or $_.MainWindowTitle -eq 'MONTAG_EXIT_TRIGGER' } | Select-Object -First 1
-    
     if ($w) { $foundWindow = $true }
-
-    # Timeout if window never appears
     if (-not $foundWindow) {
         Start-Sleep -Milliseconds 500
         $maxWait++
         if ($maxWait -gt 20) { break }
         continue
     }
-
-    # If window WAS found but is now gone -> User closed it -> EXIT LOOP
     if (-not $w) { break }
-
-    # If Title changed to TRIGGER -> Upload Done -> Wait 3s -> Close & EXIT LOOP
     if ($w.MainWindowTitle -eq 'MONTAG_EXIT_TRIGGER') {
         Start-Sleep -Seconds 3
         $w | Stop-Process -Force
         break
     }
-    
     Start-Sleep -Milliseconds 500
 }
 
-# 4. Generate Client Report (Hidden)
+# 4. Generate Client Report
 $ReportDir = "C:\MontagReports"
 if (-not (Test-Path $ReportDir)) { New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null }
 $RealHtmlFile = "$ReportDir\Montag_$($bios.SerialNumber).html"
