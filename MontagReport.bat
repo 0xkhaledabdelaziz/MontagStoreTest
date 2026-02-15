@@ -3,7 +3,17 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [0] FORCE ADMIN & CONFIG
+:: [0] SELF-PROTECTION (ANTI-DELETE FIX)
+:: ============================================================
+:: This block copies the script to TEMP to survive when MontagLauncher deletes MontagTools
+if /i "%~dp0" neq "%TEMP%\" (
+    copy /y "%~f0" "%TEMP%\%~nx0" >nul
+    "%TEMP%\%~nx0"
+    exit
+)
+
+:: ============================================================
+:: [1] FORCE ADMIN & CONFIG
 :: ============================================================
 FSUTIL dirty query %systemdrive% >nul
 if %errorlevel% neq 0 (
@@ -14,7 +24,7 @@ if %errorlevel% neq 0 (
 cd /d "%~dp0"
 chcp 65001 >nul
 mode con: cols=80 lines=25
-title Montag Store - Sales System (V 120.0 Rock Solid)
+title Montag Store - Sales System (V 125.0 Anti-Crash)
 color 0B
 
 :: --- BRANDING DATA ---
@@ -25,7 +35,7 @@ set "GFormID=1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
 set "TechSupportNumber=201040901444"
 set "WorkHours=12 PM - 9 PM"
 
-:: Paths
+:: Paths (Assets are in ProgramData, so they are SAFE from deletion)
 set "IconDir=%ProgramData%\MontagStore"
 set "IconPath=%IconDir%\Montag.ico"
 set "LogoPath=%IconDir%\Logo.png"
@@ -67,20 +77,20 @@ echo $form.Dispose^(^)
 ) > "%SplashScript%"
 
 :: ============================================================
-:: [1] CINEMATIC START
+:: [2] CINEMATIC START
 :: ============================================================
 cls
 if exist "%LogoPath%" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
 )
 
-:: --- READ LOG ---
+:: --- READ LOG (From original location if exists, else default) ---
 set "LogFile=%SystemDrive%\MontagTools\MontagLog.txt"
 set "IncomingLog=Manual Inspection"
 if exist "%LogFile%" (set /p IncomingLog=<"%LogFile%")
 
 :: ============================================================
-:: [2] PREPARE SYSTEM
+:: [3] PREPARE SYSTEM
 :: ============================================================
 echo.
 echo      =============================================
@@ -114,11 +124,11 @@ echo      [3/3] Waiting for User Input...
 powershell -ExecutionPolicy Bypass -File "%ReportEngine%" -StatusLog "%IncomingLog%" -FormID "%GFormID%" -IconPath "%IconPath%" -LogoPath "%LogoPath%" -TechNum "%TechSupportNumber%"
 
 :: ============================================================
-:: [3] CINEMATIC EXIT
+:: [4] CINEMATIC EXIT
 :: ============================================================
 cls
 color 00
-:: Force kill Edge just in case it's stuck
+:: Force kill Edge just in case
 taskkill /f /im msedge.exe >nul 2>&1
 if exist "%LogoPath%" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
@@ -250,7 +260,6 @@ $htmlContent = @"
             var url = "https://docs.google.com/forms/d/e/$FormID/formResponse?usp=pp_url&entry.371291262=" + type + "&entry.392302034=" + encodeURIComponent(tester) + "&entry.517500793=" + encodeURIComponent(clientInfo) + "&entry.531158115=" + encodeURIComponent("$FullModel") + "&entry.1203480099=" + encodeURIComponent("$($bios.SerialNumber)") + "&entry.1462565184=" + encodeURIComponent("$cpuDetails") + "&entry.212987726=" + encodeURIComponent("$ramDetails") + "&entry.1717831234=" + encodeURIComponent("$storageString") + "&entry.2044586469=" + encodeURIComponent("$gpuString") + "&entry.310563239=" + encodeURIComponent(document.getElementById('status').value);
             
             fetch(url, { mode: 'no-cors' }).then(function() {
-                // SIGNAL SUCCESS TO POWERSHELL
                 document.title = "MONTAG_EXIT_TRIGGER";
                 document.body.innerHTML = "<h1 style='color:#0f0;margin-top:20%;font-family:sans-serif'>UPLOAD SUCCESSFUL!</h1><p style='color:#fff'>System Finalized.</p>";
             });
@@ -262,28 +271,26 @@ $htmlContent = @"
 $htmlContent | Out-File "$env:TEMP\MontagSales.html" -Encoding UTF8
 
 # 3. Launch UI via Edge App Mode & SMART WATCHER
-# We launch Edge and then use a loop to monitor the TITLE of the window.
 Start-Process "msedge" -ArgumentList "--new-window --app=$env:TEMP\MontagSales.html --start-fullscreen"
 
-# SMART WATCHER LOOP
+# SMART WATCHER LOOP (Wait for trigger OR manual close)
 $foundWindow = $false
 $maxWait = 0
 while ($true) {
     # Find Edge Window with our Title
     $w = Get-Process | Where-Object { $_.MainWindowTitle -eq 'Montag Sales' -or $_.MainWindowTitle -eq 'MONTAG_EXIT_TRIGGER' } | Select-Object -First 1
     
-    # If window found, mark as started
     if ($w) { $foundWindow = $true }
 
-    # If we haven't found window yet, wait a bit (up to 10s timeout)
+    # Timeout if window never appears
     if (-not $foundWindow) {
         Start-Sleep -Milliseconds 500
         $maxWait++
-        if ($maxWait -gt 20) { break } # Exit if window never appears
+        if ($maxWait -gt 20) { break }
         continue
     }
 
-    # If window WAS found but is now gone, User closed it -> EXIT LOOP
+    # If window WAS found but is now gone -> User closed it -> EXIT LOOP
     if (-not $w) { break }
 
     # If Title changed to TRIGGER -> Upload Done -> Wait 3s -> Close & EXIT LOOP
@@ -293,7 +300,6 @@ while ($true) {
         break
     }
     
-    # Keep monitoring
     Start-Sleep -Milliseconds 500
 }
 
