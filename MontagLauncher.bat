@@ -31,7 +31,7 @@ cls
 :: ============================================================
 :: [3] VARIABLES & CORE SETUP
 :: ============================================================
-title Montag Store - System (V 260.0 Smart App Control)
+title Montag Store - System (V 270.0 Launcher Final)
 
 :: Colors
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
@@ -105,9 +105,6 @@ echo $form.Close^(^)
 echo $pb.Dispose^(^)
 echo $form.Dispose^(^)
 ) > "%SplashScript%"
-
-:: Voice Intro (Silent in V250+)
-:: start /b powershell ... (DISABLED)
 
 :: Run Splash (Start)
 if exist "%SplashScript%" powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
@@ -374,7 +371,7 @@ set "mark_Touch=[OK]"
 goto Menu_Hardware
 
 :: ============================================================
-:: [2] WINDOWS MENU (UPDATED V260.0)
+:: [2] WINDOWS MENU
 :: ============================================================
 :Menu_Windows
 cls
@@ -863,50 +860,13 @@ echo %PAD%%Yellow%Loading Montag Report System...%Reset%
 curl -L -k -# -o "%ToolDir%\MontagReport.bat" "%UrlReportScript%"
 if exist "%ToolDir%\MontagReport.bat" (
     echo %PAD%%Green%[OK] Handing over control...%Reset%
-    start "Montag Report" "%ToolDir%\MontagReport.bat"
+    :: CRITICAL FIX: LAUNCH REPORT AND EXIT. DO NOT CLEAN UP YET.
+    start "" "%ToolDir%\MontagReport.bat"
+    exit
 ) else (
     echo %PAD%%Red%[ERROR] Failed to load Report Module.%Reset%
     pause
 )
-timeout /t 3 >nul
-
-:: --- CINEMATIC EXIT ---
-cls
-color 00
-:: Run Splash Script (Exit Mode)
-set "SplashScript=%TEMP%\MontagSplash.ps1"
-if not exist "%LogoPath%" curl -L -k -s -o "%LogoPath%" "%UrlLogo%"
-(
-echo Add-Type -AssemblyName System.Windows.Forms
-echo Add-Type -AssemblyName System.Drawing
-echo $form = New-Object System.Windows.Forms.Form
-echo $form.FormBorderStyle = 'None'
-echo $form.BackColor = [System.Drawing.Color]::FromArgb^(1, 1, 1^)
-echo $form.TransparencyKey = [System.Drawing.Color]::FromArgb^(1, 1, 1^)
-echo $form.StartPosition = 'CenterScreen'
-echo $form.Size = New-Object System.Drawing.Size^(800, 800^)
-echo $form.TopMost = $true
-echo $form.ShowInTaskbar = $false
-echo $form.Opacity = 0
-echo $pb = New-Object System.Windows.Forms.PictureBox
-echo $pb.Image = [System.Drawing.Image]::FromFile^('%LogoPath%'^)
-echo $pb.SizeMode = 'Zoom'
-echo $pb.Dock = 'Fill'
-echo $pb.BackColor = [System.Drawing.Color]::Transparent
-echo $form.Controls.Add^($pb^)
-echo $form.Show^(^)
-echo for ^($i = 0; $i -le 1; $i += 0.05^) { $form.Opacity = $i; [System.Windows.Forms.Application]::DoEvents^(^); Start-Sleep -Milliseconds 15 }
-echo Start-Sleep -Seconds 2
-echo for ^($i = 1; $i -ge 0; $i -= 0.05^) { $form.Opacity = $i; [System.Windows.Forms.Application]::DoEvents^(^); Start-Sleep -Milliseconds 15 }
-echo $form.Close^(^)
-echo $pb.Dispose^(^)
-echo $form.Dispose^(^)
-) > "%SplashScript%"
-
-start /b powershell -nop -WindowStyle Hidden -c "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('Montag Store, Goodbye')" >nul 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
-timeout /t 3 >nul
-
 goto ExitCleanup
 
 :ExitCleanup
@@ -930,3 +890,21 @@ echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║�
 echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
 echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
 exit /b
+
+:: ============================================================
+::  UNIFIED POWERSHELL ENGINE
+:: ============================================================
+:::__POWERSHELL_START__:::
+param($Task, $TesterName, $StatusLog, $FormID, $LogoPath)
+$ErrorActionPreference = 'SilentlyContinue'
+
+if ($Task -eq 'CheckWin') {
+    $score = 0
+    $lic = Get-CimInstance SoftwareLicensingProduct | Where-Object {$_.PartialProductKey -and $_.Name -like "*Windows*"} | Select-Object -ExpandProperty Name -First 1
+    if ($lic -match "Volume" -or $lic -match "KMS") { Write-Host "   [1/4] License Channel : FAKE/VOLUME (Modified)" -ForegroundColor Red; $score++ } else { Write-Host "   [1/4] License Channel : OEM/RETAIL (Original)" -ForegroundColor Green }
+    if (Get-Service windefend -ErrorAction SilentlyContinue) { Write-Host "   [2/4] Windows Defender: OK" -ForegroundColor Green } else { Write-Host "   [2/4] Windows Defender: DELETED (Modified)" -ForegroundColor Red; $score++ }
+    if (Get-Service wuauserv -ErrorAction SilentlyContinue) { Write-Host "   [3/4] Windows Update  : OK" -ForegroundColor Green } else { Write-Host "   [3/4] Windows Update  : DELETED (Modified)" -ForegroundColor Red; $score++ }
+    if (Test-Path "C:\Windows\System32\Recovery\ReAgent.xml") { Write-Host "   [4/4] Recovery System : OK" -ForegroundColor Green } else { Write-Host "   [4/4] Recovery System : MISSING (Modified)" -ForegroundColor Red; $score++ }
+    if ($score -eq 0) { Write-Host "`n   [VERDICT] ORIGINAL (STOCK) WINDOWS - SAFE" -ForegroundColor Green } else { Write-Host "`n   [VERDICT] MODIFIED / FAKE DETECTED" -ForegroundColor Red }
+    exit
+}
