@@ -31,7 +31,7 @@ cls
 :: ============================================================
 :: [3] VARIABLES & CORE SETUP
 :: ============================================================
-title Montag Store - System (V 240.0 Total Silence)
+title Montag Store - System (V 260.0 Smart App Control)
 
 :: Colors
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
@@ -70,7 +70,7 @@ set "UrlLogo=https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.pn
 set "UrlIcon=https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1"
 
 :: Markers
-for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf DefCont Revo Apps Game MAS Office Report Touch RealBatt Warranty Stress CheckWin Name Bloat Active Boost Auto BrandClick ClassicMenu) do if not defined mark_%%i set "mark_%%i=    "
+for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf DefCont Revo Apps Game MAS Office Report Touch RealBatt Warranty Stress CheckWin Name Bloat Active Boost Auto BrandClick ClassicMenu SAC) do if not defined mark_%%i set "mark_%%i=    "
 
 :: Download Logo
 set "LogoPath=%IconDir%\Logo.png"
@@ -106,8 +106,8 @@ echo $pb.Dispose^(^)
 echo $form.Dispose^(^)
 ) > "%SplashScript%"
 
-:: Voice Intro
-start /b powershell -nop -c "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('Montag System')" >nul 2>&1
+:: Voice Intro (Silent in V250+)
+:: start /b powershell ... (DISABLED)
 
 :: Run Splash (Start)
 if exist "%SplashScript%" powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
@@ -241,7 +241,6 @@ goto StartLogger
 :StartLogger
 set "BatScript=%TEMP%\BatLogger.ps1"
 if exist "%BatScript%" del "%BatScript%"
-:: FIXED: Enhanced Header with System Info
 echo $log = "C:\MontagBatteryLog.txt" > "%BatScript%"
 echo $sys = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%BatScript%"
 echo $ser = (Get-WmiObject Win32_Bios).SerialNumber.Trim() >> "%BatScript%"
@@ -375,7 +374,7 @@ set "mark_Touch=[OK]"
 goto Menu_Hardware
 
 :: ============================================================
-:: [2] WINDOWS MENU (RE-ORGANIZED & NEW WIN11 FIX)
+:: [2] WINDOWS MENU (UPDATED V260.0)
 :: ============================================================
 :Menu_Windows
 cls
@@ -391,14 +390,15 @@ echo %PAD%    %Bold%%White%[6]%Reset% QUICK BOOST ^& FIX        %Green%!mark_Boo
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo %PAD%    %Bold%%White%[7]%Reset% CHECK WINDOWS UPDATE     %Green%!mark_WinUpd!%Reset%      %Bold%%White%[8]%Reset% RENAME PC ^& USER         %Green%!mark_Name!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[9]%Reset% DISABLE WIN11 MENU       %Green%!mark_ClassicMenu!%Reset%
+echo %PAD%    %Bold%%White%[9]%Reset% DISABLE WIN11 MENU       %Green%!mark_ClassicMenu!%Reset%      %Bold%%White%[S] DISABLE SMART APP        %Green%!mark_SAC!%Reset%
 echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
-choice /c 1234567890 /n
+choice /c 123456789s0 /n
 
-if %errorlevel%==10 goto MainMenu
+if %errorlevel%==11 goto MainMenu
+if %errorlevel%==10 goto DisableSAC
 if %errorlevel%==9 goto ClassicMenu
 if %errorlevel%==8 goto RenameUser
 if %errorlevel%==7 goto WinUpdate
@@ -420,7 +420,6 @@ echo %PAD%%Cyan%================================================================
 echo.
 echo %PAD%%Red%[WARNING] Optimizing Windows (No Apps)...%Reset%
 echo %PAD%%Green%   Initiating Auto-Pilot Mode...%Reset%
-call :Speak "Initiating Auto-Pilot Mode. Please stand by."
 echo.
 timeout /t 2 >nul
 
@@ -492,8 +491,25 @@ set "mark_Auto=[OK]"
 set "mark_Boost=[OK]"
 echo.
 echo %PAD%%Green%[SUCCESS] Auto-Pilot Completed Successfully!%Reset%
-call :Speak "System Ready. Have a nice day."
-pause
+echo.
+timeout /t 3 >nul
+goto Menu_Windows
+
+:DisableSAC
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo %PAD%                              [ DISABLE SMART APP CONTROL ]
+echo %PAD%%Cyan%========================================================================================================%Reset%
+echo.
+echo %PAD%%Yellow%Disabling Smart App Control...%Reset%
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f >nul 2>&1
+echo.
+echo %PAD%%Green%[OK] Policy Updated.%Reset%
+echo %PAD%%Red%[NOTE] A System Restart is required to apply this change.%Reset%
+set "mark_SAC=[OK]"
+timeout /t 3 >nul
 goto Menu_Windows
 
 :ClassicMenu
@@ -887,8 +903,7 @@ echo $pb.Dispose^(^)
 echo $form.Dispose^(^)
 ) > "%SplashScript%"
 
-:: REMOVED THE SPEAK COMMAND HERE
-
+start /b powershell -nop -WindowStyle Hidden -c "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('Montag Store, Goodbye')" >nul 2>&1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
 timeout /t 3 >nul
 
@@ -915,21 +930,3 @@ echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║�
 echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
 echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
 exit /b
-
-:: ============================================================
-::  UNIFIED POWERSHELL ENGINE
-:: ============================================================
-:::__POWERSHELL_START__:::
-param($Task, $TesterName, $StatusLog, $FormID, $LogoPath)
-$ErrorActionPreference = 'SilentlyContinue'
-
-if ($Task -eq 'CheckWin') {
-    $score = 0
-    $lic = Get-CimInstance SoftwareLicensingProduct | Where-Object {$_.PartialProductKey -and $_.Name -like "*Windows*"} | Select-Object -ExpandProperty Name -First 1
-    if ($lic -match "Volume" -or $lic -match "KMS") { Write-Host "   [1/4] License Channel : FAKE/VOLUME (Modified)" -ForegroundColor Red; $score++ } else { Write-Host "   [1/4] License Channel : OEM/RETAIL (Original)" -ForegroundColor Green }
-    if (Get-Service windefend -ErrorAction SilentlyContinue) { Write-Host "   [2/4] Windows Defender: OK" -ForegroundColor Green } else { Write-Host "   [2/4] Windows Defender: DELETED (Modified)" -ForegroundColor Red; $score++ }
-    if (Get-Service wuauserv -ErrorAction SilentlyContinue) { Write-Host "   [3/4] Windows Update  : OK" -ForegroundColor Green } else { Write-Host "   [3/4] Windows Update  : DELETED (Modified)" -ForegroundColor Red; $score++ }
-    if (Test-Path "C:\Windows\System32\Recovery\ReAgent.xml") { Write-Host "   [4/4] Recovery System : OK" -ForegroundColor Green } else { Write-Host "   [4/4] Recovery System : MISSING (Modified)" -ForegroundColor Red; $score++ }
-    if ($score -eq 0) { Write-Host "`n   [VERDICT] ORIGINAL (STOCK) WINDOWS - SAFE" -ForegroundColor Green } else { Write-Host "`n   [VERDICT] MODIFIED / FAKE DETECTED" -ForegroundColor Red }
-    exit
-}
