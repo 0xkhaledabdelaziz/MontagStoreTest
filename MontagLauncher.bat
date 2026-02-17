@@ -15,7 +15,7 @@ if '%errorlevel%' NEQ '0' (
 )
 
 :: ============================================================
-:: [2] WINDOW SETUP (WIDE BUFFER + FORCE MAXIMIZE)
+:: [2] WINDOW SETUP
 :: ============================================================
 cd /d "%~dp0"
 chcp 65001 >nul
@@ -27,7 +27,7 @@ cls
 :: ============================================================
 :: [3] VARIABLES & CORE SETUP
 :: ============================================================
-title Montag Store - System (V 16.3 Final Clean)
+title Montag Store - System (V 16.6 Stable Fix)
 
 :: Colors
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
@@ -58,14 +58,14 @@ set "UrlAppsScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagSto
 set "UrlLabelScript=https://raw.githubusercontent.com/0xkhaledabdelaziz/MontagStoreTest/refs/heads/main/MontagLabel.bat"
 set "UrlHwi=https://www.dropbox.com/scl/fi/fjtwrg3boc8zj88ml2jxs/HWiNFO64.EXE?rlkey=m64f5qxup91iq8ew09imqfcs0&st=9eqs19xe&dl=1"
 set "UrlKey=https://www.dropbox.com/scl/fi/onvccubmkxicdtvecdqvq/KeyboardTestUtility.exe?rlkey=62ag37rdvhp45iuzlk8261yus&st=k6li1383&dl=1"
-set "UrlScr=https://www.dropbox.com/scl/fi/b63drni7qk3t8f0wudnk7/defpix.exe?rlkey=ir9k1d9gi99dwunjmqtnvtq7n&st=6etkm6wa&dl=1"
 set "UrlAud=https://www.dropbox.com/scl/fi/ekej1ymnzepliyggm5hn3/xSpeaker-Headphones-Trim.mp4?rlkey=mw5md1jthagl3nfu3yfumulri&st=5xo6k9gg&dl=1"
 set "UrlMAS=https://www.dropbox.com/scl/fi/cnj7x4fp8zqksmeewhsmg/MAS_AIO.cmd?rlkey=1zr26qvm9l7r26iaw52czjmt9&st=7o2zhkih&dl=1"
 set "UrlLogo=https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.png?rlkey=b8n5e732fsepkadzg7y10gj1k&st=7q4k6jll&dl=1"
 set "UrlIcon=https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1"
+set "UrlScr=https://www.dropbox.com/scl/fi/b63drni7qk3t8f0wudnk7/defpix.exe?rlkey=ir9k1d9gi99dwunjmqtnvtq7n&st=6etkm6wa&dl=1"
 
 :: Markers
-for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf DefCont Revo Apps Game MAS Office Report Touch RealBatt Warranty CheckWin Name Bloat Active Boost Auto BrandClick ClassicMenu SAC) do if not defined mark_%%i set "mark_%%i=    "
+for %%i in (WiFi Key DeadPix BackLight Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf DefCont Revo Apps Game MAS Office Report Touch RealBatt Warranty CheckWin Name Bloat Active Boost Auto BrandClick ClassicMenu SAC) do if not defined mark_%%i set "mark_%%i=    "
 
 :: Download Logo
 set "LogoPath=%IconDir%\Logo.png"
@@ -139,7 +139,7 @@ if %errorlevel%==1 goto Menu_Hardware
 goto MainMenu
 
 :: ============================================================
-:: [1] HARDWARE MENU (CLEANED)
+:: [1] HARDWARE MENU
 :: ============================================================
 :Menu_Hardware
 cls
@@ -147,17 +147,17 @@ call :DrawHeader
 echo.
 echo %PAD%%Cyan%========================================================================================================%Reset%
 echo.
-echo %PAD%    %Bold%%White%[1]%Reset% KEYBOARD TEST            %Green%!mark_Key!%Reset%          %Bold%%White%[2]%Reset% SCREEN TEST              %Green%!mark_Screen!%Reset%
+echo %PAD%    %Bold%%White%[1]%Reset% KEYBOARD TEST            %Green%!mark_Key!%Reset%          %Bold%%White%[2]%Reset% DEAD PIXEL HUNTER        %Green%!mark_DeadPix!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[3]%Reset% CAMERA TEST              %Green%!mark_Cam!%Reset%          %Bold%%White%[4]%Reset% AUDIO TEST               %Green%!mark_Audio!%Reset%
+echo %PAD%    %Bold%%White%[3]%Reset% BACKLIGHT BLEED          %Green%!mark_BackLight!%Reset%          %Bold%%White%[4]%Reset% CAMERA TEST              %Green%!mark_Cam!%Reset%
 echo.
-echo %PAD%    %Bold%%White%[5]%Reset% BATTERY REPORT           %Green%!mark_Batt!%Reset%          %Bold%%White%[6]%Reset% PRO TOUCH TEST           %Green%!mark_Touch!%Reset%
+echo %PAD%    %Bold%%White%[5]%Reset% AUDIO TEST               %Green%!mark_Audio!%Reset%          %Bold%%White%[6]%Reset% BATTERY REPORT           %Green%!mark_Batt!%Reset%
 echo.
-echo %PAD%    %Bold%%Yellow%[B] REAL BATTERY TEST (OFFLINE)%Reset% %Green%!mark_RealBatt!%Reset%
+echo %PAD%    %Bold%%White%[7]%Reset% PRO TOUCH TEST           %Green%!mark_Touch!%Reset%          %Bold%%Yellow%[B] REAL BATTERY TEST (OFFLINE)%Reset% %Green%!mark_RealBatt!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
-echo %PAD%    %Bold%%White%[7]%Reset% CHECK WARRANTY           %Green%!mark_Warranty!%Reset%          %Bold%%White%[8]%Reset% CHECK WIN INTEGRITY      %Green%!mark_CheckWin!%Reset%
+echo %PAD%    %Bold%%White%[8]%Reset% CHECK WARRANTY           %Green%!mark_Warranty!%Reset%          %Bold%%White%[9]%Reset% CHECK WIN INTEGRITY      %Green%!mark_CheckWin!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
@@ -168,22 +168,78 @@ echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Yellow%^> Select Test:%Reset% 
-choice /c 12345678b0s /n
+choice /c 123456789b0s /n
 
-if %errorlevel%==11 set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun
-if %errorlevel%==10 goto MainMenu
-if %errorlevel%==9 set "mark_RealBatt=[OK]" & goto RealBatteryTest
-if %errorlevel%==8 set "mark_CheckWin=[OK]" & goto CheckWinIntegrity
-if %errorlevel%==7 set "mark_Warranty=[OK]" & goto CheckWarranty
-if %errorlevel%==6 set "mark_Touch=[OK]" & goto ProTouchTest
-if %errorlevel%==5 set "mark_Batt=[OK]" & call :BatteryTest & goto Menu_Hardware
-if %errorlevel%==4 set "mark_Audio=[OK]" & set "ExeName=Audio.mp4" & set "TargetUrl=%UrlAud%" & goto DownloadAndRun
-if %errorlevel%==3 set "mark_Cam=[OK]" & call :CamTest & goto Menu_Hardware
-if %errorlevel%==2 set "mark_Screen=[OK]" & set "ExeName=ScreenTest.exe" & set "TargetUrl=%UrlScr%" & goto DownloadAndRun
+if %errorlevel%==12 set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun
+if %errorlevel%==11 goto MainMenu
+if %errorlevel%==10 set "mark_RealBatt=[OK]" & goto RealBatteryTest
+if %errorlevel%==9 set "mark_CheckWin=[OK]" & goto CheckWinIntegrity
+if %errorlevel%==8 set "mark_Warranty=[OK]" & goto CheckWarranty
+if %errorlevel%==7 set "mark_Touch=[OK]" & goto ProTouchTest
+if %errorlevel%==6 set "mark_Batt=[OK]" & call :BatteryTest & goto Menu_Hardware
+if %errorlevel%==5 set "mark_Audio=[OK]" & set "ExeName=Audio.mp4" & set "TargetUrl=%UrlAud%" & goto DownloadAndRun
+if %errorlevel%==4 set "mark_Cam=[OK]" & call :CamTest & goto Menu_Hardware
+if %errorlevel%==3 set "mark_BackLight=[OK]" & goto BacklightTest
+if %errorlevel%==2 set "mark_DeadPix=[OK]" & goto DeadPixelTest
 if %errorlevel%==1 set "mark_Key=[OK]" & set "ExeName=KeyTest.exe" & set "TargetUrl=%UrlKey%" & goto DownloadAndRun
 goto Menu_Hardware
 
 :: --- HARDWARE FUNCTIONS ---
+
+:DeadPixelTest
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Yellow%Launching Dead Pixel Hunter...%Reset%
+echo %PAD%%Gray%Click to cycle colors (Red, Green, Blue, White, Black).%Reset%
+set "PsScript=%TEMP%\DeadPixel.ps1"
+if exist "%PsScript%" del "%PsScript%"
+:: Writing line-by-line to avoid Batch Block crashing
+echo Add-Type -AssemblyName System.Windows.Forms > "%PsScript%"
+echo $f = New-Object System.Windows.Forms.Form >> "%PsScript%"
+echo $f.FormBorderStyle = 'None' >> "%PsScript%"
+echo $f.WindowState = 'Maximized' >> "%PsScript%"
+echo $f.TopMost = $true >> "%PsScript%"
+echo $c = @('Red', 'Green', 'Blue', 'White', 'Black') >> "%PsScript%"
+echo $i = 0 >> "%PsScript%"
+echo $f.BackColor = $c[0] >> "%PsScript%"
+echo $f.add_Click({ $script:i++; if($script:i -ge $c.Count){$this.Close()}else{$this.BackColor=$c[$script:i]} }) >> "%PsScript%"
+echo $f.ShowDialog() >> "%PsScript%"
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PsScript%"
+del "%PsScript%" >nul 2>&1
+goto Menu_Hardware
+
+:BacklightTest
+cls
+call :DrawHeader
+echo.
+echo %PAD%%Yellow%Max Brightness Backlight Bleed Test...%Reset%
+echo %PAD%%Gray%Setting brightness to 100%% and showing Black Screen.%Reset%
+echo %PAD%%Red%Click anywhere on the black screen to exit.%Reset%
+set "PsScript=%TEMP%\Backlight.ps1"
+if exist "%PsScript%" del "%PsScript%"
+:: Writing line-by-line to avoid Batch Block crashing
+echo $ErrorActionPreference = 'SilentlyContinue' > "%PsScript%"
+echo (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1,100) >> "%PsScript%"
+echo Add-Type -AssemblyName System.Windows.Forms >> "%PsScript%"
+echo $f = New-Object System.Windows.Forms.Form >> "%PsScript%"
+echo $f.FormBorderStyle = 'None' >> "%PsScript%"
+echo $f.WindowState = 'Maximized' >> "%PsScript%"
+echo $f.TopMost = $true >> "%PsScript%"
+echo $f.BackColor = 'Black' >> "%PsScript%"
+echo $l = New-Object System.Windows.Forms.Label >> "%PsScript%"
+echo $l.Text = "MAX BRIGHTNESS - CLICK TO EXIT" >> "%PsScript%"
+echo $l.ForeColor = 'Gray' >> "%PsScript%"
+echo $l.AutoSize = $true >> "%PsScript%"
+echo $l.Location = New-Object System.Drawing.Point(50, 50) >> "%PsScript%"
+echo $f.Controls.Add($l) >> "%PsScript%"
+echo $f.Add_Click({ $this.Close() }) >> "%PsScript%"
+echo $f.ShowDialog() >> "%PsScript%"
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PsScript%"
+del "%PsScript%" >nul 2>&1
+goto Menu_Hardware
 
 :RealBatteryTest
 cls
@@ -812,7 +868,8 @@ goto MainMenu
 echo %PAD%%Cyan%Collecting Test Results...%Reset%
 set "TEST_LOG="
 if "!mark_Key!"=="[OK]" set "TEST_LOG=!TEST_LOG! Key:OK"
-if "!mark_Screen!"=="[OK]" set "TEST_LOG=!TEST_LOG! Screen:OK"
+if "!mark_DeadPix!"=="[OK]" set "TEST_LOG=!TEST_LOG! DeadPix:OK"
+if "!mark_BackLight!"=="[OK]" set "TEST_LOG=!TEST_LOG! BackLight:OK"
 if "!mark_Audio!"=="[OK]" set "TEST_LOG=!TEST_LOG! Audio:OK"
 if "!mark_Batt!"=="[OK]" set "TEST_LOG=!TEST_LOG! Batt:OK"
 if "!mark_Cam!"=="[OK]" set "TEST_LOG=!TEST_LOG! Cam:OK"
@@ -859,6 +916,6 @@ echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗  
 echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
 echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
 echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████╗   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
+echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
 echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
 exit /b
