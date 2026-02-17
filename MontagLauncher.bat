@@ -3,12 +3,11 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: [1] BULLETPROOF ADMIN ELEVATION (WITH MAXIMIZE REQUEST)
+:: [1] BULLETPROOF ADMIN ELEVATION
 :: ============================================================
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
 if '%errorlevel%' NEQ '0' (
     echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-    :: The '3' at the end tells Windows to open this Maximized
     echo UAC.ShellExecute "cmd.exe", "/c ""%~s0""", "", "runas", 3 >> "%temp%\getadmin.vbs"
     "%temp%\getadmin.vbs"
     del "%temp%\getadmin.vbs"
@@ -20,21 +19,15 @@ if '%errorlevel%' NEQ '0' (
 :: ============================================================
 cd /d "%~dp0"
 chcp 65001 >nul
-
-:: 1. Set the buffer width first (Prevents text wrapping)
 mode con: cols=170 lines=55
 color 0B
-
-:: 2. Force Maximize Window (Applied AFTER 'mode con' to override it)
-:: We use a tiny delay to ensure 'mode con' has finished resizing
 powershell -nop -c "Start-Sleep -m 200; $w=Add-Type -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);' -Name Win32 -Namespace Win32 -PassThru; $w::ShowWindow((Get-Process -Id $PID).MainWindowHandle, 3)" >nul 2>&1
-
 cls
 
 :: ============================================================
 :: [3] VARIABLES & CORE SETUP
 :: ============================================================
-title Montag Store - System (V 16.2 Max Force)
+title Montag Store - System (V 16.3 Final Clean)
 
 :: Colors
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
@@ -48,8 +41,8 @@ set "Yellow=%ESC%[33m"
 set "Bold=%ESC%[1m"
 set "Gray=%ESC%[90m"
 
-:: Padding (Centered for 170 cols)
-set "PAD=                                                            "
+:: Padding
+set "PAD=                                                             "
 
 :: Paths
 set "ToolDir=%SystemDrive%\MontagTools"
@@ -72,7 +65,7 @@ set "UrlLogo=https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.pn
 set "UrlIcon=https://www.dropbox.com/scl/fi/hjwoi8763lc1d5uyw7vhd/Montag.ico.ico?rlkey=ilxkmhhwqbaygjwhyycz5mqz0&st=siotxftu&dl=1"
 
 :: Markers
-for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf DefCont Revo Apps Game MAS Office Report Touch RealBatt Warranty Stress CheckWin Name Bloat Active Boost Auto BrandClick ClassicMenu SAC HardTest ChargerLogic) do if not defined mark_%%i set "mark_%%i=    "
+for %%i in (WiFi Key Screen Cam Audio Batt Sensor WinUpd Arab DriverBack DriverRest HighPerf DefCont Revo Apps Game MAS Office Report Touch RealBatt Warranty CheckWin Name Bloat Active Boost Auto BrandClick ClassicMenu SAC) do if not defined mark_%%i set "mark_%%i=    "
 
 :: Download Logo
 set "LogoPath=%IconDir%\Logo.png"
@@ -107,8 +100,6 @@ echo $form.Close^(^)
 echo $pb.Dispose^(^)
 echo $form.Dispose^(^)
 ) > "%SplashScript%"
-
-:: Run Splash (Start)
 if exist "%SplashScript%" powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
 
 :: Restore Color
@@ -148,7 +139,7 @@ if %errorlevel%==1 goto Menu_Hardware
 goto MainMenu
 
 :: ============================================================
-:: [1] HARDWARE MENU (FIXED OK MARKS)
+:: [1] HARDWARE MENU (CLEANED)
 :: ============================================================
 :Menu_Hardware
 cls
@@ -166,9 +157,7 @@ echo %PAD%    %Bold%%Yellow%[B] REAL BATTERY TEST (OFFLINE)%Reset% %Green%!mark_
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
-echo %PAD%    %Bold%%White%[7]%Reset% CHECK WARRANTY           %Green%!mark_Warranty!%Reset%          %Bold%%White%[8]%Reset% HARD TEST (CPU+GPU)      %Green%!mark_HardTest!%Reset%
-echo.
-echo %PAD%    %Bold%%White%[9]%Reset% CHECK WIN INTEGRITY      %Green%!mark_CheckWin!%Reset%          %Bold%%White%[C]%Reset% CHARGER STRESS (LOGIC)   %Green%!mark_ChargerLogic!%Reset%
+echo %PAD%    %Bold%%White%[7]%Reset% CHECK WARRANTY           %Green%!mark_Warranty!%Reset%          %Bold%%White%[8]%Reset% CHECK WIN INTEGRITY      %Green%!mark_CheckWin!%Reset%
 echo.
 echo %PAD%%Cyan%--------------------------------------------------------------------------------------------------------%Reset%
 echo.
@@ -179,15 +168,12 @@ echo.
 echo %PAD%                                     %Gray%[0] BACK%Reset%
 echo.
 echo %PAD%%Yellow%^> Select Test:%Reset% 
-choice /c 123456789b0sc /n
+choice /c 12345678b0s /n
 
-:: FIXED LOGIC: Set mark BEFORE going to function
-if %errorlevel%==13 set "mark_ChargerLogic=[OK]" & goto ChargerLogicTest
-if %errorlevel%==12 set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun
-if %errorlevel%==11 goto MainMenu
-if %errorlevel%==10 set "mark_RealBatt=[OK]" & goto RealBatteryTest
-if %errorlevel%==9 set "mark_CheckWin=[OK]" & goto CheckWinIntegrity
-if %errorlevel%==8 set "mark_HardTest=[OK]" & goto HardTestLauncher
+if %errorlevel%==11 set "mark_Sensor=[OK]" & set "ExeName=HWiNFO.exe" & set "TargetUrl=%UrlHwi%" & goto DownloadAndRun
+if %errorlevel%==10 goto MainMenu
+if %errorlevel%==9 set "mark_RealBatt=[OK]" & goto RealBatteryTest
+if %errorlevel%==8 set "mark_CheckWin=[OK]" & goto CheckWinIntegrity
 if %errorlevel%==7 set "mark_Warranty=[OK]" & goto CheckWarranty
 if %errorlevel%==6 set "mark_Touch=[OK]" & goto ProTouchTest
 if %errorlevel%==5 set "mark_Batt=[OK]" & call :BatteryTest & goto Menu_Hardware
@@ -198,130 +184,6 @@ if %errorlevel%==1 set "mark_Key=[OK]" & set "ExeName=KeyTest.exe" & set "Target
 goto Menu_Hardware
 
 :: --- HARDWARE FUNCTIONS ---
-:HardTestLauncher
-cls
-call :DrawHeader
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ HARDWARE STRESS TEST (CPU + GPU) ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%      %Bold%%White%[?] How many seconds to run the test?%Reset%
-echo.
-echo %PAD%      %Yellow%[0]%Reset%  INFINITE LOOP (Press 'Q' to stop)
-echo %PAD%      %Yellow%[60]%Reset% 1 Minute (Default)
-echo.
-set "tVal="
-set /p "tVal=%PAD%%Yellow%^> Enter Seconds: %Reset%"
-if "%tVal%"=="" set "tVal=60"
-set "MontagTime=%tVal%"
-
-:: Generate and Run Safe Script with AUTO-RESIZE JS
-set "PsScript=%TEMP%\Montag_HardTest.ps1"
-(
-echo $ErrorActionPreference = 'SilentlyContinue'
-echo $timeVal = $env:MontagTime
-echo Write-Host '   [!] PREPARING STRESS ENVIRONMENT...' -ForegroundColor Yellow
-echo $gpuHtml = "$env:TEMP\MontagGPU.html"
-echo $htmlContent = @"
-echo ^<!DOCTYPE html^>^<html^>^<head^>^<style^>
-echo body { margin:0; overflow:hidden; background:black; }
-echo canvas { width:100vw; height:100vh; display:block; position:absolute; top:0; left:0; }
-echo ^</style^>^</head^>^<body^>
-echo ^<canvas id="gl"^>^</canvas^>
-echo ^<script^>
-echo var c = document.getElementById('gl');
-echo var gl = c.getContext('webgl', { preserveDrawingBuffer: true });
-echo // Force canvas to match window size immediately and on resize
-echo function resize() { 
-echo    c.width = window.innerWidth; 
-echo    c.height = window.innerHeight; 
-echo    gl.viewport(0, 0, c.width, c.height); 
-echo }
-echo window.addEventListener('resize', resize);
-echo resize(); 
-echo var vs = gl.createShader(gl.VERTEX_SHADER);
-echo gl.shaderSource(vs, 'attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}');
-echo gl.compileShader(vs);
-echo var fs = gl.createShader(gl.FRAGMENT_SHADER);
-echo var src = 'precision highp float; uniform float t; uniform vec2 r; void main(){ vec2 p=(gl_FragCoord.xy*2.-r)/min(r.x,r.y); float s=0.,v=0.; for(float i=0.;i^<150.;i++){ vec2 q=p+vec2(cos(t*0.2+i),sin(t*0.3+i))*0.5; float l=length(q); s+=exp(-l*l*20.); v+=sin(l*20.-t*4.); } gl_FragColor=vec4(vec3(s*0.5+v*0.2, s*0.2, v*0.5),1);}';
-echo gl.shaderSource(fs, src);
-echo gl.compileShader(fs);
-echo var p = gl.createProgram();
-echo gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p); gl.useProgram(p);
-echo var b = gl.createBuffer();
-echo gl.bindBuffer(gl.ARRAY_BUFFER, b);
-echo gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
-echo var al = gl.getAttribLocation(p, 'p');
-echo gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
-echo var ut = gl.getUniformLocation(p, 't');
-echo var ur = gl.getUniformLocation(p, 'r');
-echo var start = Date.now();
-echo function f(){ gl.uniform1f(ut, (Date.now()-start)*0.001); gl.uniform2f(ur, c.width, c.height); gl.drawArrays(gl.TRIANGLES, 0, 6); requestAnimationFrame(f); }
-echo f();
-echo ^</script^>^</body^>^</html^>
-echo "@
-echo $htmlContent ^| Out-File $gpuHtml -Encoding UTF8
-echo # Start Edge Maximized (App Mode)
-echo Start-Process "msedge" -ArgumentList "--new-window --start-maximized --app=$gpuHtml"
-echo $jobs = @(^)
-echo 1..[Environment]::ProcessorCount ^| ForEach-Object { $jobs += Start-Job -ScriptBlock { while($true){$r=[math]::Sqrt(123456789); $r=[math]::Tan(987654321)} } }
-echo if ($timeVal -eq 0) {
-echo     Write-Host ""
-echo     Write-Host "   [INF] RUNNING INFINITE STRESS LOOP..." -ForegroundColor Magenta
-echo     Write-Host "   [!] PRESS 'Q' (IN THIS WINDOW) TO STOP [!]" -ForegroundColor Yellow
-echo     while($true) {
-echo         if ($host.UI.RawUI.KeyAvailable) {
-echo             $k = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-echo             if ($k.Character -eq 'q') { break }
-echo         }
-echo         Start-Sleep -Milliseconds 100
-echo     }
-echo } else {
-echo     for($i=$timeVal; $i -gt 0; $i--){ Write-Host ("   Sustaining Load... " + $i + "s remaining"); Start-Sleep 1 }
-echo }
-echo $jobs ^| Stop-Job ^| Remove-Job
-echo taskkill /F /IM msedge.exe ^| Out-Null
-echo Write-Host ""; Write-Host '   [OK] SYSTEM SURVIVED STRESS TEST.' -ForegroundColor Green
-echo Read-Host 'Press Enter to return...'
-) > "%PsScript%"
-
-powershell -ExecutionPolicy Bypass -File "%PsScript%"
-if exist "%PsScript%" del "%PsScript%"
-goto Menu_Hardware
-
-:ChargerLogicTest
-cls
-call :DrawHeader
-echo.
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo %PAD%                              [ SMART CHARGER STRESS TEST ]
-echo %PAD%%Cyan%========================================================================================================%Reset%
-echo.
-echo %PAD%%Yellow%Testing Charging Logic under 100%% CPU Load...%Reset%
-set "PsScript=%TEMP%\ChargerLogic.ps1"
-(
-echo $batt = Get-WmiObject Win32_Battery
-echo if (-not $batt) { Write-Host 'No Battery Detected!' -F Red; exit }
-echo Write-Host ('   Current Status: ' + $batt.BatteryStatus)
-echo Write-Host '   [!] IGNITING CPU LOAD (15s)...' -F Yellow
-echo $job = Start-Job -ScriptBlock { while($true){$r=[math]::Sqrt(999999999)} }
-echo $start = [System.Environment]::TickCount
-echo while (([System.Environment]::TickCount - $start) -lt 15000) {
-echo     $b = Get-WmiObject Win32_Battery
-echo     $s = 'Discharging'; if ($b.BatteryStatus -eq 2) { $s = 'Charging/AC' }
-echo     $time = "{0:N0}" -f (([System.Environment]::TickCount - $start) / 1000)
-echo     Write-Host ("   Time: $time s | Status: $s | Level: " + $b.EstimatedChargeRemaining + "%%")
-echo     if ($b.BatteryStatus -eq 1) { Write-Host '   [FAIL] BATTERY DRAINING UNDER LOAD!' -F Red; Stop-Job $job; Remove-Job $job; exit }
-echo     Start-Sleep -Seconds 1
-echo }
-echo Stop-Job $job; Remove-Job $job
-echo Write-Host '   [PASS] CHARGER HELD THE LOAD.' -F Green
-echo Read-Host 'Press Enter to return...'
-) > "%PsScript%"
-powershell -ExecutionPolicy Bypass -File "%PsScript%"
-if exist "%PsScript%" del "%PsScript%"
-goto Menu_Hardware
 
 :RealBatteryTest
 cls
@@ -536,11 +398,11 @@ echo.
 timeout /t 2 >nul
 
 :: --- STEP 1: RESTORE POINT (Safety) ---
-echo %PAD%%Yellow%[1/7] Creating Backup Point...%Reset%
+echo %PAD%%Yellow%[1/8] Creating Backup Point...%Reset%
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_AutoPilot' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 
 :: --- STEP 2: BOOST & TIME ---
-echo %PAD%%Yellow%[2/7] Tuning System (Time/Hibernate)...%Reset%
+echo %PAD%%Yellow%[2/8] Tuning System (Time/Hibernate)...%Reset%
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0
 powercfg /change standby-timeout-ac 0
@@ -551,12 +413,12 @@ reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506
 set "mark_HighPerf=[OK]"
 
 :: --- STEP 3: BLOATWARE ---
-echo %PAD%%Yellow%[3/7] Removing Bloatware...%Reset%
+echo %PAD%%Yellow%[3/8] Removing Bloatware...%Reset%
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 set "mark_Bloat=[OK]"
 
 :: --- STEP 4: ARABIC & EGYPT ---
-echo %PAD%%Yellow%[4/7] Setting Region and Language...%Reset%
+echo %PAD%%Yellow%[4/8] Setting Region and Language...%Reset%
 powershell -NoProfile -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}" >nul 2>&1
 powershell -NoProfile -Command "Set-WinHomeLocation -GeoId 68" >nul 2>&1
 reg add "HKCU\Control Panel\International\Geo" /v Nation /t REG_SZ /d "68" /f >nul 2>&1
@@ -568,7 +430,7 @@ tzutil /s "Egypt Standard Time" >nul 2>&1
 set "mark_Arab=[OK]"
 
 :: --- STEP 5: ACTIVATION ---
-echo %PAD%%Yellow%[5/7] Checking Activation...%Reset%
+echo %PAD%%Yellow%[5/8] Checking Activation...%Reset%
 set "KeyScript=%TEMP%\FindKey.ps1"
 if exist "%KeyScript%" del "%KeyScript%"
 echo $key = ""> "%KeyScript%"
@@ -589,12 +451,16 @@ if exist "%KeyScript%" del "%KeyScript%"
 if exist "%TEMP%\oemkey.txt" del "%TEMP%\oemkey.txt"
 
 :: --- STEP 6: DISABLE WIN11 MENU (AUTOMATIC) ---
-echo %PAD%%Yellow%[6/7] Restoring Classic Context Menu...%Reset%
+echo %PAD%%Yellow%[6/8] Restoring Classic Context Menu...%Reset%
 reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve >nul 2>&1
 set "mark_ClassicMenu=[OK]"
 
-:: --- STEP 7: CLEANUP & RESTART ---
-echo %PAD%%Yellow%[7/7] Refreshing Interface...%Reset%
+:: --- STEP 7: SHOW 'THIS PC' (NEW REQUEST) ---
+echo %PAD%%Yellow%[7/8] Showing 'This PC' on Desktop...%Reset%
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
+
+:: --- STEP 8: CLEANUP & RESTART ---
+echo %PAD%%Yellow%[8/8] Refreshing Interface...%Reset%
 del /s /f /q %temp%\*.* >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1
 start explorer.exe
@@ -952,7 +818,6 @@ if "!mark_Batt!"=="[OK]" set "TEST_LOG=!TEST_LOG! Batt:OK"
 if "!mark_Cam!"=="[OK]" set "TEST_LOG=!TEST_LOG! Cam:OK"
 if "!mark_WiFi!"=="[OK]" set "TEST_LOG=!TEST_LOG! WiFi:OK"
 if "!mark_Sensor!"=="[OK]" set "TEST_LOG=!TEST_LOG! Sensor:OK"
-if "!mark_Stress!"=="[OK]" set "TEST_LOG=!TEST_LOG! Stress:OK"
 if "!mark_HighPerf!"=="[OK]" set "TEST_LOG=!TEST_LOG! Perf:OK"
 if "!mark_WinUpd!"=="[OK]" set "TEST_LOG=!TEST_LOG! Upd:OK"
 if "!mark_Name!"=="[OK]" set "TEST_LOG=!TEST_LOG! Name:OK"
@@ -962,11 +827,8 @@ if "!mark_Apps!"=="[OK]" set "TEST_LOG=!TEST_LOG! Apps:OK"
 if "!mark_DriverBack!"=="[OK]" set "TEST_LOG=!TEST_LOG! DrvBack:OK"
 if "!mark_CheckWin!"=="[OK]" set "TEST_LOG=!TEST_LOG! WinCheck:OK"
 if "!mark_Office!"=="[OK]" set "TEST_LOG=!TEST_LOG! Office:OK"
-if "!mark_OffClean!"=="[OK]" set "TEST_LOG=!TEST_LOG! OffScrub:OK"
 if "!mark_Touch!"=="[OK]" set "TEST_LOG=!TEST_LOG! Touch:OK"
 if "!mark_RealBatt!"=="[OK]" set "TEST_LOG=!TEST_LOG! RealBatt:OK"
-if "!mark_HardTest!"=="[OK]" set "TEST_LOG=!TEST_LOG! HardTest:OK"
-if "!mark_ChargerLogic!"=="[OK]" set "TEST_LOG=!TEST_LOG! ChargerStress:OK"
 if "%TEST_LOG%"=="" set "TEST_LOG=General Inspection"
 echo !TEST_LOG! > "%ToolDir%\MontagLog.txt"
 
@@ -991,16 +853,12 @@ exit
 :: ============================================================
 :: GLOBAL HELPERS
 :: ============================================================
-:Speak
-start /b powershell -nop -c "Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; $v=$s.GetInstalledVoices().VoiceInfo | Where-Object {$_.Name -like '*Zira*' -or $_.Gender -eq 'Female'} | Select-Object -First 1; if($v){$s.SelectVoice($v.Name)}; $s.Speak('%~1')" >nul 2>&1
-exit /b
-
 :DrawHeader
 echo.
 echo %PAD%%Pink%███╗   ███╗ ██████╗ ███╗   ██╗████████╗ █████╗  ██████╗      ███████╗████████╗ ██████╗ ██████╗ ███████╗%Reset%
 echo %PAD%%Pink%████╗ ████║██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔════╝      ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝%Reset%
 echo %PAD%%Pink%██╔████╔██║██║   ██║██╔██╗ ██║   ██║   ███████║██║  ███╗     ███████╗   ██║   ██║   ██║██████╔╝█████╗  %Reset%
 echo %PAD%%Pink%██║╚██╔╝██║██║   ██║██║╚██╗██║   ██║   ██╔══██║██║   ██║     ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  %Reset%
-echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████║   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
+echo %PAD%%Pink%██║ ╚═╝ ██║╚██████╔╝██║ ╚████║   ██║   ██║  ██║╚██████╔╝     ███████╗   ██║   ╚██████╔╝██║  ██║███████╗%Reset%
 echo %PAD%%Pink%╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝%Reset%
 exit /b
