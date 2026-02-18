@@ -5,7 +5,6 @@ setlocal EnableDelayedExpansion
 :: ============================================================
 :: [0] SELF-PROTECTION & CONFIG
 :: ============================================================
-:: Copy to TEMP to survive folder deletion
 if /i "%~dp0" neq "%TEMP%\" (
     copy /y "%~f0" "%TEMP%\%~nx0" >nul
     "%TEMP%\%~nx0"
@@ -21,7 +20,7 @@ if %errorlevel% neq 0 (
 cd /d "%~dp0"
 chcp 65001 >nul
 mode con: cols=80 lines=25
-title Montag Store - Sales System (V 130.0 Integrated Cleanup)
+title Montag Store - Sales System (V 130.22 Final Stable)
 color 0B
 
 :: --- BRANDING DATA ---
@@ -125,15 +124,13 @@ powershell -ExecutionPolicy Bypass -File "%ReportEngine%" -StatusLog "%IncomingL
 :: ============================================================
 cls
 color 00
-taskkill /f /im msedge.exe >nul 2>&1
+:: REMOVED TASKKILL TO PREVENT AUTO-CLOSING
 if exist "%LogoPath%" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SplashScript%" >nul 2>&1
 )
 
-:: --- THE CLEANUP (MOVED HERE) ---
-:: Now that Report is done, we safely remove the tools folder
+:: --- THE CLEANUP ---
 rmdir /s /q "%SystemDrive%\MontagTools" >nul 2>&1
-
 exit
 
 :: ============================================================
@@ -209,20 +206,33 @@ $htmlContent = @"
     label { display: block; color: #fff; margin-bottom: 8px; font-size: 14px; }
     input, textarea { width: 95%; padding: 12px; background: #000; border: 1px solid #555; color: #00ff00; font-family: inherit; font-size: 16px; border-radius: 4px; outline: none; }
     input:focus { border-color: #8f00ff; box-shadow: 0 0 8px rgba(143, 0, 255, 0.3); }
-    #clientSection { display: none; background: rgba(0, 255, 0, 0.05); padding: 20px; border: 1px dashed #00ff00; border-radius: 8px; margin-bottom: 25px; }
+    
+    /* SECTIONS */
+    #clientSection, #stockSection, #notesSection { display: none; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+    #clientSection { background: rgba(0, 255, 0, 0.05); border: 1px dashed #00ff00; }
+    #stockSection { background: rgba(0, 255, 255, 0.05); border: 1px dashed #00ffff; transition: 0.3s; }
+    #notesSection { background: rgba(255, 0, 255, 0.05); border: 1px dashed #ff00ff; }
+
+    /* STATIC READ ONLY BOX */
+    .static-box { background: #111; padding: 12px; border: 1px solid #333; color: #0f0; font-weight: bold; border-radius: 4px; white-space: pre-wrap; font-size: 14px; }
+
     .btn-group { display: flex; gap: 15px; margin-top: 20px; }
     button { flex: 1; padding: 18px; font-size: 18px; font-family: inherit; font-weight: bold; border: none; cursor: pointer; color: #fff; text-transform: uppercase; border-radius: 6px; transition: 0.2s; }
     .btn-sell { background: #28a745; box-shadow: 0 4px 0 #1e7e34; }
     .btn-test { background: #17a2b8; box-shadow: 0 4px 0 #117a8b; }
     .btn-confirm { background: #d63384; box-shadow: 0 4px 0 #a61e61; animation: pulse 1s infinite; }
+    .btn-issue { background: #dc3545; box-shadow: 0 4px 0 #a71d2a; animation: pulse 1s infinite; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+    
+    .status-text { text-align: center; font-size: 20px; font-weight: bold; margin-top: 10px; padding: 10px; border: 2px solid; border-radius: 5px; }
 </style>
 </head>
 <body>
     <div class="container">
         <div class="header">MONTAG STORE SYSTEM</div>
         <div class="input-section"><label>TESTER NAME:</label><input type="text" id="testerName" placeholder="Who are you?" required></div>
-        <div class="info-grid">
+        
+        <div class="info-grid" id="specsGrid">
             <div class="card"><h4>MODEL</h4><p>$FullModel</p></div>
             <div class="card"><h4>SERIAL</h4><p>$($bios.SerialNumber)</p></div>
             <div class="card"><h4>CPU</h4><p>$cpuDetails</p></div>
@@ -230,20 +240,50 @@ $htmlContent = @"
             <div class="card"><h4>GPU</h4><p>$gpuString</p></div>
             <div class="card"><h4>DISK</h4><p>$storageString</p></div>
         </div>
+
+        <div class="input-section">
+            <label>SYSTEM CHECKS (READ-ONLY):</label>
+            <div id="checklistDisplay" class="static-box">$StatusLog</div>
+        </div>
+        
         <div id="clientSection">
             <div class="input-section"><label style="color: #00ff00;">CLIENT NAME:</label><input type="text" id="clientName" placeholder="Customer Name"></div>
             <div class="input-section"><label style="color: #00ff00;">PHONE NUMBER:</label><input type="text" id="clientPhone" placeholder="01xxxxxxxxx"></div>
         </div>
-        <div class="input-section"><label>NOTES:</label><textarea id="status" rows="2">$StatusLog</textarea></div>
-        <div class="btn-group">
+
+        <div id="stockSection">
+            <label style="color: #00ffff; margin-bottom: 25px; font-size: 20px; text-align:center; display:block;">STOCK CONDITION CHECK</label>
+            
+            <div class="btn-group" id="stockButtons" style="margin-top: 15px;">
+                <button onclick="submitStock('GOOD')" style="background:#28a745; box-shadow: 0 4px 0 #1e7e34;">GOOD / PASS</button>
+                <button onclick="showNotesForIssue()" style="background:#dc3545; box-shadow: 0 4px 0 #a71d2a;">HAS ISSUES</button>
+            </div>
+
+            <div id="stockFeedback" class="status-text" style="display:none; color: #ff4444; border-color: #ff4444;">
+                [X] CONDITION: HAS ISSUES
+            </div>
+        </div>
+
+        <div id="notesSection">
+            <div class="input-section"><label>MANUAL NOTES / ISSUES:</label><textarea id="userNotes" rows="3" placeholder="Write observation or problem details here..."></textarea></div>
+            <button id="btnSubmitIssue" class="btn-issue" style="display:none; width:100%; margin-top:10px;" onclick="submitStock('ISSUE')">CONFIRM & UPLOAD REPORT</button>
+        </div>
+        
+        <div class="btn-group" id="mainButtons">
             <button id="btnSell" class="btn-sell" onclick="handleSell()">SELL (Customer)</button>
-            <button id="btnTest" class="btn-test" onclick="sendData('TEST')">TEST (Stock)</button>
+            <button id="btnTest" class="btn-test" onclick="handleStock()">TEST (Stock)</button>
         </div>
     </div>
     <script>
         function handleSell() {
             var section = document.getElementById('clientSection');
             var btn = document.getElementById('btnSell');
+            var notes = document.getElementById('notesSection');
+            
+            document.getElementById('stockSection').style.display = 'none'; 
+            document.getElementById('btnTest').style.display = 'none'; 
+            notes.style.display = 'block'; 
+            
             if (section.style.display === 'none' || section.style.display === '') {
                 section.style.display = 'block';
                 btn.innerText = "CONFIRM & UPLOAD"; 
@@ -254,14 +294,72 @@ $htmlContent = @"
                 sendData('SELL');
             }
         }
+
+        function handleStock() {
+            document.getElementById('clientSection').style.display = 'none';
+            document.getElementById('notesSection').style.display = 'none';
+            document.getElementById('mainButtons').style.display = 'none';
+            document.getElementById('stockSection').style.display = 'block';
+        }
+
+        function showNotesForIssue() {
+            document.getElementById('stockButtons').style.display = 'none';
+            document.getElementById('stockFeedback').style.display = 'block';
+            document.getElementById('notesSection').style.display = 'block';
+            document.getElementById('btnSubmitIssue').style.display = 'block';
+            document.getElementById('userNotes').focus();
+        }
+
+        function submitStock(condition) {
+            if (condition === 'ISSUE') {
+                var notes = document.getElementById('userNotes').value.trim();
+                if (notes.length < 5) {
+                    alert("Please write the problem details in the NOTES field!");
+                    document.getElementById('userNotes').focus();
+                    return;
+                }
+                sendData('TEST-ISSUE');
+            } else {
+                sendData('TEST-GOOD');
+            }
+        }
+
         function sendData(type) {
             var tester = document.getElementById('testerName').value;
             if (!tester) { alert("Enter Tester Name!"); return; }
-            var clientInfo = (type === 'SELL') ? document.getElementById('clientName').value + " - " + document.getElementById('clientPhone').value : "Stock";
-            var url = "https://docs.google.com/forms/d/e/$FormID/formResponse?usp=pp_url&entry.371291262=" + type + "&entry.392302034=" + encodeURIComponent(tester) + "&entry.517500793=" + encodeURIComponent(clientInfo) + "&entry.531158115=" + encodeURIComponent("$FullModel") + "&entry.1203480099=" + encodeURIComponent("$($bios.SerialNumber)") + "&entry.1462565184=" + encodeURIComponent("$cpuDetails") + "&entry.212987726=" + encodeURIComponent("$ramDetails") + "&entry.1717831234=" + encodeURIComponent("$storageString") + "&entry.2044586469=" + encodeURIComponent("$gpuString") + "&entry.310563239=" + encodeURIComponent(document.getElementById('status').value);
             
+            var checklist = document.getElementById('checklistDisplay').innerText;
+            var userNotes = document.getElementById('userNotes').value.trim();
+            var finalStatus = checklist;
+            var clientInfo = "";
+
+            if (type === 'SELL') {
+                clientInfo = document.getElementById('clientName').value + " - " + document.getElementById('clientPhone').value;
+                if (userNotes) { finalStatus += " | NOTES: " + userNotes; }
+            } else {
+                if (userNotes) {
+                    clientInfo = userNotes; 
+                } else {
+                    clientInfo = "Stock";
+                }
+                finalStatus = checklist;
+            }
+
+            // CHUNKED URL 
+            var url = "https://docs.google.com/forms/d/e/$FormID/formResponse?usp=pp_url";
+            url += "&entry.371291262=" + type;
+            url += "&entry.392302034=" + encodeURIComponent(tester);
+            url += "&entry.517500793=" + encodeURIComponent(clientInfo);
+            url += "&entry.531158115=" + encodeURIComponent("$FullModel");
+            url += "&entry.1203480099=" + encodeURIComponent("$($bios.SerialNumber)");
+            url += "&entry.1462565184=" + encodeURIComponent("$cpuDetails");
+            url += "&entry.212987726=" + encodeURIComponent("$ramDetails");
+            url += "&entry.1717831234=" + encodeURIComponent("$storageString");
+            url += "&entry.2044586469=" + encodeURIComponent("$gpuString");
+            url += "&entry.310563239=" + encodeURIComponent(finalStatus);
+
             fetch(url, { mode: 'no-cors' }).then(function() {
-                document.title = "MONTAG_EXIT_TRIGGER";
+                document.title = "MONTAG_EXIT_TRIGGER"; // Trigger close
                 document.body.innerHTML = "<h1 style='color:#0f0;margin-top:20%;font-family:sans-serif'>UPLOAD SUCCESSFUL!</h1><p style='color:#fff'>System Finalized.</p>";
             });
         }
@@ -276,21 +374,33 @@ Start-Process "msedge" -ArgumentList "--new-window --app=$env:TEMP\MontagSales.h
 
 # WATCHER
 $foundWindow = $false
-$maxWait = 0
+$missedCount = 0
 while ($true) {
-    $w = Get-Process | Where-Object { $_.MainWindowTitle -eq 'Montag Sales' -or $_.MainWindowTitle -eq 'MONTAG_EXIT_TRIGGER' } | Select-Object -First 1
-    if ($w) { $foundWindow = $true }
-    if (-not $foundWindow) {
-        Start-Sleep -Milliseconds 500
-        $maxWait++
-        if ($maxWait -gt 20) { break }
-        continue
-    }
-    if (-not $w) { break }
-    if ($w.MainWindowTitle -eq 'MONTAG_EXIT_TRIGGER') {
-        Start-Sleep -Seconds 3
-        $w | Stop-Process -Force
-        break
+    # Check for window presence (Title or Trigger)
+    $w = Get-Process | Where-Object { $_.MainWindowTitle -like '*Montag Sales*' -or $_.MainWindowTitle -eq 'MONTAG_EXIT_TRIGGER' } | Select-Object -First 1
+    
+    if ($w) {
+        $foundWindow = $true
+        $missedCount = 0 # Reset miss counter if found
+        
+        # Check for upload trigger
+        if ($w.MainWindowTitle -eq 'MONTAG_EXIT_TRIGGER') {
+            Start-Sleep -Seconds 2 # Wait for user to see success msg
+            $w | Stop-Process -Force
+            break # Exit loop -> Show Logo
+        }
+    } else {
+        # Window not found (either not started yet OR closed by user)
+        if ($foundWindow) {
+            # Was found before, now missing?
+            $missedCount++
+            # Only assume closed if missing for 5 cycles (approx 2.5 sec) to prevent accidental close on glitch
+            if ($missedCount -gt 5) { break } 
+        } else {
+            # Startup phase (wait longer)
+            $missedCount++
+            if ($missedCount -gt 120) { break } # 60 sec timeout at startup
+        }
     }
     Start-Sleep -Milliseconds 500
 }
