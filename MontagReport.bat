@@ -146,23 +146,32 @@ $bios = Get-CimInstance Win32_Bios
 $Man = $sys.Manufacturer.Trim()
 $Mod = $sys.Model.Trim()
 if ($Mod.StartsWith($Man)) { $FullModel = $Mod } else { $FullModel = "$Man $Mod" }
+
+# CPU (Added Threads back)
 $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
 $cacheMB = [int]($cpu.L3CacheSize / 1024)
 if ($cacheMB -eq 0) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
-$cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores | $maxSpeed GHz | $cacheMB MB Cache"
+$cpuDetails = "$($cpu.Name) | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz | $cacheMB MB Cache"
+
+# RAM (Added Sticks count back)
 $mem = Get-CimInstance Win32_PhysicalMemory
 $memArray = @($mem)
+$stickCount = $memArray.Count
 $totalRam = [math]::Round(($memArray | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
 $ramSpeed = 0
 foreach ($s in $memArray) { if ($s.Speed -gt 0) { $ramSpeed = [math]::Max($ramSpeed, $s.Speed) } }
 if ($ramSpeed -eq 0) { $ramSpeed = "Unknown" }
-$ramDetails = "$totalRam GB @ $ramSpeed MHz"
+$ramDetails = "$totalRam GB ($stickCount Sticks) @ $ramSpeed MHz"
+
+# DISK (Filtering out external drives securely)
 $disks = Get-CimInstance Win32_DiskDrive | Where-Object { 
-    ($_.MediaType -eq 'Fixed hard disk media') -and ($_.InterfaceType -ne 'USB')
+    ($_.MediaType -eq 'Fixed hard disk media') -and ($_.InterfaceType -ne 'USB') -and ($_.PNPDeviceID -notmatch 'USBSTOR') -and ($_.Model -notmatch 'USB')
 }
 $diskList = @()
 foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $diskList += "$($d.Model) ($s GB)" }
 if ($diskList.Count -eq 0) { $storageString = "No Internal Disk Detected" } else { $storageString = $diskList -join " | " }
+
+# GPU
 $gpuList = @()
 $regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
 Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
@@ -444,7 +453,7 @@ $htmlContent | Out-File "$env:TEMP\MontagSales.html" -Encoding UTF8
 # ==========================================================
 # 3. Launch UI & FAST SMART WATCHER
 # ==========================================================
-Start-Process "msedge" -ArgumentList "--new-window --app=`"$env:TEMP\MontagSales.html`""
+Start-Process "msedge" -ArgumentList "--new-window --start-maximized --app=`"$env:TEMP\MontagSales.html`""
 Start-Sleep -Seconds 2
 
 $loop = $true
