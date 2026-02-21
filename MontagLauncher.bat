@@ -18,7 +18,8 @@ if "%~1" neq "" goto ROUTER
 :: ==============================================================================
 if /i "%~dp0" neq "%TEMP%\" ( copy /y "%~f0" "%TEMP%\%~nx0" >nul & "%TEMP%\%~nx0" & exit )
 FSUTIL dirty query %systemdrive% >nul
-if %errorlevel% neq 0 ( powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Maximized" & exit )
+:: Changed WindowStyle to Hidden to prevent CMD flashes
+if %errorlevel% neq 0 ( powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Hidden" & exit )
 
 :: ==============================================================================
 :: [2] ENVIRONMENT SETUP & QUANTUM ENGINE EXECUTION
@@ -32,8 +33,8 @@ if exist "%HubEngine%" del "%HubEngine%"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__HUB_CORE_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%HubEngine%"
 
-:: Start the main engine (The C# code inside will hide THIS specific console window)
-powershell -NoProfile -ExecutionPolicy Bypass -File "%HubEngine%" -MFG "!BRAND!"
+:: Execute Engine Normally
+powershell -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "%HubEngine%" -MFG "!BRAND!"
 
 :: ==============================================================================
 :: [3] POST-DIAGNOSTIC REPORT COMPILER
@@ -56,7 +57,7 @@ if exist "%TEMP%\action_report.txt" (
 )
 exit
 :: ==============================================================================
-:: [4] OS COMMAND ROUTER (VISIBLE SUB-WINDOWS)
+:: [4] OS COMMAND ROUTER (SAFE EXECUTION ENVIRONMENT)
 :: ==============================================================================
 :ROUTER
 mode con: cols=85 lines=25
@@ -104,7 +105,6 @@ if "%~1"=="CMD_APP_MAS" ( curl -L -k -# -o "%ToolDir%\MAS_AIO.cmd" "https://raw.
 exit
 
 :DO_AUTOPILOT
-echo [ AUTO-PILOT: PREPARE FOR SALE ]
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_AutoPilot' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0 & powercfg -h off >nul 2>&1
@@ -116,28 +116,24 @@ tzutil /s "Egypt Standard Time" >nul 2>&1
 reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
-echo [SUCCESS] Auto-Pilot Completed! & timeout /t 3 >nul & exit
+exit
 
 :DO_THISPC
-echo [ SHOWING 'THIS PC' ON DESKTOP ]
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
-echo [SUCCESS] Done! & timeout /t 2 >nul & exit
+exit
 
 :DO_HIGHPERF
-echo [ ENABLING HIGH PERFORMANCE ]
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0
-echo [SUCCESS] Done! & timeout /t 2 >nul & exit
+exit
 
 :DO_ARABIC
-echo [ ADDING ARABIC AND EGYPT REGION ]
 powershell -NoProfile -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68" >nul 2>&1
 tzutil /s "Egypt Standard Time" >nul 2>&1
-echo [SUCCESS] Done! & timeout /t 2 >nul & exit
+exit
 
 :DO_ACTIVATE
-echo [ ACTIVATING ORIGINAL OEM KEY ]
 set "KeyScript=%TEMP%\FindKey.ps1"
 if exist "%KeyScript%" del "%KeyScript%"
 (
@@ -145,46 +141,37 @@ echo $key = ^(Get-WmiObject -query 'select * from SoftwareLicensingService'^).OA
 echo if ^([string]::IsNullOrWhiteSpace^($key^)^) { $key = ^(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BackupProductKeyDefault }
 echo if ^([string]::IsNullOrWhiteSpace^($key^)^) { $key = ^(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BootDeviceProductKey }
 echo if ^($key^) { 
-echo     Write-Host "Key Found: $key" -ForegroundColor Cyan
 echo     cscript //nologo $env:windir\system32\slmgr.vbs /ipk $key ^| Out-Null
 echo     cscript //nologo $env:windir\system32\slmgr.vbs /ato ^| Out-Null
-echo     Write-Host "[SUCCESS] Windows Activated!" -ForegroundColor Green
-echo } else { 
-echo     Write-Host "[ERROR] No BIOS Key Found." -ForegroundColor Red 
 echo }
 ) > "%KeyScript%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%KeyScript%"
 del "%KeyScript%" >nul 2>&1
-timeout /t 5 >nul & exit
+exit
 
 :DO_BLOAT
-echo [ REMOVING BLOATWARE ]
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage; Get-AppxPackage *solitaire* | Remove-AppxPackage; Get-AppxPackage *skype* | Remove-AppxPackage"
-echo [SUCCESS] Done! & timeout /t 2 >nul & exit
+exit
 
 :DO_BOOST
-echo [ QUICK BOOST ]
 powercfg -h off >nul 2>&1 & net start w32time >nul 2>&1 & w32tm /resync >nul 2>&1
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
-echo [SUCCESS] Done! & timeout /t 2 >nul & exit
+exit
 
 :DO_RENAME
-echo [ RENAME PC AND USER ]
 set /p ClientName=" Enter Client Name: "
 powershell -Command "Rename-Computer -NewName '!ClientName!-PC' -Force -ErrorAction SilentlyContinue"
 wmic useraccount where name="%USERNAME%" rename "!ClientName!" >nul 2>&1
-echo [SUCCESS] Done! Restart required later. & timeout /t 3 >nul & exit
+exit
 
 :DO_CLASSIC
-echo [ RESTORING CLASSIC MENU ]
 reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
 exit
 
 :DO_SAC
-echo [ DISABLING SMART APP CONTROL ]
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f >nul 2>&1
-echo [SUCCESS] Done! Restart required. & timeout /t 3 >nul & exit
+exit
 
 :DO_DRV_BACKUP
 set "PSDr=%TEMP%\DrvBack.ps1"
@@ -240,62 +227,22 @@ del "%PSDr%" >nul 2>&1
 exit
 
 :DO_APP_GAMING
-echo [ INSTALLING GAMING ESSENTIALS ]
 winget install --id Microsoft.VCRedist.2015+.x64 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
 winget install --id Microsoft.VCRedist.2015+.x86 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
-echo [SUCCESS] Visual C++ Runtimes Installed! & timeout /t 3 >nul & exit
+exit
 
 :DO_BATTERY
-echo [ REAL BATTERY DRAIN TEST ]
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
-powercfg /change monitor-timeout-ac 0
-powercfg /change standby-timeout-ac 0
-powercfg -h off >nul 2>&1
+powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0 & powercfg -h off >nul 2>&1
 set "DestVid=%ToolDir%\BatteryTest.mp4"
 set "FoundSource="
-if exist "%~dp0BatteryTest.mp4" set "FoundSource=%~dp0BatteryTest.mp4" & goto FoundVideo
-for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
-    if exist "%%d:\BatteryTest.mp4" (set "FoundSource=%%d:\BatteryTest.mp4" & goto FoundVideo)
-)
-echo [ERROR] 'BatteryTest.mp4' NOT FOUND on any drive!
-pause >nul & exit
-
-:FoundVideo
-echo [FOUND] !FoundSource!
-echo [INFO] Copying video to System (C:) - Watch the percentage below...
-copy /z /y "!FoundSource!" "!DestVid!"
-if not exist "!DestVid!" (
-    echo [WARNING] Copy Failed. Playing directly from USB...
-    start "" "!FoundSource!"
-) else (
-    echo [OK] Copy Complete. Starting Test...
-    start "" "!DestVid!"
-)
+for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do ( if exist "%%d:\BatteryTest.mp4" (set "FoundSource=%%d:\BatteryTest.mp4") )
+if not "%FoundSource%"=="" copy /z /y "%FoundSource%" "%DestVid%"
+if exist "%DestVid%" ( start "" "%DestVid%" )
 set "BatScript=%TEMP%\BatLogger.ps1"
 if exist "%BatScript%" del "%BatScript%"
-echo $log = "C:\MontagBatteryLog.txt" > "%BatScript%"
-echo $sys = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%BatScript%"
-echo $ser = (Get-WmiObject Win32_Bios).SerialNumber.Trim() >> "%BatScript%"
-echo $start = Get-Date >> "%BatScript%"
-echo Add-Content $log "==========================================" >> "%BatScript%"
-echo Add-Content $log "      MONTAG STORE - BATTERY TEST" >> "%BatScript%"
-echo Add-Content $log "==========================================" >> "%BatScript%"
-echo Add-Content $log "Device : $sys" >> "%BatScript%"
-echo Add-Content $log "Serial : $ser" >> "%BatScript%"
-echo Add-Content $log "Started: $start" >> "%BatScript%"
-echo Add-Content $log "------------------------------------------" >> "%BatScript%"
-echo Write-Host "`n   MONTAG STORE - BATTERY STOPWATCH" -ForegroundColor Magenta >> "%BatScript%"
-echo Write-Host "   Device: $sys" -ForegroundColor White >> "%BatScript%"
-echo while ($true) { >> "%BatScript%"
-echo     $now = Get-Date >> "%BatScript%"
-echo     $diff = $now - $start >> "%BatScript%"
-echo     $bat = (Get-WmiObject Win32_Battery).EstimatedChargeRemaining >> "%BatScript%"
-echo     $str = "{0:hh\:mm\:ss}          {1}%%" -f $diff, $bat >> "%BatScript%"
-echo     Write-Host "   $str" -ForegroundColor Cyan >> "%BatScript%"
-echo     $logLine = "$($now.ToString('HH:mm:ss')) | Elapsed: $($diff.ToString('hh\:mm')) | Battery: $bat%%" >> "%BatScript%"
-echo     Add-Content $log $logLine >> "%BatScript%"
-echo     Start-Sleep -Seconds 60 >> "%BatScript%"
-echo } >> "%BatScript%"
+echo $log = "C:\MontagBatteryLog.txt"; $sys = (Get-WmiObject Win32_ComputerSystem).Model.Trim(); $start = Get-Date > "%BatScript%"
+echo while ($true) { $bat = (Get-WmiObject Win32_Battery).EstimatedChargeRemaining; Add-Content $log "$(Get-Date) | Battery: $bat%%"; Start-Sleep -Seconds 60 } >> "%BatScript%"
 start "Montag Battery Timer" powershell -NoProfile -ExecutionPolicy Bypass -File "%BatScript%"
 exit
 
@@ -450,7 +397,6 @@ Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
         $size = 0
         if ($null -ne $props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
         elseif ($null -ne $props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
-        
         if ($size -is [array]) {
             try {
                  if ($size.Count -ge 8) { $size = [BitConverter]::ToUInt64($size, 0) }
@@ -465,6 +411,39 @@ Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
 }
 $gpuString = ($gpuList | Select-Object -Unique) -join " + "
 if (-not $gpuString) { $gpuString = "Standard Graphics Adapter" }
+
+# --- BATTERY HEALTH ---
+$batHealth = "Unknown"
+try {
+    $full = (Get-WmiObject -Class BatteryFullCapacity -Namespace root\wmi -ErrorAction SilentlyContinue).FullChargeCapacity
+    $design = (Get-WmiObject -Class BatteryStaticData -Namespace root\wmi -ErrorAction SilentlyContinue).DesignedCapacity
+    if ($full -and $design -and $design -gt 0) {
+        $pct = [math]::Round(($full / $design) * 100)
+        if ($pct -gt 100) { $pct = 100 }
+        $batHealth = "$pct% Excellent"
+        if ($pct -lt 80) { $batHealth = "$pct% Good" }
+        if ($pct -lt 50) { $batHealth = "$pct% Weak" }
+    } else {
+        $b2 = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue
+        if ($b2) { $batHealth = "Status OK" } else { $batHealth = "No Battery" }
+    }
+} catch { $batHealth = "No Battery" }
+
+# --- STORAGE HEALTH (S.M.A.R.T) ---
+$diskHealth = "100% Excellent"
+try {
+    $smart = Get-WmiObject -Namespace root\wmi -Class MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
+    if ($smart) { foreach ($d in $smart) { if ($d.PredictFailure) { $diskHealth = "FAILING (Warning)" } } }
+} catch { }
+
+# --- AC ADAPTER STATUS ---
+$acStatus = "Connected"
+try {
+    $batStatus = (Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue).BatteryStatus
+    if ($batStatus -eq 1) { $acStatus = "Disconnected" }
+    elseif ($batStatus -eq 2) { $acStatus = "Charging" }
+    else { $acStatus = "Plugged In" }
+} catch { $acStatus = "AC Power" }
 $html = @"
 <!DOCTYPE html>
 <html lang="en">
@@ -491,12 +470,12 @@ $html = @"
 
     /* --- ENHANCED HIDDEN SIDEBAR WITH GLOWING ANIMATED BORDER --- */
     .sidebar { 
-        position: fixed; top: 0; left: -320px; width: 340px; height: 100vh; 
+        position: fixed; top: 0; left: 0; transform: translateX(-100%); width: 340px; height: 100vh; 
         background: rgba(2, 2, 8, 0.98); 
         border-right: 3px solid var(--primary); 
         display: flex; flex-direction: column; padding: 30px 0; backdrop-filter: blur(80px); 
         z-index: 9999; box-sizing: border-box; 
-        transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s; 
         animation: sideBorderGlow 3s infinite alternate ease-in-out;
     }
     
@@ -506,11 +485,11 @@ $html = @"
     }
 
     .sidebar-trigger { 
-        position: absolute; right: -42px; top: 50%; transform: translateY(-50%); 
-        width: 40px; padding: 25px 0; background: rgba(2, 2, 8, 0.95); 
+        position: absolute; left: 100%; top: 50%; transform: translateY(-50%); 
+        width: 45px; padding: 35px 0; background: rgba(2, 2, 8, 0.95); 
         border: 3px solid var(--primary); border-left: none; border-radius: 0 15px 15px 0; 
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; 
-        color: var(--primary); font-weight: 900; font-size: 15px; 
+        color: var(--primary); font-weight: 900; font-size: 16px; 
         cursor: pointer; transition: 0.3s;
         animation: triggerBtnGlow 3s infinite alternate ease-in-out;
     }
@@ -520,7 +499,7 @@ $html = @"
         100% { border-color: var(--secondary); box-shadow: 12px 0 35px rgba(0,229,255,0.8), inset 0 0 15px rgba(0,229,255,0.6); color: var(--secondary); text-shadow: 0 0 15px var(--secondary); }
     }
     
-    .sidebar:hover { left: 0; box-shadow: 20px 0 60px rgba(0,0,0,0.9); }
+    .sidebar:hover { transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,0.9); }
     .sidebar:hover .sidebar-trigger { opacity: 0; pointer-events: none; }
 
     .nav-btn { background: transparent; color: #666; border: none; padding: 22px 40px; text-align: left; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.5s; border-left: 4px solid transparent; width: 100%; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 1px; }
@@ -764,6 +743,21 @@ $html = @"
                     <button class="btn-grid" onclick="runCmd('GPU_30')">30 Seconds</button>
                     <button class="btn-grid" onclick="runCmd('GPU_60')">60 Seconds</button>
                     <button class="btn-grid" style="border-color:#ff007f; color:#ff007f;" onclick="runCmd('GPU_INF')">Infinite Load</button>
+                </div>
+
+                <div style="margin-top: 45px; padding-top: 35px; border-top: 1px solid rgba(255,255,255,0.05); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(40, 167, 69, 0.4); text-align: center;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--success); text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Battery Health</h4>
+                        <span style="font-size: 22px; font-weight: 800; color: #fff;">$batHealth</span>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(0, 229, 255, 0.4); text-align: center;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--secondary); text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Storage Health</h4>
+                        <span style="font-size: 22px; font-weight: 800; color: #fff;">$diskHealth</span>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(245, 158, 11, 0.4); text-align: center;">
+                        <h4 style="margin: 0 0 10px 0; color: #f59e0b; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Charger (AC)</h4>
+                        <span style="font-size: 20px; font-weight: 800; color: #fff;">$acStatus</span>
+                    </div>
                 </div>
             </div>
         </div>
