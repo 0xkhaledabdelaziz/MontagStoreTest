@@ -18,8 +18,7 @@ if "%~1" neq "" goto ROUTER
 :: ==============================================================================
 if /i "%~dp0" neq "%TEMP%\" ( copy /y "%~f0" "%TEMP%\%~nx0" >nul & "%TEMP%\%~nx0" & exit )
 FSUTIL dirty query %systemdrive% >nul
-:: Changed WindowStyle to Hidden to prevent CMD flashes
-if %errorlevel% neq 0 ( powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Hidden" & exit )
+if %errorlevel% neq 0 ( powershell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs -WindowStyle Maximized" & exit )
 
 :: ==============================================================================
 :: [2] ENVIRONMENT SETUP & QUANTUM ENGINE EXECUTION
@@ -33,8 +32,8 @@ if exist "%HubEngine%" del "%HubEngine%"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__HUB_CORE_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%HubEngine%"
 
-:: Execute Hidden Engine
-powershell -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "%HubEngine%" -MFG "!BRAND!"
+:: Start the main engine (The C# code inside will hide THIS specific console window)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%HubEngine%" -MFG "!BRAND!"
 
 :: ==============================================================================
 :: [3] POST-DIAGNOSTIC REPORT COMPILER
@@ -56,9 +55,8 @@ if exist "%TEMP%\action_report.txt" (
     if exist "%ToolDir%\MontagReport.bat" ( start "" "%ToolDir%\MontagReport.bat" & exit )
 )
 exit
-
 :: ==============================================================================
-:: [4] OS COMMAND ROUTER (SAFE EXECUTION ENVIRONMENT)
+:: [4] OS COMMAND ROUTER (VISIBLE SUB-WINDOWS)
 :: ==============================================================================
 :ROUTER
 mode con: cols=85 lines=25
@@ -106,6 +104,7 @@ if "%~1"=="CMD_APP_MAS" ( curl -L -k -# -o "%ToolDir%\MAS_AIO.cmd" "https://raw.
 exit
 
 :DO_AUTOPILOT
+echo [ AUTO-PILOT: PREPARE FOR SALE ]
 powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_AutoPilot' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0 & powercfg -h off >nul 2>&1
@@ -117,24 +116,28 @@ tzutil /s "Egypt Standard Time" >nul 2>&1
 reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
-exit
+echo [SUCCESS] Auto-Pilot Completed! & timeout /t 3 >nul & exit
 
 :DO_THISPC
+echo [ SHOWING 'THIS PC' ON DESKTOP ]
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
-exit
+echo [SUCCESS] Done! & timeout /t 2 >nul & exit
 
 :DO_HIGHPERF
+echo [ ENABLING HIGH PERFORMANCE ]
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0
-exit
+echo [SUCCESS] Done! & timeout /t 2 >nul & exit
 
 :DO_ARABIC
+echo [ ADDING ARABIC AND EGYPT REGION ]
 powershell -NoProfile -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68" >nul 2>&1
 tzutil /s "Egypt Standard Time" >nul 2>&1
-exit
+echo [SUCCESS] Done! & timeout /t 2 >nul & exit
 
 :DO_ACTIVATE
+echo [ ACTIVATING ORIGINAL OEM KEY ]
 set "KeyScript=%TEMP%\FindKey.ps1"
 if exist "%KeyScript%" del "%KeyScript%"
 (
@@ -142,98 +145,255 @@ echo $key = ^(Get-WmiObject -query 'select * from SoftwareLicensingService'^).OA
 echo if ^([string]::IsNullOrWhiteSpace^($key^)^) { $key = ^(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BackupProductKeyDefault }
 echo if ^([string]::IsNullOrWhiteSpace^($key^)^) { $key = ^(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform'^).BootDeviceProductKey }
 echo if ^($key^) { 
+echo     Write-Host "Key Found: $key" -ForegroundColor Cyan
 echo     cscript //nologo $env:windir\system32\slmgr.vbs /ipk $key ^| Out-Null
 echo     cscript //nologo $env:windir\system32\slmgr.vbs /ato ^| Out-Null
+echo     Write-Host "[SUCCESS] Windows Activated!" -ForegroundColor Green
+echo } else { 
+echo     Write-Host "[ERROR] No BIOS Key Found." -ForegroundColor Red 
 echo }
 ) > "%KeyScript%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%KeyScript%"
 del "%KeyScript%" >nul 2>&1
-exit
+timeout /t 5 >nul & exit
 
 :DO_BLOAT
+echo [ REMOVING BLOATWARE ]
 powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage; Get-AppxPackage *solitaire* | Remove-AppxPackage; Get-AppxPackage *skype* | Remove-AppxPackage"
-exit
+echo [SUCCESS] Done! & timeout /t 2 >nul & exit
 
 :DO_BOOST
+echo [ QUICK BOOST ]
 powercfg -h off >nul 2>&1 & net start w32time >nul 2>&1 & w32tm /resync >nul 2>&1
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
-exit
+echo [SUCCESS] Done! & timeout /t 2 >nul & exit
 
 :DO_RENAME
+echo [ RENAME PC AND USER ]
 set /p ClientName=" Enter Client Name: "
 powershell -Command "Rename-Computer -NewName '!ClientName!-PC' -Force -ErrorAction SilentlyContinue"
 wmic useraccount where name="%USERNAME%" rename "!ClientName!" >nul 2>&1
-exit
+echo [SUCCESS] Done! Restart required later. & timeout /t 3 >nul & exit
 
 :DO_CLASSIC
+echo [ RESTORING CLASSIC MENU ]
 reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
 exit
 
 :DO_SAC
+echo [ DISABLING SMART APP CONTROL ]
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f >nul 2>&1
-exit
+echo [SUCCESS] Done! Restart required. & timeout /t 3 >nul & exit
 
 :DO_DRV_BACKUP
 set "PSDr=%TEMP%\DrvBack.ps1"
-echo $model = (Get-WmiObject Win32_ComputerSystem).Model.Trim() > "%PSDr%"
+if exist "%PSDr%" del "%PSDr%"
+echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Backup' > "%PSDr%"
+echo Write-Host "`n   DRIVER BACKUP (SMART ENGINE)" -ForegroundColor Magenta >> "%PSDr%"
+echo $model = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
 echo $safeModel = $model -replace '[^^a-zA-Z0-9]', '_' >> "%PSDr%"
+echo Write-Host "   Detected Model: $model" -ForegroundColor Yellow >> "%PSDr%"
 echo $drv = Read-Host "`n   Enter Target Drive Letter (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
 echo $drv = $drv.Replace(':', '').Trim() >> "%PSDr%"
+echo if (-not (Test-Path "$($drv):\")) { Write-Host "`n   [ERROR] Drive $($drv): does not exist!" -ForegroundColor Red; Read-Host "   Press Enter to exit..."; exit } >> "%PSDr%"
 echo $finalPath = "$($drv):\$safeModel`_Drivers" >> "%PSDr%"
 echo New-Item -ItemType Directory -Force -Path $finalPath ^| Out-Null >> "%PSDr%"
+echo Write-Host "   Destination: $finalPath" -ForegroundColor Cyan >> "%PSDr%"
+echo Write-Host "`n   Exporting Drivers... (Please wait, this takes time)" -ForegroundColor Yellow >> "%PSDr%"
 echo Start-Process pnputil -ArgumentList "/export-driver * `"$finalPath`"" -NoNewWindow -Wait >> "%PSDr%"
+echo Write-Host "`n   [OK] Drivers Saved Successfully." -ForegroundColor Green >> "%PSDr%"
+echo Read-Host "`n   Press Enter to exit..." >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%" >nul 2>&1
 exit
 
 :DO_DRV_RESTORE
 set "PSDr=%TEMP%\DrvRest.ps1"
-echo $drv = Read-Host "`n   Enter Source Drive Letter (e.g. D)" > "%PSDr%"
+if exist "%PSDr%" del "%PSDr%"
+echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Restore' > "%PSDr%"
+echo Write-Host "`n   DRIVER RESTORE (SMART ENGINE)" -ForegroundColor Magenta >> "%PSDr%"
+echo $drv = Read-Host "`n   Enter Source Drive Letter (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
 echo $drv = $drv.Replace(':', '').Trim() >> "%PSDr%"
+echo if (-not (Test-Path "$($drv):\")) { Write-Host "`n   [ERROR] Drive $($drv): does not exist!" -ForegroundColor Red; Read-Host "   Press Enter to exit..."; exit } >> "%PSDr%"
 echo $term = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
 echo $pattern = "*" + ($term -replace '[^^a-zA-Z0-9]', '*') + "*" >> "%PSDr%"
+echo Write-Host "   Searching for drivers matching: $term ..." -ForegroundColor Yellow >> "%PSDr%"
 echo try { $folder = Get-ChildItem -Path "$($drv):\" -Directory -Recurse -Filter $pattern -ErrorAction SilentlyContinue ^| Select-Object -First 1 } catch { $folder = $null } >> "%PSDr%"
-echo if ($folder) { Start-Process pnputil -ArgumentList "/add-driver `"$($folder.FullName)\*.inf`" /subdirs /install" -NoNewWindow -Wait } >> "%PSDr%"
+echo if ($folder) { >> "%PSDr%"
+echo     Write-Host "   [FOUND] $($folder.FullName)" -ForegroundColor Green >> "%PSDr%"
+echo     $conf = Read-Host "`n   Install these drivers? (Y/N)" >> "%PSDr%"
+echo     if ($conf -match 'y') { >> "%PSDr%"
+echo         Write-Host "   Installing... Please wait..." -ForegroundColor Magenta >> "%PSDr%"
+echo         Start-Process pnputil -ArgumentList "/add-driver `"$($folder.FullName)\*.inf`" /subdirs /install" -NoNewWindow -Wait >> "%PSDr%"
+echo         Write-Host "`n   [OK] Installation Complete." -ForegroundColor Green >> "%PSDr%"
+echo         Read-Host "   Press Enter to restart later..." >> "%PSDr%"
+echo     } >> "%PSDr%"
+echo } else { >> "%PSDr%"
+echo     Write-Host "`n   [ERROR] No driver folder found for this model on $drv drive." -ForegroundColor Red >> "%PSDr%"
+echo     Read-Host "   Press Enter to exit..." >> "%PSDr%"
+echo } >> "%PSDr%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
 del "%PSDr%" >nul 2>&1
 exit
 
 :DO_APP_GAMING
+echo [ INSTALLING GAMING ESSENTIALS ]
 winget install --id Microsoft.VCRedist.2015+.x64 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
 winget install --id Microsoft.VCRedist.2015+.x86 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
-exit
+echo [SUCCESS] Visual C++ Runtimes Installed! & timeout /t 3 >nul & exit
 
 :DO_BATTERY
+echo [ REAL BATTERY DRAIN TEST ]
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
-powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0 & powercfg -h off >nul 2>&1
+powercfg /change monitor-timeout-ac 0
+powercfg /change standby-timeout-ac 0
+powercfg -h off >nul 2>&1
 set "DestVid=%ToolDir%\BatteryTest.mp4"
 set "FoundSource="
-for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do ( if exist "%%d:\BatteryTest.mp4" (set "FoundSource=%%d:\BatteryTest.mp4") )
-if not "%FoundSource%"=="" copy /z /y "%FoundSource%" "%DestVid%"
-if exist "%DestVid%" ( start "" "%DestVid%" )
+if exist "%~dp0BatteryTest.mp4" set "FoundSource=%~dp0BatteryTest.mp4" & goto FoundVideo
+for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+    if exist "%%d:\BatteryTest.mp4" (set "FoundSource=%%d:\BatteryTest.mp4" & goto FoundVideo)
+)
+echo [ERROR] 'BatteryTest.mp4' NOT FOUND on any drive!
+pause >nul & exit
+
+:FoundVideo
+echo [FOUND] !FoundSource!
+echo [INFO] Copying video to System (C:) - Watch the percentage below...
+copy /z /y "!FoundSource!" "!DestVid!"
+if not exist "!DestVid!" (
+    echo [WARNING] Copy Failed. Playing directly from USB...
+    start "" "!FoundSource!"
+) else (
+    echo [OK] Copy Complete. Starting Test...
+    start "" "!DestVid!"
+)
 set "BatScript=%TEMP%\BatLogger.ps1"
-echo $log = "C:\MontagBatteryLog.txt"; $sys = (Get-WmiObject Win32_ComputerSystem).Model.Trim(); $start = Get-Date > "%BatScript%"
-echo while ($true) { $bat = (Get-WmiObject Win32_Battery).EstimatedChargeRemaining; Add-Content $log "$(Get-Date) | Battery: $bat%%"; Start-Sleep -Seconds 60 } >> "%BatScript%"
-start "Montag Battery Timer" powershell -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "%BatScript%"
+if exist "%BatScript%" del "%BatScript%"
+echo $log = "C:\MontagBatteryLog.txt" > "%BatScript%"
+echo $sys = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%BatScript%"
+echo $ser = (Get-WmiObject Win32_Bios).SerialNumber.Trim() >> "%BatScript%"
+echo $start = Get-Date >> "%BatScript%"
+echo Add-Content $log "==========================================" >> "%BatScript%"
+echo Add-Content $log "      MONTAG STORE - BATTERY TEST" >> "%BatScript%"
+echo Add-Content $log "==========================================" >> "%BatScript%"
+echo Add-Content $log "Device : $sys" >> "%BatScript%"
+echo Add-Content $log "Serial : $ser" >> "%BatScript%"
+echo Add-Content $log "Started: $start" >> "%BatScript%"
+echo Add-Content $log "------------------------------------------" >> "%BatScript%"
+echo Write-Host "`n   MONTAG STORE - BATTERY STOPWATCH" -ForegroundColor Magenta >> "%BatScript%"
+echo Write-Host "   Device: $sys" -ForegroundColor White >> "%BatScript%"
+echo while ($true) { >> "%BatScript%"
+echo     $now = Get-Date >> "%BatScript%"
+echo     $diff = $now - $start >> "%BatScript%"
+echo     $bat = (Get-WmiObject Win32_Battery).EstimatedChargeRemaining >> "%BatScript%"
+echo     $str = "{0:hh\:mm\:ss}          {1}%%" -f $diff, $bat >> "%BatScript%"
+echo     Write-Host "   $str" -ForegroundColor Cyan >> "%BatScript%"
+echo     $logLine = "$($now.ToString('HH:mm:ss')) | Elapsed: $($diff.ToString('hh\:mm')) | Battery: $bat%%" >> "%BatScript%"
+echo     Add-Content $log $logLine >> "%BatScript%"
+echo     Start-Sleep -Seconds 60 >> "%BatScript%"
+echo } >> "%BatScript%"
+start "Montag Battery Timer" powershell -NoProfile -ExecutionPolicy Bypass -File "%BatScript%"
 exit
 
 :DO_STRESS
 set "PSStress=%TEMP%\MontagStress.ps1"
+if exist "%PSStress%" del "%PSStress%"
 echo param($Type, $Duration) > "%PSStress%"
-echo if ($Type -eq 'CPU') { 1..([Environment]::ProcessorCount) ^| ForEach-Object { Start-Job -ScriptBlock { while($true){ $n=[math]::Sqrt([math]::PI) } } } } >> "%PSStress%"
-echo Start-Sleep -Seconds ([int]$Duration) >> "%PSStress%"
-echo Get-Job ^| Stop-Job >> "%PSStress%"
-powershell -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "%PSStress%" -Type "%SType%" -Duration "%SDur%"
+echo $Duration = [int]$Duration >> "%PSStress%"
+echo $host.UI.RawUI.WindowTitle = "Montag Store - $Type Stress Test" >> "%PSStress%"
+echo Write-Host "`n   [ MONTAG EXTREME $Type STRESS TEST ]" -ForegroundColor Red >> "%PSStress%"
+echo if ($Duration -eq 0) { Write-Host "   Mode: INFINITE (Close window to stop)`n" -ForegroundColor Yellow } else { Write-Host "   Mode: $Duration Seconds`n" -ForegroundColor Yellow } >> "%PSStress%"
+echo if ($Type -eq 'CPU') { >> "%PSStress%"
+echo     $jobs = @() >> "%PSStress%"
+echo     1..([Environment]::ProcessorCount) ^| ForEach-Object { $jobs += Start-Job -ScriptBlock { while($true){ $n=[math]::Sqrt([math]::PI) } } } >> "%PSStress%"
+echo     $s = [Diagnostics.Stopwatch]::StartNew() >> "%PSStress%"
+echo     while ($true) { >> "%PSStress%"
+echo         $el = $s.Elapsed.TotalSeconds >> "%PSStress%"
+echo         if ($Duration -gt 0 -and $el -ge $Duration) { break } >> "%PSStress%"
+echo         $max = if ($Duration -eq 0) { "INF" } else { $Duration } >> "%PSStress%"
+echo         Write-Host -NoNewline "`r   Stressing CPU (100%% Load)... $([math]::Round($el))s / $($max)s " >> "%PSStress%"
+echo         Start-Sleep -Milliseconds 500 >> "%PSStress%"
+echo     } >> "%PSStress%"
+echo     $jobs ^| Stop-Job >> "%PSStress%"
+echo } elseif ($Type -eq 'RAM') { >> "%PSStress%"
+echo     $a = @() >> "%PSStress%"
+echo     $s = [Diagnostics.Stopwatch]::StartNew() >> "%PSStress%"
+echo     while ($true) { >> "%PSStress%"
+echo         $el = $s.Elapsed.TotalSeconds >> "%PSStress%"
+echo         if ($Duration -gt 0 -and $el -ge $Duration) { break } >> "%PSStress%"
+echo         try { $a += New-Object byte[] (50MB) } catch {} >> "%PSStress%"
+echo         $free = [math]::Round(((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1024), 2) >> "%PSStress%"
+echo         $max = if ($Duration -eq 0) { "INF" } else { $Duration } >> "%PSStress%"
+echo         Write-Host -NoNewline "`r   Stressing RAM (Filling Memory)... $([math]::Round($el))s / $($max)s | Free: $free MB " >> "%PSStress%"
+echo         Start-Sleep -Milliseconds 100 >> "%PSStress%"
+echo     } >> "%PSStress%"
+echo     $a = $null; [GC]::Collect() >> "%PSStress%"
+echo } elseif ($Type -eq 'GPU') { >> "%PSStress%"
+echo     Write-Host "   Launching WebGL Shader Engine... (DO NOT CLOSE THE BROWSER WINDOW)" -ForegroundColor Cyan >> "%PSStress%"
+echo     $gpuHtml = "$env:TEMP\MontagGPU.html" >> "%PSStress%"
+echo     $b64 = "PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+PHN0eWxlPmJvZHl7bWFyZ2lu" >> "%PSStress%"
+echo     $b64 += "OjA7b3ZlcmZsb3c6aGlkZGVuO2JhY2tncm91bmQ6IzAwMDt9Y2FudmFze3dp" >> "%PSStress%"
+echo     $b64 += "ZHRoOjEwMHZ3O2hlaWdodDoxMDB2aDtkaXNwbGF5OmJsb2NrO308L3N0eWxl" >> "%PSStress%"
+echo     $b64 += "PjwvaGVhZD48Ym9keT48Y2FudmFzIGlkPSJnbCI+PC9jYW52YXM+PHNjcmlw" >> "%PSStress%"
+echo     $b64 += "dD52YXIgYz1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZ2wnKTt2YXIgZ2w9" >> "%PSStress%"
+echo     $b64 += "Yy5nZXRDb250ZXh0KCd3ZWJnbCcpfHxjLmdldENvbnRleHQoJ2V4cGVyaW1l" >> "%PSStress%"
+echo     $b64 += "bnRhbC13ZWJnbCcpO2Mud2lkdGg9d2luZG93LmlubmVyV2lkdGg7Yy5oZWln" >> "%PSStress%"
+echo     $b64 += "aHQ9d2luZG93LmlubmVySGVpZ2h0O2dsLnZpZXdwb3J0KDAsMCxjLndpZHRo" >> "%PSStress%"
+echo     $b64 += "LGMuaGVpZ2h0KTt2YXIgdnM9Z2wuY3JlYXRlU2hhZGVyKGdsLlZFUlRFWF9T" >> "%PSStress%"
+echo     $b64 += "SEFERVIpO2dsLnNoYWRlclNvdXJjZSh2cywnYXR0cmlidXRlIHZlYzIgcDt2" >> "%PSStress%"
+echo     $b64 += "b2lkIG1haW4oKXtnbF9Qb3NpdGlvbj12ZWM0KHAsMCwxKTt9Jyk7Z2wuY29t" >> "%PSStress%"
+echo     $b64 += "cGlsZVNoYWRlcih2cyk7dmFyIGZzPWdsLmNyZWF0ZVNoYWRlcihnbC5GUkFH" >> "%PSStress%"
+echo     $b64 += "TUVOVF9TSEFERVIpO2dsLnNoYWRlclNvdXJjZShmcywncHJlY2lzaW9uIGhp" >> "%PSStress%"
+echo     $b64 += "Z2hwIGZsb2F0O3VuaWZvcm0gZmxvYXQgdDt1bmlmb3JtIHZlYzIgcjt2b2lk" >> "%PSStress%"
+echo     $b64 += "IG1haW4oKXt2ZWMyIHA9KGdsX0ZyYWdDb29yZC54eSoyLi1yKS9taW4oci54" >> "%PSStress%"
+echo     $b64 += "LHIueSk7ZmxvYXQgcz0wLix2PTAuO2ZvcihmbG9hdCBpPTAuO2k8MjUwLjtp" >> "%PSStress%"
+echo     $b64 += "Kyspe3ZlYzIgcT1wK3ZlYzIoY29zKHQqMC4xK2kpLHNpbih0KjAuMTUraSkp" >> "%PSStress%"
+echo     $b64 += "KjAuNTtmbG9hdCBsPWxlbmd0aChxKTtzKz1leHAoLWwqbCoxMC4pO3YrPXNp" >> "%PSStress%"
+echo     $b64 += "bihsKjIwLi10KjQuKTt9Z2xfRnJhZ0NvbG9yPXZlYzQodmVjMyhzKjAuNSt2" >> "%PSStress%"
+echo     $b64 += "KjAuMixzKjAuMix2KjAuNSksMSk7fScpO2dsLmNvbXBpbGVTaGFkZXIoZnMp" >> "%PSStress%"
+echo     $b64 += "O3ZhciBwPWdsLmNyZWF0ZVByb2dyYW0oKTtnbC5hdHRhY2hTaGFkZXIocCx2" >> "%PSStress%"
+echo     $b64 += "cyk7Z2wuYXR0YWNoU2hhZGVyKHAsZnMpO2dsLmxpbmtQcm9ncmFtKHApO2ds" >> "%PSStress%"
+echo     $b64 += "LnVzZVByb2dyYW0ocCk7dmFyIGI9Z2wuY3JlYXRlQnVmZmVyKCk7Z2wuYmlu" >> "%PSStress%"
+echo     $b64 += "ZEJ1ZmZlcihnbC5BUlJBWV9CVUZGRVIsYik7Z2wuYnVmZmVyRGF0YShnbC5B" >> "%PSStress%"
+echo     $b64 += "UlJBWV9CVUZGRVIsbmV3IEZsb2F0MzJBcnJheShbLTEsLTEsMSwtMSwtMSwx" >> "%PSStress%"
+echo     $b64 += "LC0xLDEsMSwtMSwxLDFdKSxnbC5TVEFUSUNfRFJBVyk7dmFyIGFsPWdsLmdl" >> "%PSStress%"
+echo     $b64 += "dEF0dHJpYkxvY2F0aW9uKHAsJ3AnKTtnbC5lbmFibGVWZXJ0ZXhBdHRyaWJB" >> "%PSStress%"
+echo     $b64 += "cnJheShhbCk7Z2wudmVydGV4QXR0cmliUG9pbnRlcihhbCwyLGdsLkZMT0FU" >> "%PSStress%"
+echo     $b64 += "LGZhbHNlLDAsMCk7dmFyIHV0PWdsLmdldFVuaWZvcm1Mb2NhdGlvbihwLCd0" >> "%PSStress%"
+echo     $b64 += "Jyk7dmFyIHVyPWdsLmdldFVuaWZvcm1Mb2NhdGlvbihwLCdyJyk7dmFyIHN0" >> "%PSStress%"
+echo     $b64 += "YXJ0PURhdGUubm93KCk7ZnVuY3Rpb24gZigpe2dsLnVuaWZvcm0xZih1dCwo" >> "%PSStress%"
+echo     $b64 += "RGF0ZS5ub3coKS1zdGFydCkqMC4wMDEpO2dsLnVuaWZvcm0yZih1cixjLndp" >> "%PSStress%"
+echo     $b64 += "ZHRoLGMuaGVpZ2h0KTtnbC5kcmF3QXJyYXlzKGdsLlRSSUFOR0xFUywwLDYp" >> "%PSStress%"
+echo     $b64 += "O3JlcXVlc3RBbmltYXRpb25GcmFtZShmKTt9ZigpOzwvc2NyaXB0PjwvYm9k" >> "%PSStress%"
+echo     $b64 += "eT48L2h0bWw+" >> "%PSStress%"
+echo     $bytes = [Convert]::FromBase64String($b64) >> "%PSStress%"
+echo     [IO.File]::WriteAllBytes($gpuHtml, $bytes) >> "%PSStress%"
+echo     Start-Process "msedge" -ArgumentList "--new-window --kiosk --edge-kiosk-type=fullscreen --disable-web-security --user-data-dir=`"$env:TEMP\EdgeGPU`" `"$gpuHtml`"" >> "%PSStress%"
+echo     $s = [Diagnostics.Stopwatch]::StartNew() >> "%PSStress%"
+echo     while ($true) { >> "%PSStress%"
+echo         $el = $s.Elapsed.TotalSeconds >> "%PSStress%"
+echo         if ($Duration -gt 0 -and $el -ge $Duration) { break } >> "%PSStress%"
+echo         $max = if ($Duration -eq 0) { "INF" } else { $Duration } >> "%PSStress%"
+echo         Write-Host -NoNewline "`r   Stressing GPU Graphics Core... $([math]::Round($el))s / $($max)s " >> "%PSStress%"
+echo         Start-Sleep -Milliseconds 500 >> "%PSStress%"
+echo     } >> "%PSStress%"
+echo     Get-CimInstance Win32_Process -Filter "Name='msedge.exe' AND CommandLine LIKE '%%EdgeGPU%%'" ^| Invoke-CimMethod -MethodName Terminate ^| Out-Null >> "%PSStress%"
+echo     del $gpuHtml -Force -ErrorAction SilentlyContinue >> "%PSStress%"
+echo } >> "%PSStress%"
+echo Write-Host "`n`n   [OK] TEST COMPLETED SUCCESSFULLY." -ForegroundColor Green >> "%PSStress%"
+echo Start-Sleep -Seconds 4 >> "%PSStress%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PSStress%" -Type "%SType%" -Duration "%SDur%"
 del "%PSStress%" >nul 2>&1
 exit
 :: ==============================================================================
 :::__HUB_CORE_START__:::
 param($MFG)
 
-# --- ANTI-FREEZE CORE FIX: COMPLETELY HIDE THE CONSOLE WINDOW ---
+# --- ANTI-FREEZE CORE FIX: COMPLETELY HIDE THE MAIN CONSOLE WINDOW ONLY ---
 Add-Type -Name ConsoleHider -Namespace Win32 -MemberDefinition '
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -406,7 +566,8 @@ $html = @"
     .spec-value-mini { font-size: 16px; font-weight: 500; color: #fff; line-height: 1.4; }
     
     @keyframes pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(143, 0, 255, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(143, 0, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(143, 0, 255, 0); } }
-	.btn-hero { width: 100%; background: linear-gradient(45deg, #ff007f, var(--primary)); color: #fff; border: none; padding: 25px; border-radius: 20px; font-size: 18px; font-weight: 950; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.4s; box-shadow: 0 15px 40px rgba(143,0,255,0.4); margin-bottom: 25px; }
+
+    .btn-hero { width: 100%; background: linear-gradient(45deg, #ff007f, var(--primary)); color: #fff; border: none; padding: 25px; border-radius: 20px; font-size: 18px; font-weight: 950; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.4s; box-shadow: 0 15px 40px rgba(143,0,255,0.4); margin-bottom: 25px; }
     .btn-hero:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(255,0,127,0.5); }
     .btn-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; width: 100%; margin-top: 10px; }
     .btn-grid { background: rgba(255,255,255,0.03); color: #ccc; border: 1px solid rgba(255,255,255,0.06); padding: 22px 15px; border-radius: 15px; cursor: pointer; font-weight: 800; text-transform: uppercase; font-size: 13px; transition: 0.3s; display: flex; align-items: center; justify-content: center; letter-spacing: 1px; }
@@ -546,7 +707,8 @@ $html = @"
             <div class="dash-card" onclick="runCmd('BATTERY')"><h3>Real Battery Drain</h3><p>Offline Video Logger</p><div class="card-status" style="border-color:#ff007f; color:#ff007f;">UTILITY</div></div>
             <div class="dash-card" onclick="openTest('test-stress')" style="border-color:var(--primary);"><h3>Performance Stress</h3><p>CPU / GPU / RAM Load</p><div class="card-status" style="border-color:var(--secondary); color:var(--secondary);">EXTREME</div></div>
         </div>
-		<div id="test-kb" class="test-view">
+
+        <div id="test-kb" class="test-view">
             <button class="btn-back" onclick="closeTest()">BACK TO DASHBOARD</button>
             <button class="btn-action-pro" style="background:rgba(255,255,255,0.04); color:var(--secondary); border:1px solid var(--secondary); padding:14px 35px; margin-bottom:40px; font-weight:950;" onclick="toggleNumpad()">Enable Extended Numpad</button>
             <div class="kb-frame">
