@@ -558,7 +558,6 @@ $cacheMB = [int]($cpu.L3CacheSize / 1024)
 if ($cacheMB -eq 0 -and $cpu.L2CacheSize) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
 $cacheStr = if ($cacheMB -gt 0) { " | $cacheMB MB Cache" } else { "" }
 $cpuDetails = "$cpuName | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr"
-$cpuDetailsUI = "$cpuName <br> <span style='color:#a0a0ab; font-size:13px;'>$($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr</span>"
 
 $CpuLogo = "https://cdn.simpleicons.org/intel/0068B5"
 if ($cpuName -match "AMD") { $CpuLogo = "https://cdn.simpleicons.org/amd/ED1C24" }
@@ -614,9 +613,7 @@ Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
         if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" } else { $gpuList += $props.DriverDesc }
     }
 }
-$gpuStringUI = ($gpuList | Select-Object -Unique) -join " <br> "
 $gpuString = ($gpuList | Select-Object -Unique) -join " + "
-if (-not $gpuStringUI) { $gpuStringUI = "Standard Graphics Adapter"; $gpuString = "Standard Graphics Adapter" }
 
 # --- DISPLAY RESOLUTION ---
 $resString = ""
@@ -638,6 +635,44 @@ try {
 
 # MERGE DISPLAY WITH GPU STRING FOR THE FINAL REPORT AND DB UPLOAD
 $gpuString = "$gpuString | Display: $resString"
+
+# --- TEMPERATURE DETECTION ---
+$cpuTemp = "N/A"
+$cpuTempColor = "#a0a0ab"
+try {
+    $tz = Get-CimInstance -Namespace "root/wmi" -ClassName "MSAcpi_ThermalZoneTemperature" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($tz -and $tz.CurrentTemperature) {
+        $c = [math]::Round(($tz.CurrentTemperature / 10) - 273.15)
+        if ($c -gt 0 -and $c -lt 150) {
+            $cpuTemp = "$c C"
+            if ($c -ge 85) { $cpuTempColor = "#ef4444" }
+            elseif ($c -ge 75) { $cpuTempColor = "#f59e0b" }
+            else { $cpuTempColor = "#28a745" }
+        }
+    }
+} catch {}
+
+$gpuTemp = "N/A"
+$gpuTempColor = "#a0a0ab"
+try {
+    $nvsmi = "$env:windir\System32\nvidia-smi.exe"
+    if (Test-Path $nvsmi) {
+        $gInfo = &$nvsmi --query-gpu=temperature.gpu --format=csv,noheader
+        if ($gInfo -match "\d+") {
+            $gVal = [int]$matches[0]
+            $gpuTemp = "$gVal C"
+            if ($gVal -ge 85) { $gpuTempColor = "#ef4444" }
+            elseif ($gVal -ge 75) { $gpuTempColor = "#f59e0b" }
+            else { $gpuTempColor = "#28a745" }
+        }
+    }
+} catch {}
+
+$cpuDetailsUI = "$cpuName <br> <span style='color:#a0a0ab; font-size:13px;'>$($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr</span> <br> <span style='color:$cpuTempColor; font-size:13px; font-weight:800; margin-top:5px; display:inline-block;'>Temp: $cpuTemp</span>"
+$gpuStringUI = ($gpuList | Select-Object -Unique) -join " <br> "
+if (-not $gpuStringUI) { $gpuStringUI = "Standard Graphics Adapter" }
+$gpuStringUI = "$gpuStringUI <br><span style='color:var(--secondary); font-size:12px; font-weight:800; letter-spacing:1px; margin-top:5px; display:inline-block;'>$resString</span> <br> <span style='color:$gpuTempColor; font-size:13px; font-weight:800; margin-top:5px; display:inline-block;'>Temp: $gpuTemp</span>"
+
 
 # --- BATTERY HEALTH ---
 $batHealth = "Unknown"
@@ -839,7 +874,7 @@ $html = @"
                 </div>
                 <div class="spec-card-mini">
                     <span class="spec-label-mini">Graphics Processor (GPU)</span>
-                    <div class="spec-value-mini" style="color: #e0e0e0;">$gpuStringUI <br><span style="color:var(--secondary); font-size:12px; font-weight:800; letter-spacing:1px; margin-top:5px; display:inline-block;">$resString</span></div>
+                    <div class="spec-value-mini" style="color: #e0e0e0;">$gpuStringUI</div>
                 </div>
                 <div class="spec-row-split">
                     <div class="spec-card-mini"><span class="spec-label-mini">Installed Memory (RAM)</span><div class="spec-value-mini">$ramDetailsUI</div></div>
@@ -1266,10 +1301,10 @@ $html = @"
         url += "&entry.517500793=" + encodeURIComponent(clientInfo);
         url += "&entry.531158115=" + encodeURIComponent("$FullModel");
         url += "&entry.1203480099=" + encodeURIComponent("$($bios.SerialNumber)");
-        url += "&entry.1462565184=" + encodeURIComponent("$cpuDetails");
+        url += "&entry.1462565184=" + encodeURIComponent("$cpuDetails | Temp: $cpuTemp");
         url += "&entry.212987726=" + encodeURIComponent("$ramDetails");
         url += "&entry.1717831234=" + encodeURIComponent("$storageString");
-        url += "&entry.2044586469=" + encodeURIComponent("$gpuString");
+        url += "&entry.2044586469=" + encodeURIComponent("$gpuString | Temp: $gpuTemp");
         url += "&entry.310563239=" + encodeURIComponent(finalStatus);
         
         fetch(url, { mode: 'no-cors' }).then(() => {
@@ -1328,11 +1363,14 @@ function Get-FullTextStatus($st) {
 
 $FinalStatusLog = "Keyboard: $(Get-FullTextStatus $kb_st) | Screen: $(Get-FullTextStatus $sc_st) | Audio: $(Get-FullTextStatus $au_st) | Touch: $(Get-FullTextStatus $to_st) | Camera: $(Get-FullTextStatus $ca_st)"
 
-$ReportDir = "C:\MontagReports"
+$SafeModel = $FullModel -replace '[\\/:*?"<>|]','_'
+$DesktopPath = [Environment]::GetFolderPath("Desktop")
+
+# Save to ProgramData to hide it, then create a shortcut on Desktop
+$ReportDir = "$env:ProgramData\MontagStore"
 if (-not (Test-Path $ReportDir)) { New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null }
 $RealHtmlFile = "$ReportDir\Montag_$($bios.SerialNumber).html"
-$SafeModel = $FullModel -replace '[\\/:*?"<>|]','_'
-$DesktopShortcut = "$env:USERPROFILE\Desktop\Report - $SafeModel.url"
+$DesktopShortcut = "$DesktopPath\Report - $SafeModel.url"
 
 $ClientReport = @"
 <!DOCTYPE html>
@@ -1401,6 +1439,7 @@ $ClientReport = @"
     </div>
 
     <div class="specs-grid" id="specsData">
+       
         <div class="spec-card" style="grid-column: 1 / -1; border-color: var(--secondary);">
             <span class="spec-label">Model</span>
             <div class="spec-value" style="font-size: 20px; font-weight: bold;">$FullModel</div>
@@ -1409,13 +1448,14 @@ $ClientReport = @"
             <span class="spec-label">Serial Number</span>
             <div class="spec-value" style="color:var(--secondary); font-size: 17px; font-weight:800;">$($bios.SerialNumber)</div>
         </div>
+      
         <div class="spec-card">
             <span class="spec-label">Processor (CPU)</span>
-            <div class="spec-value">$cpuDetails</div>
+            <div class="spec-value">$cpuDetails <br><span style="color:$cpuTempColor; font-size:13px; font-weight:800;">Temp: $cpuTemp</span></div>
         </div>
         <div class="spec-card">
             <span class="spec-label">Graphics (GPU)</span>
-            <div class="spec-value">$gpuString</div>
+            <div class="spec-value">$gpuString <br><span style="color:$gpuTempColor; font-size:13px; font-weight:800;">Temp: $gpuTemp</span></div>
         </div>
         <div class="spec-card">
             <span class="spec-label">Installed RAM</span>
@@ -1424,6 +1464,7 @@ $ClientReport = @"
         <div class="spec-card" style="border-color: #ff007f;">
             <span class="spec-label">Primary Storage</span>
             <div class="spec-value">$storageString</div>
+        
         </div>
         <div class="spec-card" style="grid-column: 1 / -1; border-color: #00e5ff;">
             <span class="spec-label" style="color:#00e5ff;">Inspection Checklist / Condition</span>
@@ -1444,6 +1485,7 @@ $ClientReport = @"
     function forceCopyText(text) {
         var textArea = document.createElement("textarea"); textArea.value = text;
         textArea.style.position = "fixed"; textArea.style.left = "-999999px"; 
+ 
         document.body.appendChild(textArea); textArea.focus(); textArea.select();
         document.execCommand("copy"); document.body.removeChild(textArea);
     }
@@ -1451,14 +1493,16 @@ $ClientReport = @"
     function copySpecs(btn) {
         var textToCopy = "[ Montag Store - Device Specs ]\n\n" +
                          "*Model:* $FullModel\n" +
-                         "*Serial:* $($bios.SerialNumber)\n" +
-                         "*CPU:* $cpuDetails\n" +
+                         "*Serial:* $($bios.SerialNumber)\n" 
+                         +
+                         "*CPU:* $cpuDetails | Temp: $cpuTemp\n" +
                          "*RAM:* $ramDetails\n" +
-                         "*GPU:* $gpuString\n" +
+                         "*GPU:* $gpuString | Temp: $gpuTemp\n" +
                          "*Storage:* $storageString\n\n" +
                          "*Status:* $FinalStatusLog\n\n" +
                          "Verified by Montag Store System [OK]";
         forceCopyText(textToCopy);
+      
         
         var originalText = btn.innerHTML;
         btn.innerHTML = "Copied to Clipboard! [OK]";
@@ -1472,6 +1516,7 @@ $ClientReport = @"
     }
 
     function handleWarranty(btn) {
+      
         forceCopyText("$($bios.SerialNumber)");
         var originalText = btn.innerHTML;
         btn.innerHTML = "Serial Copied! Opening...";
@@ -1485,4 +1530,14 @@ $ClientReport = @"
 $ClientReport | Out-File "$RealHtmlFile" -Encoding UTF8
 $ShortcutContent = "[InternetShortcut]`r`nURL=file:///$RealHtmlFile`r`nIconIndex=0`r`nIconFile=$IconPath"
 [System.IO.File]::WriteAllText($DesktopShortcut, $ShortcutContent)
+
+# --- CLEANUP ROUTINE ---
+Remove-Item -Path "$env:SystemDrive\MontagTools" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:SystemDrive\MontagReports" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:SystemDrive\MontagOffice" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:SystemDrive\MontagBatteryLog.txt" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:TEMP\Montag*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:TEMP\*status.txt" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:TEMP\action_report.txt" -Force -ErrorAction SilentlyContinue
+
 exit
