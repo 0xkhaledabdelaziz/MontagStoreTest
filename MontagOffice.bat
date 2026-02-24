@@ -9,6 +9,9 @@ setlocal EnableDelayedExpansion
 chcp 65001 >nul
 cd /d "%~dp0"
 
+:: Generate ESC Character for Colors
+for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
+
 :: Admin Check
 FSUTIL dirty query %systemdrive% >nul
 if %errorlevel% neq 0 (
@@ -38,33 +41,37 @@ more +%StartLine% "%~f0" > "%EngineScript%"
 cls
 echo.
 echo.
-echo      [96m ██████╗ ███████╗███████╗██╗ ██████╗███████╗[0m
-echo      [96m██╔═══██╗██╔════╝██╔════╝██║██╔════╝██╔════╝[0m
-echo      [96m██║   ██║█████╗  █████╗  ██║██║     █████╗  [0m
-echo      [96m██║   ██║██╔══╝  ██╔══╝  ██║██║     ██╔══╝  [0m
-echo      [96m╚██████╔╝██║     ██║     ██║╚██████╗███████╗[0m
-echo      [96m ╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═════╝╚══════╝[0m
+echo       %ESC%[96m ██████╗ ███████╗███████╗██╗ ██████╗███████╗ %ESC%[0m
+echo       %ESC%[96m██╔═══██╗██╔════╝██╔════╝██║██╔════╝██╔════╝ %ESC%[0m
+echo       %ESC%[96m██║   ██║█████╗  █████╗  ██║██║     █████╗   %ESC%[0m
+echo       %ESC%[96m██║   ██║██╔══╝  ██╔══╝  ██║██║     ██╔══╝   %ESC%[0m
+echo       %ESC%[96m╚██████╔╝██║     ██║     ██║╚██████╗███████╗ %ESC%[0m
+echo       %ESC%[96m ╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═════╝╚══════╝ %ESC%[0m
 echo.
-echo      [90m====================================================[0m
+echo       %ESC%[90m==================================================== %ESC%[0m
 echo.
-echo      [1m[1][0m INSTALL FROM USB (OFFLINE)
-echo      [90m    (Auto-scans all drives for 'Office\Setup.exe')[0m
+echo       %ESC%[1m[1] %ESC%[0m INSTALL FROM USB (OFFLINE)
+echo       %ESC%[90m    (Auto-scans all drives for 'Office\Setup.exe') %ESC%[0m
 echo.
-echo      [1m[2][0m DOWNLOAD OFFICE 2019 (ONLINE)
-echo      [90m    (Work In Progress - Coming Soon)[0m
+echo       %ESC%[1m[2] %ESC%[0m DOWNLOAD OFFICE 2019 (ONLINE)
+echo       %ESC%[90m    (Work In Progress - Coming Soon) %ESC%[0m
 echo.
-echo      [31m[3] FORCE UNINSTALL (NUCLEAR)[0m
-echo      [90m    (Removes Registry, Files and Services)[0m
+echo       %ESC%[31m[3] FORCE UNINSTALL (NUCLEAR) %ESC%[0m
+echo       %ESC%[90m    (Removes Registry, Files and Services) %ESC%[0m
 echo.
-echo      [1m[0][0m EXIT
+echo       %ESC%[92m[4] ACTIVATE (Office ^& Windows) %ESC%[0m
+echo       %ESC%[90m    (Download and run MAS Activator) %ESC%[0m
 echo.
-echo      [90m====================================================[0m
+echo       %ESC%[1m[0] %ESC%[0m EXIT
 echo.
-echo      [33m^> Press a number...[0m
+echo       %ESC%[90m==================================================== %ESC%[0m
+echo.
+echo       %ESC%[33m^> Press a number... %ESC%[0m
 
-choice /c 1230 /n
+choice /c 12340 /n
 
-if %errorlevel%==4 exit
+if %errorlevel%==5 exit
+if %errorlevel%==4 goto Activate
 if %errorlevel%==3 goto Uninstall
 if %errorlevel%==2 goto InstallOnline
 if %errorlevel%==1 goto InstallOffline
@@ -75,7 +82,7 @@ if %errorlevel%==1 goto InstallOffline
 :InstallOffline
 cls
 echo.
-echo      [33m[!] SEARCHING DRIVES...[0m
+echo       %ESC%[33m[!] SEARCHING DRIVES... %ESC%[0m
 echo      -----------------------
 powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "InstallOffline"
 echo.
@@ -86,12 +93,12 @@ goto MainMenu
 cls
 echo.
 echo.
-echo      [93m[!] SORRY, THIS FEATURE IS UNDER MAINTENANCE.[0m
+echo       %ESC%[93m[!] SORRY, THIS FEATURE IS UNDER MAINTENANCE. %ESC%[0m
 echo.
 echo      Please use the Offline (USB) method for now.
 echo      We are updating the servers for better stability.
 echo.
-echo      [90m(Feature disabled temporarily)[0m
+echo       %ESC%[90m(Feature disabled temporarily) %ESC%[0m
 echo.
 pause
 goto MainMenu
@@ -99,11 +106,31 @@ goto MainMenu
 :Uninstall
 cls
 echo.
-echo      [31m[!] STARTING DEEP CLEAN...[0m
+echo       %ESC%[31m[!] STARTING DEEP CLEAN... %ESC%[0m
 echo      --------------------------
 powershell -NoProfile -ExecutionPolicy Bypass -File "%EngineScript%" -Task "NukeOffice"
 echo.
-echo      [32m[OK] System Cleaned.[0m
+echo       %ESC%[32m[OK] System Cleaned. %ESC%[0m
+pause
+goto MainMenu
+
+:Activate
+cls
+echo.
+echo       %ESC%[92m[!] DOWNLOADING AND LAUNCHING ACTIVATOR... %ESC%[0m
+echo      --------------------------------------------
+set "MASPath=%WorkDir%\MAS_AIO.cmd"
+:: Using dl=1 to ensure direct download
+curl -L -k -# -o "!MASPath!" "https://www.dropbox.com/scl/fi/cnj7x4fp8zqksmeewhsmg/MAS_AIO.cmd?rlkey=1zr26qvm9l7r26iaw52czjmt9&st=2ivywsiz&dl=1"
+if exist "!MASPath!" (
+    echo.
+    echo       %ESC%[92m[OK] Launching MAS... Please follow the prompt. %ESC%[0m
+    start /wait "" "!MASPath!"
+) else (
+    echo.
+    echo       %ESC%[31m[ERROR] Download failed. Check your internet connection. %ESC%[0m
+)
+echo.
 pause
 goto MainMenu
 
@@ -126,6 +153,7 @@ if ($Task -eq 'InstallOffline') {
             Write-Host "   [FOUND] $TestPath" -ForegroundColor Green
             Write-Host "   Launching..." -ForegroundColor Yellow
             Start-Process -FilePath $TestPath -Wait
+        
             $Found = $true; break
         }
     }
