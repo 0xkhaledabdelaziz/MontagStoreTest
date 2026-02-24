@@ -71,6 +71,7 @@ set "Cyan=%ESC%[36m"
 set "Magenta=%ESC%[35m"
 
 echo.
+
 if "%~1"=="CMD_AUTOPILOT" goto DO_AUTOPILOT
 if "%~1"=="CMD_THISPC" goto DO_THISPC
 if "%~1"=="CMD_HIGHPERF" goto DO_HIGHPERF
@@ -347,7 +348,7 @@ powercfg /change monitor-timeout-ac 0
 powercfg /change standby-timeout-ac 0
 powercfg -h off >nul 2>&1
 
-set "DestVid=%ToolDir%\BatteryTest.mp4"
+set "DestVid=%ProgramData%\BatteryTest.mp4"
 set "FoundSource="
 if exist "%~dp0BatteryTest.mp4" set "FoundSource=%~dp0BatteryTest.mp4" & goto FoundVideoBAT
 for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
@@ -360,8 +361,8 @@ goto :EOF
 
 :FoundVideoBAT
 echo %Green%[FOUND] %FoundSource%%Reset%
-echo %Yellow%Copying to System (C:) - Please Wait...%Reset%
-copy /z /y "%FoundSource%" "%DestVid%" >nul 2>&1
+echo %Yellow%Copying to ProgramData - Please Wait...%Reset%
+for %%A in ("%FoundSource%") do robocopy "%%~dpA." "%ProgramData%" "BatteryTest.mp4" /Z /NJH /NJS
 if not exist "%DestVid%" (
     echo %Red%[ERROR] Copy Failed. Trying to play directly from USB...%Reset%
     start "" "%FoundSource%"
@@ -400,10 +401,10 @@ echo     Start-Sleep -Seconds 60 >> "%BatScript%"
 echo } >> "%BatScript%"
 cls
 echo.
-echo   [ MONTAG BATTERY TEST - DO NOT CLOSE ]
+echo   [ MONTAG BATTERY TEST - RUNNING IN SEPARATE WINDOW ]
 echo   Initializing Logger...
 echo.
-powershell -nop -ep bypass -File "%BatScript%"
+start "Montag Battery Logger" powershell -nop -ep bypass -File "%BatScript%"
 goto :EOF
 
 :DO_CHARGER
@@ -508,7 +509,6 @@ echo Start-Sleep -Seconds 4 >> "%PSStress%"
 powershell -nop -ep bypass -File "%PSStress%" -Type "%SType%" -Duration "%SDur%"
 del "%PSStress%" >nul 2>&1
 goto :EOF
-
 :: ==============================================================================
 :::__HUB_CORE_START__:::
 param($MFG)
@@ -1139,7 +1139,6 @@ $html = @"
             if(masterReq.filter(key => !pressedKeys.has(key)).length === 0) manualKBFinish(); 
         } 
     });
-
     window.addEventListener('keyup', e => { 
         if(e.code === 'F11') { 
             e.preventDefault();
@@ -1151,7 +1150,6 @@ $html = @"
             } 
         } 
     });
-
     function toggleNumpad() { const n = document.getElementById('numpad-master'); n.style.display = (n.style.display === 'none' ? 'flex' : 'none'); }
     function manualKBFinish() { let isOK = masterReq.filter(k => !pressedKeys.has(k)).length === 0; let res = isOK ? "OK" : "X"; document.getElementById('c-stat-kb').innerText = res; document.getElementById('c-stat-kb').className = isOK ? "card-status ok" : "card-status"; doneTests.kb = true; document.title = "MONTAG_KB_" + res; checkHubStatus(); closeTest(); }
 
@@ -1209,7 +1207,8 @@ $html = @"
         for(let i=0; i<t.length; i++) {
             let el = document.elementFromPoint(t[i].clientX, t[i].clientY);
             if(el && el.classList.contains('t-cell') && !el.classList.contains('touched')) {
-                el.style.background = '#0f0'; el.style.boxShadow = '0 0 10px #0f0'; el.style.borderColor = '#0f0'; el.classList.add('touched');
+                el.style.background = '#0f0';
+                el.style.boxShadow = '0 0 10px #0f0'; el.style.borderColor = '#0f0'; el.classList.add('touched');
             }
         }
         checkTouchComp();
@@ -1228,7 +1227,7 @@ $html = @"
     window.addEventListener('mousemove', function(e) { if(document.getElementById('touch-surface-master').style.display === 'block' && e.buttons === 1) actTouch(e); });
     function finalizeTouch(st) { document.getElementById('touch-surface-master').style.display = 'none'; doneTests.to = true; document.getElementById('c-stat-to').innerText = st; document.getElementById('c-stat-to').className = st === "OK" ? "card-status ok" : "card-status"; document.title = "MONTAG_TO_" + st; checkHubStatus(); closeTest(); }
     document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && document.getElementById('touch-surface-master').style.display === 'block') { let a = document.querySelectorAll('.touched').length; finalizeTouch(a >= 238 ? "OK" : "X"); } });
-    
+
     async function toggleC() { try { stream = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('vid').srcObject = stream; document.getElementById('vid').style.display = 'block'; document.getElementById('caDec').style.display = 'block'; } catch(e) { alert('Lens Sensor Denied.'); } }
     function verifyCA(st) { if(stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } document.getElementById('vid').style.display = 'none'; document.getElementById('caDec').style.display = 'none'; doneTests.ca = true; document.getElementById('c-stat-ca').innerText = st; document.getElementById('c-stat-ca').className = st === "OK" ? "card-status ok" : "card-status"; document.title = "MONTAG_CA_" + st; checkHubStatus(); closeTest(); }
 
@@ -1239,7 +1238,6 @@ $html = @"
         document.getElementById('stockSection').style.display = 'none'; 
         document.getElementById('btnTest').style.display = 'none'; 
         notes.style.display = 'block';
-        
         if (section.style.display === 'none' || section.style.display === '') {
             section.style.display = 'block';
             btn.innerText = "CONFIRM & UPLOAD"; btn.className = "btn-sales btn-confirm"; 
@@ -1307,7 +1305,6 @@ $html = @"
         url += "&entry.1717831234=" + encodeURIComponent("$storageString");
         url += "&entry.2044586469=" + encodeURIComponent("$gpuString | Temp: $gpuTemp");
         url += "&entry.310563239=" + encodeURIComponent(finalStatus);
-        
         fetch(url, { mode: 'no-cors' }).then(() => {
             document.getElementById('tab-rep').innerHTML = "<div class='test-card-ultimate' style='max-width: 900px; padding: 40px; width: 100%; text-align:center;'><h1 style='color:var(--secondary); font-size:40px; margin-bottom:20px;'>UPLOAD SUCCESSFUL!</h1><p style='color:#aaa; font-size:16px;'>Data has been saved to the Sales Database.</p><button class='btn-action-pro' onclick='exitHub()'>CLOSE DIAGNOSTIC HUB</button></div>";
         }).catch(e => {
@@ -1440,7 +1437,6 @@ $ClientReport = @"
     </div>
 
     <div class="specs-grid" id="specsData">
-       
         <div class="spec-card" style="grid-column: 1 / -1; border-color: var(--secondary);">
             <span class="spec-label">Model</span>
             <div class="spec-value" style="font-size: 20px; font-weight: bold;">$FullModel</div>
@@ -1449,7 +1445,6 @@ $ClientReport = @"
             <span class="spec-label">Serial Number</span>
             <div class="spec-value" style="color:var(--secondary); font-size: 17px; font-weight:800;">$($bios.SerialNumber)</div>
         </div>
-      
         <div class="spec-card">
             <span class="spec-label">Processor (CPU)</span>
             <div class="spec-value">$cpuDetails <br><span style="color:$cpuTempColor; font-size:13px; font-weight:800;">Temp: $cpuTemp</span></div>
@@ -1465,7 +1460,6 @@ $ClientReport = @"
         <div class="spec-card" style="border-color: #ff007f;">
             <span class="spec-label">Primary Storage</span>
             <div class="spec-value">$storageString</div>
-        
         </div>
         <div class="spec-card" style="grid-column: 1 / -1; border-color: #00e5ff;">
             <span class="spec-label" style="color:#00e5ff;">Inspection Checklist / Condition</span>
@@ -1486,7 +1480,6 @@ $ClientReport = @"
     function forceCopyText(text) {
         var textArea = document.createElement("textarea"); textArea.value = text;
         textArea.style.position = "fixed"; textArea.style.left = "-999999px"; 
- 
         document.body.appendChild(textArea); textArea.focus(); textArea.select();
         document.execCommand("copy"); document.body.removeChild(textArea);
     }
@@ -1494,8 +1487,7 @@ $ClientReport = @"
     function copySpecs(btn) {
         var textToCopy = "[ Montag Store - Device Specs ]\n\n" +
                          "*Model:* $FullModel\n" +
-                         "*Serial:* $($bios.SerialNumber)\n" 
-                         +
+                         "*Serial:* $($bios.SerialNumber)\n" +
                          "*CPU:* $cpuDetails | Temp: $cpuTemp\n" +
                          "*RAM:* $ramDetails\n" +
                          "*GPU:* $gpuString | Temp: $gpuTemp\n" +
@@ -1503,7 +1495,6 @@ $ClientReport = @"
                          "*Status:* $FinalStatusLog\n\n" +
                          "Verified by Montag Store System [OK]";
         forceCopyText(textToCopy);
-      
         
         var originalText = btn.innerHTML;
         btn.innerHTML = "Copied to Clipboard! [OK]";
@@ -1517,7 +1508,6 @@ $ClientReport = @"
     }
 
     function handleWarranty(btn) {
-      
         forceCopyText("$($bios.SerialNumber)");
         var originalText = btn.innerHTML;
         btn.innerHTML = "Serial Copied! Opening...";
@@ -1536,7 +1526,8 @@ $ShortcutContent = "[InternetShortcut]`r`nURL=file:///$RealHtmlFile`r`nIconIndex
 Remove-Item -Path "$env:SystemDrive\MontagTools" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemDrive\MontagReports" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemDrive\MontagOffice" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:SystemDrive\MontagBatteryLog.txt" -Force -ErrorAction SilentlyContinue
+# Removed to retain the log file as requested:
+# Remove-Item -Path "$env:SystemDrive\MontagBatteryLog.txt" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:TEMP\Montag*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:TEMP\*status.txt" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:TEMP\action_report.txt" -Force -ErrorAction SilentlyContinue
