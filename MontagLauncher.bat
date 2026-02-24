@@ -1,13 +1,12 @@
-<# :
 @echo off
 setlocal EnableDelayedExpansion
 
 :: ==============================================================================
-:: [0] GLOBAL VARIABLES & CORE PATHS
+:: [0] GLOBAL VARIABLES & SAFE CORE PATHS
 :: ==============================================================================
 set "ToolDir=%SystemDrive%\MontagTools"
 if not exist "%ToolDir%" mkdir "%ToolDir%" >nul 2>&1
-set "BatchPath=%TEMP%\MontagCore.bat"
+set "BatchPath=%ToolDir%\MontagCore.bat"
 if /i "%~f0" neq "%BatchPath%" copy /y "%~f0" "%BatchPath%" >nul 2>&1
 
 :: Router Intercept for OS Commands
@@ -18,7 +17,7 @@ if "%~1" neq "" goto ROUTER
 :: ==============================================================================
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
 if '%errorlevel%' NEQ '0' (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell -nop -ep bypass -c "Start-Process -FilePath '%~f0' -Verb RunAs"
     exit
 )
 
@@ -28,29 +27,29 @@ if '%errorlevel%' NEQ '0' (
 cd /d "%~dp0"
 chcp 65001 >nul
 title Montag Store - Quantum OS Dashboard v22.0
-for /f "usebackq delims=" %%a in (`powershell -Command "(Get-CimInstance Win32_ComputerSystem).Manufacturer.Trim()"`) do set "BRAND=%%a"
-set "HubEngine=%TEMP%\MontagQuantumEngine.ps1"
+for /f "usebackq delims=" %%a in (`powershell -nop -c "(Get-CimInstance Win32_ComputerSystem).Manufacturer.Trim()"`) do set "BRAND=%%a"
+set "HubEngine=%ToolDir%\MontagQuantumEngine.ps1"
 if exist "%HubEngine%" del "%HubEngine%"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__HUB_CORE_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%HubEngine%"
 
-:: Execute Engine Normally
-powershell -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "%HubEngine%" -MFG "!BRAND!"
+:: Execute Engine Safely
+powershell -WindowStyle Hidden -nop -ep bypass -File "%HubEngine%" -MFG "!BRAND!"
 
 :: ==============================================================================
 :: [3] POST-DIAGNOSTIC REPORT COMPILER (LOG ONLY)
 :: ==============================================================================
-if exist "%TEMP%\action_report.txt" (
+if exist "%ToolDir%\action_report.txt" (
     set "KB_ST=PENDING" & set "SC_ST=PENDING" & set "AU_ST=PENDING" & set "TO_ST=PENDING" & set "CA_ST=PENDING"
     
-    if exist "%TEMP%\kb_status.txt" set /p KB_ST=<"%TEMP%\kb_status.txt"
-    if exist "%TEMP%\sc_status.txt" set /p SC_ST=<"%TEMP%\sc_status.txt"
-    if exist "%TEMP%\au_status.txt" set /p AU_ST=<"%TEMP%\au_status.txt"
-    if exist "%TEMP%\to_status.txt" set /p TO_ST=<"%TEMP%\to_status.txt"
-    if exist "%TEMP%\ca_status.txt" set /p CA_ST=<"%TEMP%\ca_status.txt"
+    if exist "%ToolDir%\kb_status.txt" set /p KB_ST=<"%ToolDir%\kb_status.txt"
+    if exist "%ToolDir%\sc_status.txt" set /p SC_ST=<"%ToolDir%\sc_status.txt"
+    if exist "%ToolDir%\au_status.txt" set /p AU_ST=<"%ToolDir%\au_status.txt"
+    if exist "%ToolDir%\to_status.txt" set /p TO_ST=<"%ToolDir%\to_status.txt"
+    if exist "%ToolDir%\ca_status.txt" set /p CA_ST=<"%ToolDir%\ca_status.txt"
     
     echo Key:!KB_ST! Screen:!SC_ST! Audio:!AU_ST! Touch:!TO_ST! Cam:!CA_ST! > "%ToolDir%\MontagLog.txt"
-    del "%TEMP%\action_report.txt" >nul 2>&1
+    del "%ToolDir%\action_report.txt" >nul 2>&1
 )
 exit
 
@@ -115,15 +114,15 @@ goto :EOF
 cls
 echo %Cyan%Applying Auto-Pilot (Prepare for Sale)...%Reset%
 echo %Yellow%Creating Restore Point...%Reset%
-powershell -Command "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_AutoPilot' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
+powershell -nop -c "Enable-ComputerRestore -Drive 'C:\'; Checkpoint-Computer -Description 'Montag_AutoPilot' -RestorePointType 'MODIFY_SETTINGS'" >nul 2>&1
 echo %Yellow%Tuning Performance...%Reset%
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0 & powercfg -h off >nul 2>&1
 net start w32time >nul 2>&1 & w32tm /resync >nul 2>&1
 echo %Yellow%Removing Bloatware...%Reset%
-powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
+powershell -nop -c "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
 echo %Yellow%Setting Region and Language...%Reset%
-powershell -NoProfile -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68; Set-Culture en-US" >nul 2>&1
+powershell -nop -c "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68; Set-Culture en-US" >nul 2>&1
 reg add "HKCU\Control Panel\International\Geo" /v Nation /t REG_SZ /d "68" /f >nul 2>&1
 tzutil /s "Egypt Standard Time" >nul 2>&1
 echo %Yellow%Restoring Classic Menu ^& This PC...%Reset%
@@ -156,7 +155,7 @@ goto :EOF
 :DO_ARABIC
 cls
 echo %Cyan%Setting Region to Egypt and adding Arabic Keyboard...%Reset%
-powershell -NoProfile -Command "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68" >nul 2>&1
+powershell -nop -c "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68" >nul 2>&1
 tzutil /s "Egypt Standard Time" >nul 2>&1
 echo %Green%[OK] Done.%Reset%
 timeout /t 2 >nul
@@ -166,17 +165,17 @@ goto :EOF
 cls
 echo.
 echo %Cyan%Searching for BIOS Product Key...%Reset%
-set "KeyScript=%TEMP%\FindKey.ps1"
+set "KeyScript=%ToolDir%\FindKey.ps1"
 if exist "%KeyScript%" del "%KeyScript%"
 echo $key = "" > "%KeyScript%"
 echo try { $key = (Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey } catch {} >> "%KeyScript%"
 echo if ([string]::IsNullOrWhiteSpace($key)) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform').BackupProductKeyDefault } catch {} } >> "%KeyScript%"
 echo if ([string]::IsNullOrWhiteSpace($key)) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform').BootDeviceProductKey } catch {} } >> "%KeyScript%"
-echo $key ^| Out-File "$env:TEMP\oemkey.txt" -Encoding ASCII >> "%KeyScript%"
+echo $key ^| Out-File "$env:SystemDrive\MontagTools\oemkey.txt" -Encoding ASCII >> "%KeyScript%"
 
-powershell -ExecutionPolicy Bypass -File "%KeyScript%" >nul 2>&1
+powershell -nop -ep bypass -File "%KeyScript%" >nul 2>&1
 set "BiosKey="
-if exist "%TEMP%\oemkey.txt" ( set /p BiosKey=<"%TEMP%\oemkey.txt" )
+if exist "%ToolDir%\oemkey.txt" ( set /p BiosKey=<"%ToolDir%\oemkey.txt" )
 if not "!BiosKey!"=="" (
     echo.
     echo %Green%[OK] Key Found: %White%!BiosKey!%Reset%
@@ -191,7 +190,7 @@ if not "!BiosKey!"=="" (
     echo %Red%[ERROR] No Original BIOS Key Found.%Reset%
 )
 if exist "%KeyScript%" del "%KeyScript%"
-if exist "%TEMP%\oemkey.txt" del "%TEMP%\oemkey.txt"
+if exist "%ToolDir%\oemkey.txt" del "%ToolDir%\oemkey.txt"
 echo.
 pause
 goto :EOF
@@ -199,7 +198,7 @@ goto :EOF
 :DO_BLOAT
 cls
 echo %Cyan%Removing Windows Bloatware...%Reset%
-powershell -Command "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue"
+powershell -nop -c "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue"
 echo %Green%[OK] Done.%Reset%
 timeout /t 2 >nul
 goto :EOF
@@ -221,7 +220,7 @@ echo.
 set "ClientName="
 set /p ClientName=" Enter Client Name: "
 if "!ClientName!"=="" goto :EOF
-powershell -Command "Rename-Computer -NewName '!ClientName!-PC' -Force -ErrorAction SilentlyContinue"
+powershell -nop -c "Rename-Computer -NewName '!ClientName!-PC' -Force -ErrorAction SilentlyContinue"
 net user "%USERNAME%" /fullname:"!ClientName!" >nul 2>&1
 wmic useraccount where name="%USERNAME%" rename "!ClientName!" >nul 2>&1
 echo.
@@ -243,13 +242,15 @@ goto :EOF
 :DO_SAC
 cls
 echo %Cyan%Disabling Smart App Control...%Reset%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f >nul 2>&1
+set "SAC_P1=HKLM\SYSTEM\CurrentControlSet"
+set "SAC_P2=Control\CI\Policy"
+reg add "!SAC_P1!\!SAC_P2!" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f >nul 2>&1
 echo %Green%[OK] Policy Updated. Restart required.%Reset%
 timeout /t 3 >nul
 goto :EOF
 
 :DO_DRV_BACKUP
-set "PSDr=%TEMP%\DrvBack.ps1"
+set "PSDr=%ToolDir%\DrvBack.ps1"
 if exist "%PSDr%" del "%PSDr%"
 echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Backup' > "%PSDr%"
 echo Write-Host "`n   DRIVER BACKUP (SMART ENGINE)" -ForegroundColor Magenta >> "%PSDr%"
@@ -267,12 +268,12 @@ echo Write-Host "`n   Exporting Drivers... (Please wait, this takes time)" -Fore
 echo Start-Process pnputil -ArgumentList "/export-driver * `"$finalPath`"" -NoNewWindow -Wait >> "%PSDr%"
 echo Write-Host "`n   [OK] Drivers Saved Successfully." -ForegroundColor Green >> "%PSDr%"
 echo Read-Host "`n   Press Enter to exit..." >> "%PSDr%"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
+powershell -nop -ep bypass -File "%PSDr%"
 del "%PSDr%" >nul 2>&1
 goto :EOF
 
 :DO_DRV_RESTORE
-set "PSDr=%TEMP%\DrvRest.ps1"
+set "PSDr=%ToolDir%\DrvRest.ps1"
 if exist "%PSDr%" del "%PSDr%"
 echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Restore' > "%PSDr%"
 echo Write-Host "`n   DRIVER RESTORE (SMART ENGINE)" -ForegroundColor Magenta >> "%PSDr%"
@@ -297,7 +298,7 @@ echo } else { >> "%PSDr%"
 echo     Write-Host "`n   [ERROR] No driver folder found for this model on $drv drive." -ForegroundColor Red >> "%PSDr%"
 echo     Read-Host "   Press Enter to exit..." >> "%PSDr%"
 echo } >> "%PSDr%"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PSDr%"
+powershell -nop -ep bypass -File "%PSDr%"
 del "%PSDr%" >nul 2>&1
 goto :EOF
 
@@ -371,7 +372,7 @@ timeout /t 2 >nul
 start "" "%DestVid%"
 
 :StartLoggerBAT
-set "BatScript=%TEMP%\BatLogger.ps1"
+set "BatScript=%ToolDir%\BatLogger.ps1"
 if exist "%BatScript%" del "%BatScript%"
 echo $host.UI.RawUI.WindowTitle = "Montag Battery Timer" > "%BatScript%"
 echo $log = "C:\MontagBatteryLog.txt" >> "%BatScript%"
@@ -402,11 +403,11 @@ echo.
 echo   [ MONTAG BATTERY TEST - DO NOT CLOSE ]
 echo   Initializing Logger...
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%BatScript%"
+powershell -nop -ep bypass -File "%BatScript%"
 goto :EOF
 
 :DO_CHARGER
-set "PSChg=%TEMP%\MontagCharger.ps1"
+set "PSChg=%ToolDir%\MontagCharger.ps1"
 if exist "%PSChg%" del "%PSChg%"
 echo $host.UI.RawUI.WindowTitle = "Montag Lab - Charger Stress Test" > "%PSChg%"
 echo Write-Host "`n   [16] CHARGER STRESS (30 Seconds Load Test)" -ForegroundColor Cyan >> "%PSChg%"
@@ -449,11 +450,11 @@ echo.
 echo   [ MONTAG CHARGER STRESS - DO NOT CLOSE ]
 echo   Initializing Engine...
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PSChg%"
+powershell -nop -ep bypass -File "%PSChg%"
 goto :EOF
 
 :DO_STRESS
-set "PSStress=%TEMP%\MontagStress.ps1"
+set "PSStress=%ToolDir%\MontagStress.ps1"
 if exist "%PSStress%" del "%PSStress%"
 echo param($Type, $Duration) > "%PSStress%"
 echo $Duration = [int]$Duration >> "%PSStress%"
@@ -487,10 +488,10 @@ echo     } >> "%PSStress%"
 echo     $a = $null; [GC]::Collect() >> "%PSStress%"
 echo } elseif ($Type -eq 'GPU') { >> "%PSStress%"
 echo     Write-Host "   Launching WebGL Shader Engine... (DO NOT CLOSE THE BROWSER WINDOW)" -ForegroundColor Cyan >> "%PSStress%"
-echo     $gpuHtml = "$env:TEMP\MontagGPU.html" >> "%PSStress%"
+echo     $gpuHtml = "$env:SystemDrive\MontagTools\MontagGPU.html" >> "%PSStress%"
 echo     $htmlContent = "<!DOCTYPE html><html><head><style>body{margin:0;overflow:hidden;background:#000;}canvas{width:100vw;height:100vh;display:block;}</style></head><body><canvas id='gl'></canvas><script>var c=document.getElementById('gl');var gl=c.getContext('webgl')||c.getContext('experimental-webgl');c.width=window.innerWidth;c.height=window.innerHeight;gl.viewport(0,0,c.width,c.height);var vs=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vs,'attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}');gl.compileShader(vs);var fs=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fs,'precision highp float;uniform float t;uniform vec2 r;void main(){vec2 p=(gl_FragCoord.xy*2.-r)/min(r.x,r.y);float s=0.,v=0.;for(float i=0.;i<250.;i++){vec2 q=p+vec2(cos(t*0.1+i),sin(t*0.15+i))*0.5;float l=length(q);s+=exp(-l*10.);v+=sin(l*20.-t*4.);}gl_FragColor=vec4(vec3(s*0.5+v*0.2,s*0.2,v*0.5),1);}');gl.compileShader(fs);var p=gl.createProgram();gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);gl.useProgram(p);var b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);var al=gl.getAttribLocation(p,'p');gl.enableVertexAttribArray(al);gl.vertexAttribPointer(al,2,gl.FLOAT,false,0,0);var ut=gl.getUniformLocation(p,'t');var ur=gl.getUniformLocation(p,'r');var start=Date.now();function f(){gl.uniform1f(ut,(Date.now()-start)*0.001);gl.uniform2f(ur,c.width,c.height);gl.drawArrays(gl.TRIANGLES,0,6);requestAnimationFrame(f);}f();</script></body></html>" >> "%PSStress%"
 echo     Set-Content -Path $gpuHtml -Value $htmlContent -Encoding UTF8 >> "%PSStress%"
-echo     Start-Process "msedge" -ArgumentList "--new-window --kiosk --edge-kiosk-type=fullscreen --disable-web-security --user-data-dir=`"$env:TEMP\EdgeGPU`" `"$gpuHtml`"" >> "%PSStress%"
+echo     Start-Process "msedge" -ArgumentList "--new-window --kiosk --edge-kiosk-type=fullscreen --disable-web-security --user-data-dir=`"$env:SystemDrive\MontagTools\EdgeGPU`" `"$gpuHtml`"" >> "%PSStress%"
 echo     $s = [Diagnostics.Stopwatch]::StartNew() >> "%PSStress%"
 echo     while ($true) { >> "%PSStress%"
 echo         $el = $s.Elapsed.TotalSeconds >> "%PSStress%"
@@ -504,7 +505,7 @@ echo     del $gpuHtml -Force -ErrorAction SilentlyContinue >> "%PSStress%"
 echo } >> "%PSStress%"
 echo Write-Host "`n`n   [OK] TEST COMPLETED SUCCESSFULLY." -ForegroundColor Green >> "%PSStress%"
 echo Start-Sleep -Seconds 4 >> "%PSStress%"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PSStress%" -Type "%SType%" -Duration "%SDur%"
+powershell -nop -ep bypass -File "%PSStress%" -Type "%SType%" -Duration "%SDur%"
 del "%PSStress%" >nul 2>&1
 goto :EOF
 
@@ -518,7 +519,7 @@ Add-Type -Name ConsoleHider -Namespace Win32 -MemberDefinition '
 '
 [Win32.ConsoleHider]::ShowWindow([Win32.ConsoleHider]::GetConsoleWindow(), 0) | Out-Null
 
-$GuiFile = "$env:TEMP\MontagDiagnosticUltimate.html"
+$GuiFile = "$env:SystemDrive\MontagTools\MontagDiagnosticUltimate.html"
 
 # --- SALES & REPORTING CONFIGURATION ---
 $GFormID = "1FAIpQLSeQzAlNJupT5zEfjYxoQMbTupHd3gEPgdConPG_ySOdVFyhkA"
@@ -1328,18 +1329,18 @@ while ($true) {
     if ($activeWins) {
         foreach ($e in $activeWins) {
             $title = $e.MainWindowTitle
-            if ($title -match "MONTAG_KB_") { $title.Split("_")[-1] | Out-File "$env:TEMP\kb_status.txt" -Encoding ASCII }
-            if ($title -match "MONTAG_SC_") { $title.Split("_")[-1] | Out-File "$env:TEMP\sc_status.txt" -Encoding ASCII }
-            if ($title -match "MONTAG_AU_") { $title.Split("_")[-1] | Out-File "$env:TEMP\au_status.txt" -Encoding ASCII }
-            if ($title -match "MONTAG_TO_") { $title.Split("_")[-1] | Out-File "$env:TEMP\to_status.txt" -Encoding ASCII }
-            if ($title -match "MONTAG_CA_") { $title.Split("_")[-1] | Out-File "$env:TEMP\ca_status.txt" -Encoding ASCII }
+            if ($title -match "MONTAG_KB_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\kb_status.txt" -Encoding ASCII }
+            if ($title -match "MONTAG_SC_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\sc_status.txt" -Encoding ASCII }
+            if ($title -match "MONTAG_AU_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\au_status.txt" -Encoding ASCII }
+            if ($title -match "MONTAG_TO_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\to_status.txt" -Encoding ASCII }
+            if ($title -match "MONTAG_CA_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\ca_status.txt" -Encoding ASCII }
             if ($title -match "MONTAG_CMD_(.+)") { 
                 $cmd = $matches[1]
                 if ($cmd -eq "EXIT") { 
                     Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG_" } | Stop-Process -Force -ErrorAction SilentlyContinue
                     break
                 }
-                Start-Process cmd -ArgumentList "/c `"`"$env:TEMP\MontagCore.bat`" CMD_$cmd`"" -WindowStyle Normal
+                Start-Process cmd -ArgumentList "/c `"`"$env:SystemDrive\MontagTools\MontagCore.bat`" CMD_$cmd`"" -WindowStyle Normal
                 Start-Sleep -Seconds 2
             }
         }
@@ -1349,11 +1350,11 @@ while ($true) {
 }
 
 # --- GENERATE DESKTOP CLIENT REPORT ---
-$kb_st = if (Test-Path "$env:TEMP\kb_status.txt") { Get-Content "$env:TEMP\kb_status.txt" } else { "PENDING" }
-$sc_st = if (Test-Path "$env:TEMP\sc_status.txt") { Get-Content "$env:TEMP\sc_status.txt" } else { "PENDING" }
-$au_st = if (Test-Path "$env:TEMP\au_status.txt") { Get-Content "$env:TEMP\au_status.txt" } else { "PENDING" }
-$to_st = if (Test-Path "$env:TEMP\to_status.txt") { Get-Content "$env:TEMP\to_status.txt" } else { "PENDING" }
-$ca_st = if (Test-Path "$env:TEMP\ca_status.txt") { Get-Content "$env:TEMP\ca_status.txt" } else { "PENDING" }
+$kb_st = if (Test-Path "$env:SystemDrive\MontagTools\kb_status.txt") { Get-Content "$env:SystemDrive\MontagTools\kb_status.txt" } else { "PENDING" }
+$sc_st = if (Test-Path "$env:SystemDrive\MontagTools\sc_status.txt") { Get-Content "$env:SystemDrive\MontagTools\sc_status.txt" } else { "PENDING" }
+$au_st = if (Test-Path "$env:SystemDrive\MontagTools\au_status.txt") { Get-Content "$env:SystemDrive\MontagTools\au_status.txt" } else { "PENDING" }
+$to_st = if (Test-Path "$env:SystemDrive\MontagTools\to_status.txt") { Get-Content "$env:SystemDrive\MontagTools\to_status.txt" } else { "PENDING" }
+$ca_st = if (Test-Path "$env:SystemDrive\MontagTools\ca_status.txt") { Get-Content "$env:SystemDrive\MontagTools\ca_status.txt" } else { "PENDING" }
 
 function Get-FullTextStatus($st) {
     if ($st -match "OK") { return "Passed [OK]" }
