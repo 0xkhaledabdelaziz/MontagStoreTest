@@ -15,9 +15,9 @@ if "%~1" neq "" goto ROUTER
 :: ==============================================================================
 :: [1] ADMINISTRATIVE PRIVILEGES ENFORCEMENT (CLEAN BYPASS)
 :: ==============================================================================
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
-if '%errorlevel%' NEQ '0' (
-    powershell -nop -ep bypass -c "Start-Process -FilePath '%~f0' -Verb RunAs"
+net session >nul 2>&1
+if %errorLevel% NEQ 0 (
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
     exit
 )
 
@@ -27,14 +27,14 @@ if '%errorlevel%' NEQ '0' (
 cd /d "%~dp0"
 chcp 65001 >nul
 title Montag Store - Quantum OS Dashboard v22.0
-for /f "usebackq delims=" %%a in (`powershell -nop -c "(Get-CimInstance Win32_ComputerSystem).Manufacturer.Trim()"`) do set "BRAND=%%a"
+for /f "usebackq delims=" %%a in (`powershell.exe -NoProfile -Command "(Get-CimInstance Win32_ComputerSystem).Manufacturer.Trim()"`) do set "BRAND=%%a"
 set "HubEngine=%ToolDir%\MontagQuantumEngine.ps1"
 if exist "%HubEngine%" del "%HubEngine%"
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__HUB_CORE_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%HubEngine%"
 
 :: Execute Engine Safely
-powershell -WindowStyle Hidden -nop -ep bypass -File "%HubEngine%" -MFG "!BRAND!"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%HubEngine%" -MFG "!BRAND!"
 
 :: ==============================================================================
 :: [3] POST-DIAGNOSTIC REPORT COMPILER (LOG ONLY)
