@@ -737,8 +737,10 @@ $html = @"
     .sidebar { position: fixed; top: 0; left: 0; transform: translateX(calc(-100% + 15px)); width: 340px; height: 100vh; background: rgba(2, 2, 8, 0.98); border-right: 3px solid var(--primary); display: flex; flex-direction: column; padding: 30px 0; backdrop-filter: blur(80px); z-index: 9999; box-sizing: border-box; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s; animation: sideBorderGlow 3s infinite alternate ease-in-out; }
     @keyframes sideBorderGlow { 0% { border-color: var(--primary); box-shadow: 5px 0 20px rgba(168,32,255,0.6), inset -3px 0 15px rgba(168,32,255,0.3); } 100% { border-color: var(--accent); box-shadow: 8px 0 35px rgba(255,0,170,0.8), inset -5px 0 25px rgba(255,0,170,0.4); } }
     .sidebar::after { content: ''; position: absolute; top: 0; right: -60px; width: 60px; height: 100%; background: transparent; z-index: 10001; }
-    .sidebar-trigger { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); width: 85px; padding: 55px 0; background: rgba(2, 2, 8, 0.98); border: 3px solid var(--primary); border-left: none; border-radius: 0 20px 20px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--primary); font-weight: 950; font-size: 19px; cursor: pointer; transition: 0.3s; z-index: 10000; animation: triggerBtnGlow 3s infinite alternate ease-in-out; }
+    
+    .sidebar-trigger { position: absolute; left: 100%; top: auto; bottom: 60px; transform: none; padding: 12px 20px; background: rgba(2, 2, 8, 0.98); border: 3px solid var(--primary); border-left: none; border-radius: 0 15px 15px 0; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 950; font-size: 16px; letter-spacing: 4px; cursor: pointer; transition: 0.3s; z-index: 10000; animation: triggerBtnGlow 3s infinite alternate ease-in-out; white-space: nowrap; }
     @keyframes triggerBtnGlow { 0% { border-color: var(--primary); box-shadow: 10px 0 20px rgba(168,32,255,0.6), inset 0 0 15px rgba(168,32,255,0.4); color: var(--primary); text-shadow: 0 0 10px var(--primary); } 100% { border-color: var(--secondary); box-shadow: 15px 0 35px rgba(0,229,255,0.8), inset 0 0 20px rgba(0,229,255,0.6); color: var(--secondary); text-shadow: 0 0 15px var(--secondary); } }
+    
     .sidebar:hover { transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,0.9); }
     .nav-btn { background: transparent; color: #666; border: none; padding: 22px 40px; text-align: left; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.5s; border-left: 4px solid transparent; width: 100%; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 1px; }
     .nav-btn:hover { background: rgba(255,255,255,0.02); color: #fff; }
@@ -783,7 +785,7 @@ $html = @"
     .progress-bg { width: 100%; height: 5px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 12px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary), var(--primary)) !important; background-size: 300% 100% !important; animation: gradientFlow 1.5s linear infinite !important; }
 
-    @keyframes fastPulseBtn { 0% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0.6); } 70% { box-shadow: 0 0 0 25px rgba(168, 32, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0); } }
+    @keyframes fastPulseBtn { 0% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0.6); } 70% { box-shadow: 0 0 0 20px rgba(168, 32, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0); } }
     @keyframes hyperGradientFast { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 
     .welcome-container button[onclick="startDiagnosticHub()"] { background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary), var(--accent)) !important; background-size: 200% 100% !important; animation: hyperGradientFast 0.4s linear infinite, fastPulseBtn 0.8s infinite !important; border-color: transparent !important; color: #fff !important; text-shadow: 0 2px 5px rgba(0,0,0,0.5); font-weight: 900; }
@@ -791,7 +793,7 @@ $html = @"
     .btn-action-pro { margin-top: 20px; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border: none; padding: 18px 75px; font-size: 16px; font-weight: 950; border-radius: 50px; cursor: pointer; text-transform: uppercase; transition: 0.4s; }
     .btn-action-pro:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(168,32,255,0.4); }
 
-    .btn-hero { width: 100%; background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary)); background-size: 200% 100%; animation: hyperGradientFast 1s linear infinite; color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; font-size: 17px; font-weight: 950; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 30px rgba(168,32,255,0.4); margin-bottom: 20px; }
+    .btn-hero { width: 100%; background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary)); background-size: 200% 100%; animation: hyperGradientFast 0.8s linear infinite; color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 15px; font-size: 16px; font-weight: 950; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 30px rgba(168,32,255,0.4); margin-bottom: 20px; }
     .btn-hero:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(255,0,170,0.6); }
 
     .btn-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; width: 100%; margin-top: 10px; }
@@ -851,7 +853,7 @@ $html = @"
 <div id="splash"><div style="text-align:center;"><img src="$LogoMontag" class="splash-logo"><div class="master-loader-box"><div class="master-loader-fill"></div></div><p style="color:#555; font-size:12px; margin-top:35px; letter-spacing:8px; opacity:0; animation: fadeIn 0.8s 1s forwards;">INITIALIZING QUANTUM MASTER v22.0</p></div></div>
 
 <div class="sidebar">
-    <div class="sidebar-trigger"><span>M</span><span>E</span><span>N</span><span>U</span></div>
+    <div class="sidebar-trigger">MENU</div>
     <div style="text-align:center; padding: 20px 30px 40px 30px;"><img src="$LogoMontag" style="width:200px;"></div>
     
     <button class="nav-btn active" id="nav-hw" onclick="switchMainTab('tab-hw', this, 'Hardware Diagnostic Hub')"><span>[1] Hardware Tests</span><span class="done-badge" id="badge-hw">DONE</span></button>
