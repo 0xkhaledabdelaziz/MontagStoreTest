@@ -35,22 +35,6 @@ more +%StartLine% "%~f0" > "%HubEngine%"
 
 :: Execute Engine Safely
 powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%HubEngine%" -MFG "!BRAND!"
-
-:: ==============================================================================
-:: [3] POST-DIAGNOSTIC REPORT COMPILER (LOG ONLY)
-:: ==============================================================================
-if exist "%ToolDir%\action_report.txt" (
-    set "KB_ST=PENDING" & set "SC_ST=PENDING" & set "AU_ST=PENDING" & set "TO_ST=PENDING" & set "CA_ST=PENDING"
-    
-    if exist "%ToolDir%\kb_status.txt" set /p KB_ST=<"%ToolDir%\kb_status.txt"
-    if exist "%ToolDir%\sc_status.txt" set /p SC_ST=<"%ToolDir%\sc_status.txt"
-    if exist "%ToolDir%\au_status.txt" set /p AU_ST=<"%ToolDir%\au_status.txt"
-    if exist "%ToolDir%\to_status.txt" set /p TO_ST=<"%ToolDir%\to_status.txt"
-    if exist "%ToolDir%\ca_status.txt" set /p CA_ST=<"%ToolDir%\ca_status.txt"
-    
-    echo Key:!KB_ST! Screen:!SC_ST! Audio:!AU_ST! Touch:!TO_ST! Cam:!CA_ST! > "%ToolDir%\MontagLog.txt"
-    del "%ToolDir%\action_report.txt" >nul 2>&1
-)
 exit
 
 :: ==============================================================================
@@ -169,7 +153,7 @@ echo %Cyan%Searching for BIOS Product Key...%Reset%
 set "KeyScript=%ToolDir%\FindKey.ps1"
 if exist "%KeyScript%" del "%KeyScript%"
 echo $key = "" > "%KeyScript%"
-echo try { $key = (Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey } catch {} >> "%KeyScript%"
+echo try { $key = (Get-CimInstance -ClassName SoftwareLicensingService).OA3xOriginalProductKey } catch {} >> "%KeyScript%"
 echo if ([string]::IsNullOrWhiteSpace($key)) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform').BackupProductKeyDefault } catch {} } >> "%KeyScript%"
 echo if ([string]::IsNullOrWhiteSpace($key)) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform').BootDeviceProductKey } catch {} } >> "%KeyScript%"
 echo $key ^| Out-File "$env:SystemDrive\MontagTools\oemkey.txt" -Encoding ASCII >> "%KeyScript%"
@@ -255,7 +239,7 @@ set "PSDr=%ToolDir%\DrvBack.ps1"
 if exist "%PSDr%" del "%PSDr%"
 echo $host.UI.RawUI.WindowTitle = 'Montag Store - Driver Backup' > "%PSDr%"
 echo Write-Host "`n   DRIVER BACKUP (SMART ENGINE)" -ForegroundColor Magenta >> "%PSDr%"
-echo $model = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
+echo $model = (Get-CimInstance Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
 echo $safeModel = $model -replace '[^^a-zA-Z0-9]', '_' >> "%PSDr%"
 echo Write-Host "   Detected Model: $model" -ForegroundColor Yellow >> "%PSDr%"
 echo $drv = Read-Host "`n   Enter Target Drive Letter (e.g. D)" >> "%PSDr%"
@@ -282,7 +266,7 @@ echo $drv = Read-Host "`n   Enter Source Drive Letter (e.g. D)" >> "%PSDr%"
 echo if (-not $drv) { exit } >> "%PSDr%"
 echo $drv = $drv.Replace(':', '').Trim() >> "%PSDr%"
 echo if (-not (Test-Path "$($drv):\")) { Write-Host "`n   [ERROR] Drive $($drv): does not exist!" -ForegroundColor Red; Read-Host "   Press Enter to exit..."; exit } >> "%PSDr%"
-echo $term = (Get-WmiObject Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
+echo $term = (Get-CimInstance Win32_ComputerSystem).Model.Trim() >> "%PSDr%"
 echo $pattern = "*" + ($term -replace '[^^a-zA-Z0-9]', '*') + "*" >> "%PSDr%"
 echo Write-Host "   Searching for drivers matching: $term ..." -ForegroundColor Yellow >> "%PSDr%"
 echo try { $folder = Get-ChildItem -Path "$($drv):\" -Directory -Recurse -Filter $pattern -ErrorAction SilentlyContinue ^| Select-Object -First 1 } catch { $folder = $null } >> "%PSDr%"
@@ -480,8 +464,8 @@ echo     $s = [Diagnostics.Stopwatch]::StartNew() >> "%PSStress%"
 echo     while ($true) { >> "%PSStress%"
 echo         $el = $s.Elapsed.TotalSeconds >> "%PSStress%"
 echo         if ($Duration -gt 0 -and $el -ge $Duration) { break } >> "%PSStress%"
-echo         try { $a += New-Object byte[] (50MB) } catch {} >> "%PSStress%"
 echo         $free = [math]::Round(((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1024), 2) >> "%PSStress%"
+echo         if ($free -gt 300) { try { $a += New-Object byte[] (50MB) } catch {} } >> "%PSStress%"
 echo         $max = if ($Duration -eq 0) { "INF" } else { $Duration } >> "%PSStress%"
 echo         Write-Host -NoNewline "`r   Stressing RAM (Filling Memory)... $([math]::Round($el))s / $($max)s | Free: $free MB " >> "%PSStress%"
 echo         Start-Sleep -Milliseconds 100 >> "%PSStress%"
@@ -558,7 +542,6 @@ $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
 $cacheMB = [int]($cpu.L3CacheSize / 1024)
 if ($cacheMB -eq 0 -and $cpu.L2CacheSize) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
 $cacheStr = if ($cacheMB -gt 0) { " | $cacheMB MB Cache" } else { "" }
-$cpuDetails = "$cpuName | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr"
 
 $CpuLogo = "https://cdn.simpleicons.org/intel/0068B5"
 if ($cpuName -match "AMD") { $CpuLogo = "https://cdn.simpleicons.org/amd/ED1C24" }
@@ -571,8 +554,13 @@ $maxMem = if ($memArray) { [math]::Round($memArray.MaxCapacity / 1048576, 1) } e
 $usedSlots = $mems.Count
 $speed = if ($mems) { $mems[0].Speed } else { "?" }
 $totalRam = [math]::Round(($mems | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
-$ramDetailsUI = "$totalRam GB ($speed MHz) <br> <span style='color:#a0a0ab; font-size:13px;'>Slots: $usedSlots Used of $totalSlots | Max Upgrade: $maxMem GB</span>"
 $ramDetails = "$totalRam GB Installed ($usedSlots Sticks) @ $speed MHz"
+
+# RAM Progress Bar Calculation
+$ramSlotPct = 0
+if ($totalSlots -ne "?" -and $totalSlots -gt 0) { $ramSlotPct = [math]::Round(($usedSlots / $totalSlots) * 100) }
+$ramBar = "<div class='progress-bg'><div class='progress-fill' style='width: $($ramSlotPct)%%;'></div></div>"
+$ramDetailsUI = "$totalRam GB ($speed MHz) <br> <span style='color:#a0a0ab; font-size:13px;'>Slots: $usedSlots Used of $totalSlots | Max Upgrade: $maxMem GB</span> $ramBar"
 
 # Storage
 $disks = Get-CimInstance Win32_DiskDrive | Where-Object { ($_.MediaType -eq 'Fixed hard disk media') -and ($_.InterfaceType -ne 'USB') -and ($_.PNPDeviceID -notmatch 'USBSTOR') -and ($_.Model -notmatch 'USB') }
@@ -585,11 +573,13 @@ foreach ($d in $disks) {
     $diskCount++ 
     $diskList += "$($d.Model) ($s GB)" 
 }
+$storageBar = "<div class='progress-bg'><div class='progress-fill' style='width: 100%%;'></div></div>"
+
 if ($totalDiskSize -eq 0) { 
     $storageStringUI = "No Internal Disk Detected" 
     $storageString = "No Internal Disk Detected"
 } else { 
-    $storageStringUI = "$totalDiskSize GB <br> <span style='color:#a0a0ab; font-size:13px;'>Installed Drives: $diskCount</span>" 
+    $storageStringUI = "$totalDiskSize GB <br> <span style='color:#a0a0ab; font-size:13px;'>Installed Drives: $diskCount</span> $storageBar" 
     $storageString = $diskList -join " | "
 }
 
@@ -616,6 +606,12 @@ Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
 }
 $gpuString = ($gpuList | Select-Object -Unique) -join " + "
 
+# GPU Logo Logic
+$GpuLogo = "https://cdn.simpleicons.org/ssg/666666"
+if ($gpuString -match "(?i)NVIDIA") { $GpuLogo = "https://cdn.simpleicons.org/nvidia/76B900" }
+elseif ($gpuString -match "(?i)AMD" -or $gpuString -match "(?i)Radeon") { $GpuLogo = "https://cdn.simpleicons.org/amd/ED1C24" }
+elseif ($gpuString -match "(?i)Intel") { $GpuLogo = "https://cdn.simpleicons.org/intel/0068B5" }
+
 # --- DISPLAY RESOLUTION ---
 $resString = ""
 try {
@@ -635,7 +631,7 @@ try {
 } catch { $resString = "Standard Display" }
 
 # MERGE DISPLAY WITH GPU STRING FOR THE FINAL REPORT AND DB UPLOAD
-$gpuString = "$gpuString | Display: $resString"
+$gpuStringUpload = "$gpuString | Display: $resString"
 
 # --- TEMPERATURE DETECTION ---
 $cpuTemp = "N/A"
@@ -669,17 +665,18 @@ try {
     }
 } catch {}
 
-$cpuDetailsUI = "$cpuName <br> <span style='color:#a0a0ab; font-size:13px;'>$($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr</span> <br> <span style='color:$cpuTempColor; font-size:13px; font-weight:800; margin-top:5px; display:inline-block;'>Temp: $cpuTemp</span>"
+$cpuDetails = "$cpuName | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr"
+$cpuDetailsUI = "$cpuName <br> <span style='color:#a0a0ab; font-size:13px;'>$($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr</span> <br> <span class='badge' style='background-color: $($cpuTempColor)20; color: $cpuTempColor; border-color: $cpuTempColor;'>TEMP: $cpuTemp</span>"
+
 $gpuStringUI = ($gpuList | Select-Object -Unique) -join " <br> "
 if (-not $gpuStringUI) { $gpuStringUI = "Standard Graphics Adapter" }
-$gpuStringUI = "$gpuStringUI <br><span style='color:var(--secondary); font-size:12px; font-weight:800; letter-spacing:1px; margin-top:5px; display:inline-block;'>$resString</span> <br> <span style='color:$gpuTempColor; font-size:13px; font-weight:800; margin-top:5px; display:inline-block;'>Temp: $gpuTemp</span>"
+$gpuStringUI = "$gpuStringUI <br><span class='badge' style='background-color: rgba(0,229,255,0.1); color: var(--secondary); border-color: var(--secondary);'>$resString</span> <span class='badge' style='background-color: $($gpuTempColor)20; color: $gpuTempColor; border-color: $gpuTempColor;'>TEMP: $gpuTemp</span>"
 
-
-# --- BATTERY HEALTH ---
+# --- BATTERY HEALTH (CIM) ---
 $batHealth = "Unknown"
 try {
-    $full = (Get-WmiObject -Class BatteryFullCapacity -Namespace root\wmi -ErrorAction SilentlyContinue).FullChargeCapacity
-    $design = (Get-WmiObject -Class BatteryStaticData -Namespace root\wmi -ErrorAction SilentlyContinue).DesignedCapacity
+    $full = (Get-CimInstance -ClassName BatteryFullCapacity -Namespace root\wmi -ErrorAction SilentlyContinue).FullChargeCapacity
+    $design = (Get-CimInstance -ClassName BatteryStaticData -Namespace root\wmi -ErrorAction SilentlyContinue).DesignedCapacity
     if ($full -and $design -and $design -gt 0) {
         $pct = [math]::Round(($full / $design) * 100)
         if ($pct -gt 100) { $pct = 100 }
@@ -692,10 +689,10 @@ try {
     }
 } catch { $batHealth = "No Battery" }
 
-# --- STORAGE HEALTH (S.M.A.R.T) ---
+# --- STORAGE HEALTH (S.M.A.R.T via CIM) ---
 $diskHealth = "100% Excellent"
 try {
-    $smart = Get-WmiObject -Namespace root\wmi -Class MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
+    $smart = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
     if ($smart) { foreach ($d in $smart) { if ($d.PredictFailure) { $diskHealth = "FAILING (Warning)" } } }
 } catch { }
 
@@ -708,7 +705,6 @@ try {
     else { $acStatus = "Plugged In" }
 } catch { $acStatus = "AC Power" }
 
-
 # ==========================================================
 # MASTER UI HTML CONSTRUCTION
 # ==========================================================
@@ -719,73 +715,88 @@ $html = @"
 <meta charset="UTF-8">
 <title>MONTAG_HUB_ACTIVE</title>
 <style>
-    :root { --primary: #8f00ff; --secondary: #00e5ff; --bg-deep: #050505; --card: rgba(15, 15, 20, 0.75); --success: #28a745; --error: #ef4444; }
+    :root { --primary: #a820ff; --secondary: #00e5ff; --accent: #ff00aa; --bg-deep: #050505; --card: rgba(15, 15, 20, 0.75); --success: #28a745; --error: #ef4444; }
     html, body { width: 100vw; height: 100vh; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; background-color: var(--bg-deep); color: #fff; display: block; overflow: hidden; box-sizing: border-box; position: relative; z-index: 1; }
 
-    body::before, body::after { content: ''; position: absolute; width: 60vw; height: 60vw; border-radius: 50%; filter: blur(120px); z-index: -1; animation: floatOrbs 3.5s infinite ease-in-out alternate; pointer-events: none; }
-    body::before { background: rgba(0, 229, 255, 0.12); top: -15%; left: -10%; } 
-    body::after { background: rgba(143, 0, 255, 0.20); bottom: -15%; right: -10%; animation-delay: -1.5s; } 
-    @keyframes floatOrbs { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(5%, 5%) scale(1.15); } }
+    @keyframes floatLive { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(6%, 6%) scale(1.15); } }
+    @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+    body::before, body::after { content: ''; position: absolute; width: 60vw; height: 60vw; border-radius: 50%; filter: blur(120px); z-index: -1; pointer-events: none; }
+    body::before { background: rgba(0, 229, 255, 0.15); top: -15%; left: -10%; animation: floatLive 2.5s infinite alternate ease-in-out; } 
+    body::after { background: rgba(168, 32, 255, 0.20); bottom: -15%; right: -10%; animation: floatLive 3s infinite alternate-reverse ease-in-out; } 
 
     #splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s ease-in-out; }
     .splash-logo { width: 630px; filter: drop-shadow(0 0 50px var(--primary)); animation: constantNeonPulse 2.5s infinite alternate ease-in-out, splashFinalZoom 3s forwards; opacity: 0; }
     @keyframes splashFinalZoom { 0% { transform: scale(0.75) translateY(20px); opacity: 0; filter: brightness(0) blur(25px); } 30% { opacity: 1; filter: brightness(1.8) blur(0px); } 100% { transform: scale(1) translateY(0); opacity: 1; } }
     @keyframes constantNeonPulse { 0% { filter: drop-shadow(0 0 30px var(--primary)) brightness(0.9); } 100% { filter: drop-shadow(0 0 80px var(--primary)) brightness(1.4); } }
     .master-loader-box { width: 420px; height: 3px; background: rgba(255,255,255,0.02); margin: 60px auto 0; border-radius: 10px; overflow: hidden; opacity: 0; animation: fadeIn 0.5s 0.5s forwards; }
-    .master-loader-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); box-shadow: 0 0 25px var(--secondary); animation: loaderMasterFill 2.5s ease-in-out forwards; }
+    .master-loader-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary)); box-shadow: 0 0 25px var(--accent); animation: loaderMasterFill 2.5s ease-in-out forwards; }
     @keyframes loaderMasterFill { 0% { width: 0%; } 100% { width: 100%; } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .sidebar { position: fixed; top: 0; left: 0; transform: translateX(calc(-100% + 15px)); width: 340px; height: 100vh; background: rgba(2, 2, 8, 0.98); border-right: 3px solid var(--primary); display: flex; flex-direction: column; padding: 30px 0; backdrop-filter: blur(80px); z-index: 9999; box-sizing: border-box; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s; animation: sideBorderGlow 3s infinite alternate ease-in-out; }
-    @keyframes sideBorderGlow { 0% { border-color: var(--primary); box-shadow: 5px 0 20px rgba(143,0,255,0.6), inset -3px 0 15px rgba(143,0,255,0.3); } 100% { border-color: var(--secondary); box-shadow: 8px 0 35px rgba(0,229,255,0.8), inset -5px 0 25px rgba(0,229,255,0.4); } }
+    @keyframes sideBorderGlow { 0% { border-color: var(--primary); box-shadow: 5px 0 20px rgba(168,32,255,0.6), inset -3px 0 15px rgba(168,32,255,0.3); } 100% { border-color: var(--accent); box-shadow: 8px 0 35px rgba(255,0,170,0.8), inset -5px 0 25px rgba(255,0,170,0.4); } }
     .sidebar::after { content: ''; position: absolute; top: 0; right: -60px; width: 60px; height: 100%; background: transparent; z-index: 10001; }
     .sidebar-trigger { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); width: 85px; padding: 55px 0; background: rgba(2, 2, 8, 0.98); border: 3px solid var(--primary); border-left: none; border-radius: 0 20px 20px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--primary); font-weight: 950; font-size: 19px; cursor: pointer; transition: 0.3s; z-index: 10000; animation: triggerBtnGlow 3s infinite alternate ease-in-out; }
-    @keyframes triggerBtnGlow { 0% { border-color: var(--primary); box-shadow: 10px 0 20px rgba(143,0,255,0.6), inset 0 0 15px rgba(143,0,255,0.4); color: var(--primary); text-shadow: 0 0 10px var(--primary); } 100% { border-color: var(--secondary); box-shadow: 15px 0 35px rgba(0,229,255,0.8), inset 0 0 20px rgba(0,229,255,0.6); color: var(--secondary); text-shadow: 0 0 15px var(--secondary); } }
+    @keyframes triggerBtnGlow { 0% { border-color: var(--primary); box-shadow: 10px 0 20px rgba(168,32,255,0.6), inset 0 0 15px rgba(168,32,255,0.4); color: var(--primary); text-shadow: 0 0 10px var(--primary); } 100% { border-color: var(--secondary); box-shadow: 15px 0 35px rgba(0,229,255,0.8), inset 0 0 20px rgba(0,229,255,0.6); color: var(--secondary); text-shadow: 0 0 15px var(--secondary); } }
     .sidebar:hover { transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,0.9); }
     .nav-btn { background: transparent; color: #666; border: none; padding: 22px 40px; text-align: left; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.5s; border-left: 4px solid transparent; width: 100%; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 1px; }
     .nav-btn:hover { background: rgba(255,255,255,0.02); color: #fff; }
-    .nav-btn.active { background: linear-gradient(90deg, rgba(143,0,255,0.12), transparent); color: #fff; border-left-color: var(--primary); font-weight: 800; }
+    .nav-btn.active { background: linear-gradient(90deg, rgba(168,32,255,0.12), transparent); color: #fff; border-left-color: var(--primary); font-weight: 800; }
     .done-badge { display: none; color: var(--success); font-size: 9px; font-weight: 900; border: 1px solid var(--success); padding: 2px 6px; border-radius: 4px; margin-left: 10px; flex-shrink: 0; }
 
-    .panel { width: 100vw; height: 100vh; padding: 50px 80px 50px 100px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; box-sizing: border-box; position: relative; }
-    .header-system { width: 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 30px; margin-bottom: 45px; max-width: 1300px; }
-    .montag-logo-main { grid-column: 1; justify-self: start; height: 130px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(143, 0, 255, 0.7)); animation: neonPulseTop 1.5s infinite alternate ease-in-out; }
-    .header-system img.brand { grid-column: 3; justify-self: end; height: 100px; filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.3)); }
-    .header-system h1 { margin: 0; font-size: 32px; font-weight: 950; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: 4px; text-align: center; }
+    .panel { width: 100vw; height: 100vh; padding: 30px 80px 30px 100px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; box-sizing: border-box; position: relative; }
+    
+    #mainContainer::before { content: ''; position: absolute; width: 50vw; height: 50vw; border-radius: 50%; background: rgba(255, 0, 170, 0.1); filter: blur(120px); z-index: -1; top: 20%; left: 25%; animation: floatLive 3s infinite alternate-reverse ease-in-out; pointer-events: none; }
+
+    .header-system { width: 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 15px; margin-bottom: 20px; max-width: 1300px; }
+    .montag-logo-main { grid-column: 1; justify-self: start; height: 95px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(168, 32, 255, 0.7)); animation: neonPulseTop 1.5s infinite alternate ease-in-out; }
+    .header-system img.brand { grid-column: 3; justify-self: end; height: 75px; filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.3)); }
+    .header-system h1 { margin: 0; font-size: 28px; font-weight: 950; background: linear-gradient(to right, var(--primary), var(--accent), var(--secondary), var(--primary)); background-size: 300% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: 4px; text-align: center; animation: gradientFlow 3s linear infinite; }
 
     .section { display: none; width: 100%; flex-direction: column; align-items: center; animation: epicFadeIn 0.8s ease-out; max-width: 1300px; }
     .section.active { display: flex; }
     @keyframes epicFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-    .dash-grid { width: 100%; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
-    .dash-card { background: var(--card); border: 1px solid rgba(255,255,255,0.05); padding: 35px; border-radius: 20px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
-    .dash-card:hover { transform: translateY(-8px); border-color: var(--primary); box-shadow: 0 20px 50px rgba(143,0,255,0.3); }
+    .dash-grid { width: 100%; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .dash-card { background: var(--card); border: 1px solid rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
+    .dash-card:hover { transform: translateY(-8px); border-color: var(--primary); box-shadow: 0 20px 50px rgba(168,32,255,0.3); }
     .dash-card h3 { margin: 0 0 10px 0; font-size: 20px; color: #fff; }
     .dash-card p { margin: 0; color: #777; font-size: 13px; }
     .card-status { margin-top: 20px; font-size: 11px; font-weight: 900; padding: 5px 15px; border-radius: 10px; background: rgba(255,255,255,0.05); color: #aaa; border: 1px solid #333; }
     .card-status.ok { background: rgba(40,167,69,0.1); color: var(--success); border-color: var(--success); }
 	
-    .welcome-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 1000px; margin: 0 auto; animation: epicFadeIn 0.8s ease-out; }
-    .welcome-header-row { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 45px; }
-    .device-title { margin: 0; font-size: 45px; font-weight: 900; letter-spacing: 4px; text-align: center; color: #fff; line-height: 1.4; text-shadow: 0 0 20px rgba(0,229,255,0.5); padding: 0 40px; }
+    .welcome-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 1150px; margin: 0 auto; animation: epicFadeIn 0.8s ease-out; }
+    .welcome-header-row { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 25px; }
+    .device-title { margin: 0; font-size: 34px; font-weight: 900; letter-spacing: 2px; text-align: center; line-height: 1.3; padding: 0 20px; background: linear-gradient(to right, #fff, var(--secondary), #fff, var(--accent), #fff); background-size: 300% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientFlow 4s linear infinite; filter: drop-shadow(0 0 15px rgba(0,229,255,0.3)); }
     
-    .spec-grid-custom { display: flex; flex-direction: column; gap: 15px; width: 100%; margin-bottom: 45px; }
-    .spec-row-split { display: flex; gap: 15px; width: 100%; }
+    .spec-grid-custom { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+    .spec-row-split { display: flex; gap: 12px; width: 100%; }
     .spec-row-split > div { flex: 1; }
-    .spec-card-mini { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 22px 30px; border-radius: 15px; border-left: 4px solid var(--primary); transition: 0.3s; display: flex; flex-direction: column; justify-content: center; }
-    .spec-card-mini:hover { border-color: rgba(143,0,255,0.4); transform: translateY(-3px); box-shadow: 0 10px 25px rgba(143,0,255,0.2); background: rgba(0,0,0,0.6); }
+    .spec-card-mini { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 16px 20px; border-radius: 15px; border-left: 4px solid var(--primary); transition: 0.3s; display: flex; flex-direction: column; justify-content: center; }
+    .spec-card-mini:hover { border-color: rgba(168,32,255,0.4); transform: translateY(-3px); box-shadow: 0 10px 25px rgba(168,32,255,0.2); background: rgba(0,0,0,0.6); }
     .spec-card-mini.accent { border-left-color: var(--secondary); align-items: center; flex-direction: row; justify-content: space-between; text-align: left; }
     .spec-label-mini { font-size: 11px; color: #a0a0ab; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 800; display:block; }
-    .spec-value-mini { font-size: 16px; font-weight: 500; color: #fff; line-height: 1.4; }
+    .spec-value-mini { font-size: 15px; font-weight: 500; color: #fff; line-height: 1.4; }
     
-    @keyframes pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(143, 0, 255, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(143, 0, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(143, 0, 255, 0); } }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(143, 0, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(143, 0, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(143, 0, 255, 0); } }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-top: 8px; margin-right: 6px; text-transform: uppercase; border: 1px solid transparent; }
+    .progress-bg { width: 100%; height: 5px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 12px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary), var(--primary)) !important; background-size: 300% 100% !important; animation: gradientFlow 1.5s linear infinite !important; }
 
-    .btn-hero { width: 100%; background: linear-gradient(45deg, #ff007f, var(--primary)); color: #fff; border: none; padding: 25px; border-radius: 20px; font-size: 18px; font-weight: 950; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.4s; box-shadow: 0 15px 40px rgba(143,0,255,0.4); margin-bottom: 25px; }
-    .btn-hero:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(255,0,127,0.5); }
+    @keyframes fastPulseBtn { 0% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0.6); } 70% { box-shadow: 0 0 0 25px rgba(168, 32, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0); } }
+    @keyframes hyperGradientFast { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+
+    .welcome-container button[onclick="startDiagnosticHub()"] { background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary), var(--accent)) !important; background-size: 200% 100% !important; animation: hyperGradientFast 0.4s linear infinite, fastPulseBtn 0.8s infinite !important; border-color: transparent !important; color: #fff !important; text-shadow: 0 2px 5px rgba(0,0,0,0.5); font-weight: 900; }
+    
+    .btn-action-pro { margin-top: 20px; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border: none; padding: 18px 75px; font-size: 16px; font-weight: 950; border-radius: 50px; cursor: pointer; text-transform: uppercase; transition: 0.4s; }
+    .btn-action-pro:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(168,32,255,0.4); }
+
+    .btn-hero { width: 100%; background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary)); background-size: 200% 100%; animation: hyperGradientFast 1s linear infinite; color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; font-size: 17px; font-weight: 950; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 30px rgba(168,32,255,0.4); margin-bottom: 20px; }
+    .btn-hero:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(255,0,170,0.6); }
+
     .btn-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; width: 100%; margin-top: 10px; }
     .btn-grid { background: rgba(255,255,255,0.03); color: #ccc; border: 1px solid rgba(255,255,255,0.06); padding: 22px 15px; border-radius: 15px; cursor: pointer; font-weight: 800; text-transform: uppercase; font-size: 13px; transition: 0.3s; display: flex; align-items: center; justify-content: center; letter-spacing: 1px; }
-    .btn-grid:hover { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border-color: transparent; transform: translateY(-4px); box-shadow: 0 12px 25px rgba(143,0,255,0.3); }
+    .btn-grid:hover { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border-color: transparent; transform: translateY(-4px); box-shadow: 0 12px 25px rgba(168,32,255,0.3); }
 
     .test-view { display: none; width: 100%; flex-direction: column; align-items: center; animation: epicFadeIn 0.5s ease-out; }
     .test-view.active { display: flex; }
@@ -800,14 +811,13 @@ $html = @"
     .nav-row-up { display: flex; justify-content: center; width: 100%; margin-top: 15px; }
     .nav-row-bottom { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
     .test-card-ultimate { background: var(--card); padding: 70px; border-radius: 40px; text-align: center; width: 100%; max-width: 800px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 30px 90px rgba(0,0,0,0.6); }
-    .btn-action-pro { margin-top: 35px; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border: none; padding: 22px 75px; font-size: 16px; font-weight: 950; border-radius: 50px; cursor: pointer; text-transform: uppercase; transition: 0.4s; }
-    .btn-action-pro:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(143,0,255,0.4); }
+    
     video { width: 100%; border-radius: 20px; margin-top: 30px; border: 4px solid var(--primary); background: #000; }
 
     .input-group { margin-bottom: 15px; width: 100%; text-align: left; }
     .input-group label { display: block; font-size: 12px; color: #a0a0ab; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 800; }
     .input-group input, .input-group textarea { width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: #00e5ff; border-radius: 8px; font-family: inherit; margin-bottom: 10px; outline: none; box-sizing: border-box; font-size: 14px; }
-    .input-group input:focus, .input-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(143, 0, 255, 0.2); }
+    .input-group input:focus, .input-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(168, 32, 255, 0.2); }
     .static-box { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 229, 255, 0.3); color: #00e5ff; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; text-align: left; }
     #clientSection, #stockSection, #notesSection { display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px; margin-bottom: 15px; width: 100%; box-sizing: border-box; text-align: left; }
     .flex-row { display: flex; gap: 15px; } .flex-row .input-group { flex: 1; margin-bottom: 0; }
@@ -815,22 +825,22 @@ $html = @"
     .btn-sales { flex: 1; padding: 16px; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 14px; text-transform: uppercase; transition: 0.3s; color:#fff;}
     .btn-sell { background: linear-gradient(45deg, #10b981, #059669); }
     .btn-test { background: linear-gradient(45deg, #3b82f6, #2563eb); }
-    .btn-confirm { background: linear-gradient(45deg, #8f00ff, #c026d3); animation: pulse 2s infinite; }
+    .btn-confirm { background: linear-gradient(45deg, var(--primary), #c026d3); animation: fastPulseBtn 2s infinite; }
     .btn-issue { background: linear-gradient(45deg, #ef4444, #dc2626); }
     .btn-sales:hover { transform: translateY(-2px); filter: brightness(1.2); }
     .status-text { text-align: center; font-size: 14px; font-weight: 800; margin-top: 10px; padding: 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
 
     @media (max-width: 1400px), (max-height: 850px) {
         .panel { padding: 30px 40px 30px 70px; }
-        .montag-logo-main { height: 100px; }
-        .header-system { margin-bottom: 30px; padding-bottom: 20px; }
-        .header-system img.brand { height: 80px; }
-        .header-system h1 { font-size: 26px; }
+        .montag-logo-main { height: 80px; }
+        .header-system { margin-bottom: 20px; padding-bottom: 15px; }
+        .header-system img.brand { height: 60px; }
+        .header-system h1 { font-size: 24px; }
         .sidebar { width: 280px; }
         .nav-btn { padding: 18px 25px; font-size: 13px; }
-        .device-title { font-size: 32px; letter-spacing: 1.5px; padding: 0 15px; }
-        .spec-grid-custom { gap: 10px; margin-bottom: 30px; }
-        .spec-card-mini { padding: 15px 20px; }
+        .device-title { font-size: 28px; letter-spacing: 1.5px; padding: 0 15px; }
+        .spec-grid-custom { gap: 10px; margin-bottom: 0px; }
+        .spec-card-mini { padding: 12px 18px; }
         .btn-action-pro { padding: 16px 50px; font-size: 14px; }
         .dash-card { padding: 25px; }
         .test-card-ultimate { padding: 40px; }
@@ -868,21 +878,34 @@ $html = @"
     <div id="tab-hw" class="section active">
         <div id="welcome-view" class="welcome-container">
             <div class="welcome-header-row"><h2 class="device-title">$FullModel</h2></div>
-            <div class="spec-grid-custom">
-                <div class="spec-card-mini accent">
-                    <div><span class="spec-label-mini">Processor Engine (CPU)</span><div class="spec-value-mini">$cpuDetailsUI</div></div>
-                    <img src="$CpuLogo" style="height: 50px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
+            
+            <div style="display: flex; gap: 20px; width: 100%; align-items: stretch;">
+                <div class="spec-grid-custom" style="flex: 1; margin-bottom: 0;">
+                    <div class="spec-card-mini accent">
+                        <div><span class="spec-label-mini">Processor Engine (CPU)</span><div class="spec-value-mini">$cpuDetailsUI</div></div>
+                        <img src="$CpuLogo" style="height: 45px; max-width: 80px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));">
+                    </div>
+                    <div class="spec-card-mini accent" style="border-left-color: var(--primary);">
+                        <div><span class="spec-label-mini">Graphics Processor (GPU)</span><div class="spec-value-mini" style="color: #e0e0e0;">$gpuStringUI</div></div>
+                        <img src="$GpuLogo" style="height: 45px; max-width: 80px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));">
+                    </div>
+                    <div class="spec-row-split">
+                        <div class="spec-card-mini accent" style="border-left-color: var(--secondary);">
+                            <div><span class="spec-label-mini">Installed Memory (RAM)</span><div class="spec-value-mini">$ramDetailsUI</div></div>
+                            <svg viewBox="0 0 24 24" style="height: 40px; min-width: 40px; flex-shrink: 0; fill: var(--secondary); filter: drop-shadow(0 0 10px rgba(0,229,255,0.3));"><path d="M2 6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H2zm0 2h20v8H2V8zm2 2v4h2v-4H4zm4 0v4h2v-4H8zm4 0v4h2v-4h-2zm4 0v4h2v-4h-2z"/></svg>
+                        </div>
+                        <div class="spec-card-mini accent" style="border-left-color: #ff007f;">
+                            <div><span class="spec-label-mini">Internal Storage</span><div class="spec-value-mini">$storageStringUI</div></div>
+                            <svg viewBox="0 0 24 24" style="height: 40px; min-width: 40px; flex-shrink: 0; fill: #ff007f; filter: drop-shadow(0 0 10px rgba(255,0,127,0.3));"><path d="M4 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4zm0 2h16v12H4V6zm2 2v2h12V8H6zm0 4v2h12v-2H6z"/></svg>
+                        </div>
+                    </div>
                 </div>
-                <div class="spec-card-mini">
-                    <span class="spec-label-mini">Graphics Processor (GPU)</span>
-                    <div class="spec-value-mini" style="color: #e0e0e0;">$gpuStringUI</div>
-                </div>
-                <div class="spec-row-split">
-                    <div class="spec-card-mini"><span class="spec-label-mini">Installed Memory (RAM)</span><div class="spec-value-mini">$ramDetailsUI</div></div>
-                    <div class="spec-card-mini"><span class="spec-label-mini">Internal Storage</span><div class="spec-value-mini">$storageStringUI</div></div>
-                </div>
+                <button class="btn-action-pro" style="margin: 0; width: 200px; border-radius: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; font-size: 18px; letter-spacing: 2px; padding: 20px; text-align: center; height: auto; flex-shrink: 0;" onclick="startDiagnosticHub()">
+                    <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                    <span>START<br>TESTS</span>
+                </button>
             </div>
-            <button class="btn-action-pro" style="animation: pulse-btn 2s infinite; padding: 22px 90px; font-size: 16px; letter-spacing: 1px;" onclick="startDiagnosticHub()">PROCEED TO DIAGNOSTICS</button>
+
         </div>
 
         <div id="hw-dashboard" class="dash-grid" style="display: none;">
@@ -1123,7 +1146,7 @@ $html = @"
     function runCmd(actionName) {
         let originalTitle = document.title;
         document.title = "MONTAG_CMD_" + actionName;
-        setTimeout(() => { document.title = originalTitle; }, 1500);
+        setTimeout(() => { document.title = originalTitle; }, 600);
     }
 
     const masterReq = ['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12','Escape','Delete','Insert','Home','PageUp','PageDown','End','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal','Backspace','KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight','Backslash','KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote','Enter','KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash','ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','MetaLeft','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
@@ -1182,7 +1205,8 @@ $html = @"
         osc.frequency.setValueAtTime(20, ctx.currentTime);
         osc.frequency.linearRampToValueAtTime(200, ctx.currentTime + 3);
         gain.gain.setValueAtTime(0.8, ctx.currentTime);
-        osc.connect(gain); gain.connect(ctx.destination);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
         osc.start(); osc.stop(ctx.currentTime + 3);
     }
 
@@ -1219,15 +1243,17 @@ $html = @"
         let a = document.querySelectorAll('.touched').length;
         let p = Math.round((a/t)*100);
         let infoH1 = document.querySelector('#touch-info h1');
-        if(infoH1) { infoH1.innerText = p + '%'; if(p >= 100) infoH1.style.color = '#0f0'; }
-        if(p >= 100) { if(document.fullscreenElement) document.exitFullscreen(); finalizeTouch("OK"); }
+        if(infoH1) { infoH1.innerText = p + '%';
+        if(p >= 100) infoH1.style.color = '#0f0'; }
+        if(p >= 100) { if(document.fullscreenElement) document.exitFullscreen();
+        finalizeTouch("OK"); }
     }
 
     window.addEventListener('touchmove', function(e) { if(document.getElementById('touch-surface-master').style.display === 'block') actTouch(e); }, {passive: false});
     window.addEventListener('mousemove', function(e) { if(document.getElementById('touch-surface-master').style.display === 'block' && e.buttons === 1) actTouch(e); });
     function finalizeTouch(st) { document.getElementById('touch-surface-master').style.display = 'none'; doneTests.to = true; document.getElementById('c-stat-to').innerText = st; document.getElementById('c-stat-to').className = st === "OK" ? "card-status ok" : "card-status"; document.title = "MONTAG_TO_" + st; checkHubStatus(); closeTest(); }
     document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && document.getElementById('touch-surface-master').style.display === 'block') { let a = document.querySelectorAll('.touched').length; finalizeTouch(a >= 238 ? "OK" : "X"); } });
-
+    
     async function toggleC() { try { stream = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('vid').srcObject = stream; document.getElementById('vid').style.display = 'block'; document.getElementById('caDec').style.display = 'block'; } catch(e) { alert('Lens Sensor Denied.'); } }
     function verifyCA(st) { if(stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } document.getElementById('vid').style.display = 'none'; document.getElementById('caDec').style.display = 'none'; doneTests.ca = true; document.getElementById('c-stat-ca').innerText = st; document.getElementById('c-stat-ca').className = st === "OK" ? "card-status ok" : "card-status"; document.title = "MONTAG_CA_" + st; checkHubStatus(); closeTest(); }
 
@@ -1284,6 +1310,16 @@ $html = @"
         if(!tester) { alert("Tester Name Required!"); return; }
         
         var finalStatus = updateLiveChecklist();
+
+        let k_st = document.getElementById('c-stat-kb').innerText;
+        let s_st = document.getElementById('c-stat-sc').innerText;
+        let a_st = document.getElementById('c-stat-au').innerText;
+        let t_st = document.getElementById('c-stat-to').innerText;
+        let c_st = document.getElementById('c-stat-ca').innerText;
+        let originalTitle = document.title;
+        document.title = "MONTAG_SYNC_" + k_st + "_" + s_st + "_" + a_st + "_" + t_st + "_" + c_st;
+        setTimeout(() => { document.title = originalTitle; }, 1500);
+
         var userNotes = document.getElementById('userNotes').value.trim();
         var clientInfo = "";
         
@@ -1303,7 +1339,7 @@ $html = @"
         url += "&entry.1462565184=" + encodeURIComponent("$cpuDetails | Temp: $cpuTemp");
         url += "&entry.212987726=" + encodeURIComponent("$ramDetails");
         url += "&entry.1717831234=" + encodeURIComponent("$storageString");
-        url += "&entry.2044586469=" + encodeURIComponent("$gpuString | Temp: $gpuTemp");
+        url += "&entry.2044586469=" + encodeURIComponent("$gpuStringUpload | Temp: $gpuTemp");
         url += "&entry.310563239=" + encodeURIComponent(finalStatus);
         fetch(url, { mode: 'no-cors' }).then(() => {
             document.getElementById('tab-rep').innerHTML = "<div class='test-card-ultimate' style='max-width: 900px; padding: 40px; width: 100%; text-align:center;'><h1 style='color:var(--secondary); font-size:40px; margin-bottom:20px;'>UPLOAD SUCCESSFUL!</h1><p style='color:#aaa; font-size:16px;'>Data has been saved to the Sales Database.</p><button class='btn-action-pro' onclick='exitHub()'>CLOSE DIAGNOSTIC HUB</button></div>";
@@ -1321,38 +1357,51 @@ $html | Out-File $GuiFile -Encoding UTF8
 
 Start-Process "msedge" -ArgumentList "--new-window --kiosk --edge-kiosk-type=fullscreen `"$GuiFile`""
 Start-Sleep -Seconds 2
+
+# --- MEMORY UPGRADE: ZERO-DISK I/O WITH ANTI-DUPLICATE ---
+$kb_st = "PENDING"; $sc_st = "PENDING"; $au_st = "PENDING"; $to_st = "PENDING"; $ca_st = "PENDING"
+$last_cmd = ""
+
 while ($true) {
     $activeWins = Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG_" }
     if ($activeWins) {
         foreach ($e in $activeWins) {
             $title = $e.MainWindowTitle
-            if ($title -match "MONTAG_KB_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\kb_status.txt" -Encoding ASCII }
-            if ($title -match "MONTAG_SC_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\sc_status.txt" -Encoding ASCII }
-            if ($title -match "MONTAG_AU_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\au_status.txt" -Encoding ASCII }
-            if ($title -match "MONTAG_TO_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\to_status.txt" -Encoding ASCII }
-            if ($title -match "MONTAG_CA_") { $title.Split("_")[-1] | Out-File "$env:SystemDrive\MontagTools\ca_status.txt" -Encoding ASCII }
+            
+            if ($title -match "MONTAG_KB_") { $kb_st = $title.Split("_")[-1] }
+            if ($title -match "MONTAG_SC_") { $sc_st = $title.Split("_")[-1] }
+            if ($title -match "MONTAG_AU_") { $au_st = $title.Split("_")[-1] }
+            if ($title -match "MONTAG_TO_") { $to_st = $title.Split("_")[-1] }
+            if ($title -match "MONTAG_CA_") { $ca_st = $title.Split("_")[-1] }
+            
+            if ($title -match "MONTAG_SYNC_") {
+                $syncParts = $title.Split("_")
+                if ($syncParts.Count -ge 7) {
+                    $kb_st = $syncParts[2]; $sc_st = $syncParts[3]; $au_st = $syncParts[4]; $to_st = $syncParts[5]; $ca_st = $syncParts[6]
+                }
+            }
+            
+            # --- PREVENT COMMAND DUPLICATION ---
             if ($title -match "MONTAG_CMD_(.+)") { 
                 $cmd = $matches[1]
-                if ($cmd -eq "EXIT") { 
-                    Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG_" } | Stop-Process -Force -ErrorAction SilentlyContinue
-                    break
+                if ($cmd -ne $last_cmd) { 
+                    $last_cmd = $cmd 
+                    if ($cmd -eq "EXIT") { 
+                        Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG_" } | Stop-Process -Force -ErrorAction SilentlyContinue
+                        break
+                    }
+                    Start-Process cmd -ArgumentList "/c `"`"$env:SystemDrive\MontagTools\MontagCore.bat`" CMD_$cmd`"" -WindowStyle Normal
                 }
-                Start-Process cmd -ArgumentList "/c `"`"$env:SystemDrive\MontagTools\MontagCore.bat`" CMD_$cmd`"" -WindowStyle Normal
-                Start-Sleep -Seconds 2
+            } elseif ($title -notmatch "MONTAG_CMD_") {
+                $last_cmd = "" 
             }
         }
     }
     if (-not (Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG" })) { break }
-    Start-Sleep -Milliseconds 500
+    Start-Sleep -Milliseconds 300
 }
 
 # --- GENERATE DESKTOP CLIENT REPORT ---
-$kb_st = if (Test-Path "$env:SystemDrive\MontagTools\kb_status.txt") { Get-Content "$env:SystemDrive\MontagTools\kb_status.txt" } else { "PENDING" }
-$sc_st = if (Test-Path "$env:SystemDrive\MontagTools\sc_status.txt") { Get-Content "$env:SystemDrive\MontagTools\sc_status.txt" } else { "PENDING" }
-$au_st = if (Test-Path "$env:SystemDrive\MontagTools\au_status.txt") { Get-Content "$env:SystemDrive\MontagTools\au_status.txt" } else { "PENDING" }
-$to_st = if (Test-Path "$env:SystemDrive\MontagTools\to_status.txt") { Get-Content "$env:SystemDrive\MontagTools\to_status.txt" } else { "PENDING" }
-$ca_st = if (Test-Path "$env:SystemDrive\MontagTools\ca_status.txt") { Get-Content "$env:SystemDrive\MontagTools\ca_status.txt" } else { "PENDING" }
-
 function Get-FullTextStatus($st) {
     if ($st -match "OK") { return "Passed [OK]" }
     if ($st -match "X") { return "Failed [X]" }
@@ -1379,17 +1428,17 @@ $ClientReport = @"
 <title>Montag Store - Premium Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;800&display=swap" rel="stylesheet">
 <style>
-    :root { --primary: #8f00ff; --secondary: #00e5ff; --bg: #050505; --card-bg: rgba(15, 15, 20, 0.75); }
+    :root { --primary: #a820ff; --secondary: #00e5ff; --bg: #050505; --card-bg: rgba(15, 15, 20, 0.75); }
     body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; overflow-y: auto; position: relative; z-index: 1; }
 
     body::before, body::after { content: ''; position: absolute; width: 60vw; height: 60vw; border-radius: 50%; filter: blur(120px); z-index: -1; animation: floatOrbs 3.5s infinite ease-in-out alternate; }
     body::before { background: rgba(0, 229, 255, 0.12); top: -15%; left: -10%; } 
-    body::after { background: rgba(143, 0, 255, 0.20); bottom: -15%; right: -10%; animation-delay: -1.5s; } 
+    body::after { background: rgba(168, 32, 255, 0.20); bottom: -15%; right: -10%; animation-delay: -1.5s; } 
     @keyframes floatOrbs { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(5%, 5%) scale(1.15); } }
 
     .outside-logo { display: flex; justify-content: center; margin-bottom: 15px; z-index: 10; }
-    .outside-logo img { height: 200px; filter: drop-shadow(0 0 20px rgba(143, 0, 255, 0.7)); animation: neonPulseTop 1.5s infinite alternate ease-in-out; }
-    @keyframes neonPulseTop { 0% { filter: drop-shadow(0 0 10px rgba(143, 0, 255, 0.5)) scale(1); } 100% { filter: drop-shadow(0 0 40px rgba(143, 0, 255, 1)) scale(1.08); } }
+    .outside-logo img { height: 200px; filter: drop-shadow(0 0 20px rgba(168, 32, 255, 0.7)); animation: neonPulseTop 1.5s infinite alternate ease-in-out; }
+    @keyframes neonPulseTop { 0% { filter: drop-shadow(0 0 10px rgba(168, 32, 255, 0.5)) scale(1); } 100% { filter: drop-shadow(0 0 40px rgba(168, 32, 255, 1)) scale(1.08); } }
 
     .container { max-width: 780px; width: 100%; background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 25px 30px; box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6); max-height: 85vh; overflow-y: auto; }
     .container::-webkit-scrollbar { width: 8px; }
@@ -1406,7 +1455,7 @@ $ClientReport = @"
 
     .specs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
     .spec-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 12px 18px; transition: all 0.3s ease; position: relative; overflow: hidden; border-left: 4px solid var(--primary); }
-    .spec-card:hover { transform: translateY(-3px); border-color: rgba(143, 0, 255, 0.5); box-shadow: 0 10px 20px rgba(143, 0, 255, 0.15); background: rgba(255, 255, 255, 0.05); }
+    .spec-card:hover { transform: translateY(-3px); border-color: rgba(168, 32, 255, 0.5); box-shadow: 0 10px 20px rgba(168, 32, 255, 0.15); background: rgba(255, 255, 255, 0.05); }
     .spec-label { font-size: 11px; color: #a0a0ab; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; font-weight: 800; }
     .spec-value { font-size: 15px; font-weight: 500; color: #fff; }
     
@@ -1526,10 +1575,6 @@ $ShortcutContent = "[InternetShortcut]`r`nURL=file:///$RealHtmlFile`r`nIconIndex
 Remove-Item -Path "$env:SystemDrive\MontagTools" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemDrive\MontagReports" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemDrive\MontagOffice" -Recurse -Force -ErrorAction SilentlyContinue
-# Removed to retain the log file as requested:
-# Remove-Item -Path "$env:SystemDrive\MontagBatteryLog.txt" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:TEMP\Montag*" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:TEMP\*status.txt" -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:TEMP\action_report.txt" -Force -ErrorAction SilentlyContinue
 
 exit
