@@ -900,8 +900,8 @@ $html = @"
                         </div>
                     </div>
                 </div>
-                <button class="btn-action-pro" style="margin: 0; width: 200px; border-radius: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; font-size: 18px; letter-spacing: 2px; padding: 20px; text-align: center; height: auto; flex-shrink: 0;" onclick="startDiagnosticHub()">
-                    <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                <button class="btn-action-pro" style="margin: 0; width: 120px; border-radius: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; font-size: 15px; letter-spacing: 1px; padding: 15px 10px; text-align: center; height: auto; flex-shrink: 0;" onclick="startDiagnosticHub()">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
                     <span>START<br>TESTS</span>
                 </button>
             </div>
