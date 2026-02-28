@@ -60,6 +60,7 @@ set "Cyan=%ESC%[36m"
 set "Magenta=%ESC%[35m"
 
 echo.
+:: SILENT / UI COMMANDS (No pauses)
 if "%~1"=="CMD_AUTOPILOT" goto DO_AUTOPILOT
 if "%~1"=="CMD_THISPC" goto DO_THISPC
 if "%~1"=="CMD_HIGHPERF" goto DO_HIGHPERF
@@ -70,6 +71,7 @@ if "%~1"=="CMD_BOOST" goto DO_BOOST
 if "%~1"=="CMD_RENAME" goto DO_RENAME
 if "%~1"=="CMD_CLASSIC" goto DO_CLASSIC
 if "%~1"=="CMD_SAC" goto DO_SAC
+if "%~1"=="CMD_OEM_BRAND" goto DO_OEM_BRAND
 
 :: SMART DRIVER HUNTER PRO
 if "%~1"=="CMD_DRV_MISSING" goto DO_DRV_MISSING
@@ -77,9 +79,13 @@ if "%~1"=="CMD_DRV_BACKUP" goto DO_DRV_BACKUP
 if "%~1"=="CMD_DRV_RESTORE" goto DO_DRV_RESTORE
 if "%~1"=="CMD_APP_GAMING" goto DO_APP_GAMING
 
+:: DEEP DIAGNOSTICS & HARDWARE
 if "%~1"=="CMD_BATTERY" goto DO_BATTERY
 if "%~1"=="CMD_BATTERY_NATIVE" goto DO_BAT_NATIVE
 if "%~1"=="CMD_CHARGER_TEST" goto DO_CHARGER
+if "%~1"=="CMD_USB_MAPPER" goto DO_USB_MAPPER
+if "%~1"=="CMD_THERMAL_ANALYZER" goto DO_THERMAL_ANALYZER
+if "%~1"=="CMD_STORAGE_TEST" goto DO_STORAGE_TEST
 
 :: ISOLATED STRESS TEST COMMANDS
 if "%~1"=="CMD_CPU_30" ( set "SType=CPU" & set "SDur=30" & goto DO_STRESS )
@@ -114,10 +120,8 @@ echo %Yellow%Tuning Performance...%Reset%
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0 & powercfg -h off >nul 2>&1
 net start w32time >nul 2>&1 & w32tm /resync >nul 2>&1
-
 echo %Yellow%Removing Bloatware (Extended Win 11 Clean)...%Reset%
 powershell -nop -c "$apps = @('*xbox*', '*solitaire*', '*bing*', '*skype*', '*YourPhone*', '*OneDriveSync*', '*Clipchamp*', '*Zune*', '*People*', '*Todos*', '*GetHelp*'); foreach ($app in $apps) { Get-AppxPackage $app | Remove-AppxPackage -ErrorAction SilentlyContinue }" >nul 2>&1
-
 echo %Yellow%Deep System Cleanup (Temp ^& Updates Cache)...%Reset%
 del /q /f /s "%TEMP%\*" >nul 2>&1
 del /q /f /s "C:\Windows\Temp\*" >nul 2>&1
@@ -125,7 +129,6 @@ if exist "C:\Windows.old" rd /s /q "C:\Windows.old" >nul 2>&1
 net stop wuauserv >nul 2>&1
 del /q /f /s "C:\Windows\SoftwareDistribution\Download\*" >nul 2>&1
 net start wuauserv >nul 2>&1
-
 echo %Yellow%Setting Region and Language...%Reset%
 powershell -nop -c "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68; Set-Culture en-US" >nul 2>&1
 reg add "HKCU\Control Panel\International\Geo" /v Nation /t REG_SZ /d "68" /f >nul 2>&1
@@ -135,35 +138,34 @@ reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\Inpr
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 echo %Yellow%Restarting Explorer...%Reset%
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
-echo %Green%[OK] Auto-Pilot Completed Successfully!%Reset%
 timeout /t 3 >nul
 goto :EOF
 
 :DO_THISPC
-cls
-echo %Cyan%Showing This PC Icon on Desktop...%Reset%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /v "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" /t REG_DWORD /d 0 /f >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
-echo %Green%[OK] Done.%Reset%
-timeout /t 2 >nul
+timeout /t 1 >nul
 goto :EOF
 
 :DO_HIGHPERF
-cls
-echo %Cyan%Applying High Performance Power Plan...%Reset%
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0
-echo %Green%[OK] Done.%Reset%
-timeout /t 2 >nul
+timeout /t 1 >nul
 goto :EOF
 
 :DO_ARABIC
-cls
-echo %Cyan%Setting Region to Egypt and adding Arabic Keyboard...%Reset%
 powershell -nop -c "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68" >nul 2>&1
 tzutil /s "Egypt Standard Time" >nul 2>&1
-echo %Green%[OK] Done.%Reset%
-timeout /t 2 >nul
+timeout /t 1 >nul
+goto :EOF
+
+:DO_OEM_BRAND
+set "OemKey=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation"
+reg add "%OemKey%" /v "Manufacturer" /t REG_SZ /d "Montag Store" /f >nul 2>&1
+reg add "%OemKey%" /v "SupportPhone" /t REG_SZ /d "01040901444" /f >nul 2>&1
+reg add "%OemKey%" /v "SupportURL" /t REG_SZ /d "https://www.facebook.com/montagstore" /f >nul 2>&1
+reg add "%OemKey%" /v "Model" /t REG_SZ /d "Montag Certified PC" /f >nul 2>&1
+timeout /t 1 >nul
 goto :EOF
 
 :DO_ACTIVATE
@@ -177,7 +179,6 @@ if %errorlevel%==0 (
     timeout /t 3 >nul
     goto :EOF
 )
-
 echo %Yellow%Windows not activated. Searching for BIOS Product Key...%Reset%
 set "KeyScript=%ToolDir%\FindKey.ps1"
 if exist "%KeyScript%" del "%KeyScript%"
@@ -186,7 +187,6 @@ echo try { $key = (Get-CimInstance -ClassName SoftwareLicensingService).OA3xOrig
 echo if ([string]::IsNullOrWhiteSpace($key)) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform').BackupProductKeyDefault } catch {} } >> "%KeyScript%"
 echo if ([string]::IsNullOrWhiteSpace($key)) { try { $key = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform').BootDeviceProductKey } catch {} } >> "%KeyScript%"
 echo $key ^| Out-File "$env:SystemDrive\MontagTools\oemkey.txt" -Encoding ASCII >> "%KeyScript%"
-
 powershell -nop -ep bypass -File "%KeyScript%" >nul 2>&1
 set "BiosKey="
 if exist "%ToolDir%\oemkey.txt" ( set /p BiosKey=<"%ToolDir%\oemkey.txt" )
@@ -210,20 +210,14 @@ pause
 goto :EOF
 
 :DO_BLOAT
-cls
-echo %Cyan%Removing Windows Bloatware (Extended Clean)...%Reset%
 powershell -nop -c "$apps = @('*xbox*', '*solitaire*', '*bing*', '*skype*', '*YourPhone*', '*OneDriveSync*', '*Clipchamp*', '*Zune*', '*People*', '*Todos*', '*GetHelp*'); foreach ($app in $apps) { Get-AppxPackage $app | Remove-AppxPackage -ErrorAction SilentlyContinue }"
-echo %Green%[OK] Done.%Reset%
-timeout /t 2 >nul
+timeout /t 1 >nul
 goto :EOF
 
 :DO_BOOST
-cls
-echo %Cyan%Running Quick Boost ^& Fix...%Reset%
 powercfg -h off >nul 2>&1 & net start w32time >nul 2>&1 & w32tm /resync >nul 2>&1
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v Flags /t REG_SZ /d "506" /f >nul 2>&1
-echo %Green%[OK] Done.%Reset%
-timeout /t 2 >nul
+timeout /t 1 >nul
 goto :EOF
 
 :DO_RENAME
@@ -245,22 +239,92 @@ pause
 goto :EOF
 
 :DO_CLASSIC
-cls
-echo %Cyan%Restoring Classic Windows 11 Menu...%Reset%
 reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1 & start explorer.exe
-echo %Green%[OK] Done.%Reset%
-timeout /t 2 >nul
+timeout /t 1 >nul
 goto :EOF
 
 :DO_SAC
-cls
-echo %Cyan%Disabling Smart App Control...%Reset%
 set "SAC_P1=HKLM\SYSTEM\CurrentControlSet"
 set "SAC_P2=Control\CI\Policy"
 reg add "!SAC_P1!\!SAC_P2!" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f >nul 2>&1
-echo %Green%[OK] Policy Updated. Restart required.%Reset%
-timeout /t 3 >nul
+timeout /t 1 >nul
+goto :EOF
+
+:: DEEP DIAGNOSTICS COMMANDS
+:DO_STORAGE_TEST
+set "PSSt=%ToolDir%\MontagStorage.ps1"
+echo $host.UI.RawUI.WindowTitle = 'Montag Storage Benchmark' > "%PSSt%"
+echo Write-Host "`n   [ MONTAG STORAGE SPEED BENCHMARK ]" -ForegroundColor Cyan >> "%PSSt%"
+echo Write-Host "   Testing Primary Drive (C:) Write/Read speed...`n" -ForegroundColor Yellow >> "%PSSt%"
+echo $tempFile = "$env:SystemDrive\MontagTools\bench.tmp" >> "%PSSt%"
+echo $data = New-Object Byte[] (500MB) >> "%PSSt%"
+echo Write-Host "   [1/2] Simulating Large File Write..." -ForegroundColor Gray >> "%PSSt%"
+echo $sw = [Diagnostics.Stopwatch]::StartNew() >> "%PSSt%"
+echo try { [System.IO.File]::WriteAllBytes($tempFile, $data) } catch { Write-Host "   Error writing test file." -ForegroundColor Red; exit } >> "%PSSt%"
+echo $sw.Stop() >> "%PSSt%"
+echo $writeSpeed = [math]::Round(500 / $sw.Elapsed.TotalSeconds) >> "%PSSt%"
+echo Write-Host "   [2/2] Simulating Large File Read..." -ForegroundColor Gray >> "%PSSt%"
+echo $sw.Restart() >> "%PSSt%"
+echo $data = [System.IO.File]::ReadAllBytes($tempFile) >> "%PSSt%"
+echo $sw.Stop() >> "%PSSt%"
+echo $readSpeed = [math]::Round(500 / $sw.Elapsed.TotalSeconds) >> "%PSSt%"
+echo Remove-Item $tempFile -Force -ErrorAction SilentlyContinue >> "%PSSt%"
+echo Write-Host "`n   ==========================================" -ForegroundColor Cyan >> "%PSSt%"
+echo Write-Host "   -> SEQUENTIAL WRITE SPEED : $writeSpeed MB/s" -ForegroundColor Green >> "%PSSt%"
+echo Write-Host "   -> SEQUENTIAL READ SPEED  : $readSpeed MB/s" -ForegroundColor Green >> "%PSSt%"
+echo Write-Host "   ==========================================`n" -ForegroundColor Cyan >> "%PSSt%"
+echo Read-Host "   Press Enter to exit..." >> "%PSSt%"
+powershell -nop -ep bypass -File "%PSSt%"
+del "%PSSt%" >nul 2>&1
+goto :EOF
+
+:DO_USB_MAPPER
+set "PSUSB=%ToolDir%\USBMap.ps1"
+echo $host.UI.RawUI.WindowTitle = 'Montag USB Mapper' > "%PSUSB%"
+echo Write-Host "`n   [ MONTAG USB PORT MAPPER ]" -ForegroundColor Cyan >> "%PSUSB%"
+echo Write-Host "   Insert a USB Flash Drive into each port one by one." -ForegroundColor Gray >> "%PSUSB%"
+echo Write-Host "   Listen for the confirmation Beep." -ForegroundColor Gray >> "%PSUSB%"
+echo Write-Host "   Close this window when all ports are verified.`n" -ForegroundColor Yellow >> "%PSUSB%"
+echo $seen = @() >> "%PSUSB%"
+echo while($true) { >> "%PSUSB%"
+echo     $drives = Get-CimInstance Win32_DiskDrive -ErrorAction SilentlyContinue ^| Where-Object { $_.InterfaceType -match 'USB' } >> "%PSUSB%"
+echo     foreach ($d in $drives) { >> "%PSUSB%"
+echo         if ($d.PNPDeviceID -notin $seen) { >> "%PSUSB%"
+echo             $seen += $d.PNPDeviceID >> "%PSUSB%"
+echo             Write-Host "   [PORT OK] Device Detected: $($d.Model)" -ForegroundColor Green >> "%PSUSB%"
+echo             [console]::beep(1000, 400) >> "%PSUSB%"
+echo         } >> "%PSUSB%"
+echo     } >> "%PSUSB%"
+echo     Start-Sleep -Milliseconds 500 >> "%PSUSB%"
+echo } >> "%PSUSB%"
+powershell -nop -ep bypass -File "%PSUSB%"
+del "%PSUSB%" >nul 2>&1
+goto :EOF
+
+:DO_THERMAL_ANALYZER
+set "PSThermal=%ToolDir%\Thermal.ps1"
+echo $host.UI.RawUI.WindowTitle = 'Montag Thermal Analyzer' > "%PSThermal%"
+echo Write-Host "`n   [ MONTAG THERMAL PASTE ANALYZER ]" -ForegroundColor Cyan >> "%PSThermal%"
+echo Write-Host "   Applying 100%% CPU Load for 60 seconds to test cooling...`n" -ForegroundColor Yellow >> "%PSThermal%"
+echo $jobs = @(); 1..([Environment]::ProcessorCount) ^| ForEach-Object { $jobs += Start-Job -ScriptBlock { while($true){ $n=[math]::Sqrt([math]::PI) } } } >> "%PSThermal%"
+echo $s = [Diagnostics.Stopwatch]::StartNew(); $maxTemp = 0 >> "%PSThermal%"
+echo while ($s.Elapsed.TotalSeconds -lt 60) { >> "%PSThermal%"
+echo     $cTemp = 0; try { $tz = Get-CimInstance -Namespace "root\wmi" -ClassName "MSAcpi_ThermalZoneTemperature" -ErrorAction SilentlyContinue ^| Select-Object -First 1; if($tz){ $cTemp = [math]::Round(($tz.CurrentTemperature/10)-273.15) } } catch{} >> "%PSThermal%"
+echo     if ($cTemp -gt $maxTemp) { $maxTemp = $cTemp } >> "%PSThermal%"
+echo     Write-Host -NoNewline "`r   Stressing CPU... Time: $([math]::Round($s.Elapsed.TotalSeconds))s / 60s | Current Temp: ${cTemp}C | Max Temp: ${maxTemp}C   " >> "%PSThermal%"
+echo     Start-Sleep -Seconds 1 >> "%PSThermal%"
+echo } >> "%PSThermal%"
+echo $jobs ^| Stop-Job ^| Out-Null >> "%PSThermal%"
+echo Write-Host "`n`n   ==========================================" -ForegroundColor Cyan >> "%PSThermal%"
+echo if ($maxTemp -eq 0 -or $maxTemp -ge 150) { Write-Host "   [ RESULT: UNKNOWN ] Thermal sensor not supported on this board." -ForegroundColor Gray } >> "%PSThermal%"
+echo elseif ($maxTemp -ge 90) { Write-Host "   [ RESULT: WARNING ] CPU Reached $maxTemp C" -ForegroundColor Red; Write-Host "   ACTION: Thermal Paste replacement highly recommended!" -ForegroundColor Red } >> "%PSThermal%"
+echo elseif ($maxTemp -ge 80) { Write-Host "   [ RESULT: ACCEPTABLE ] CPU Reached $maxTemp C" -ForegroundColor Yellow; Write-Host "   ACTION: Normal operating temps, safe to sell." -ForegroundColor Yellow } >> "%PSThermal%"
+echo else { Write-Host "   [ RESULT: EXCELLENT ] CPU Reached $maxTemp C" -ForegroundColor Green; Write-Host "   ACTION: Cooling system is in perfect condition." -ForegroundColor Green } >> "%PSThermal%"
+echo Write-Host "   ==========================================`n" -ForegroundColor Cyan >> "%PSThermal%"
+echo Read-Host "   Press Enter to exit..." >> "%PSThermal%"
+powershell -nop -ep bypass -File "%PSThermal%"
+del "%PSThermal%" >nul 2>&1
 goto :EOF
 
 :DO_DRV_MISSING
@@ -620,7 +684,7 @@ elseif ($MFG -match "Lenovo") {
 }
 
 # ==========================================================
-# ASYNC MASTER UI HTML CONSTRUCTION (FAST LOAD)
+# ASYNC MASTER UI HTML CONSTRUCTION
 # ==========================================================
 $html = @"
 <!DOCTYPE html>
@@ -742,6 +806,9 @@ $html = @"
 </style>
 </head>
 <body>
+
+<div id="toast-container" style="position:fixed; bottom:30px; right:30px; z-index:99999; display:flex; flex-direction:column; gap:10px;"></div>
+
 <div id="splash"><div style="text-align:center;"><img src="$LogoMontag" class="splash-logo"><div class="master-loader-box"><div class="master-loader-fill"></div></div><p style="color:#555; font-size:12px; margin-top:35px; letter-spacing:8px; opacity:0; animation: fadeIn 0.8s 1s forwards;">INITIALIZING QUANTUM MASTER v22.0</p></div></div>
 
 <div class="sidebar">
@@ -807,6 +874,7 @@ $html = @"
             <div class="dash-card" onclick="openTest('test-au')"><h3>Stereo Engine</h3><p>Acoustic Verification</p><div class="card-status" id="c-stat-au">PENDING</div></div>
             <div class="dash-card" onclick="openTest('test-to')"><h3>Touch Digitizer</h3><p>Matrix Scan</p><div class="card-status" id="c-stat-to">PENDING</div></div>
             <div class="dash-card" onclick="openTest('test-ca')"><h3>Webcam Sensor</h3><p>Visual Stream</p><div class="card-status" id="c-stat-ca">PENDING</div></div>
+            <div class="dash-card" onclick="runCmd('USB_MAPPER')" style="border-color:#10b981;"><h3>USB Port Mapper</h3><p>Live Insert Detection</p><div class="card-status" style="border-color:#10b981; color:#10b981;">DEEP TEST</div></div>
             <div class="dash-card" onclick="runCmd('BATTERY')" style="border-color:#ff007f;"><h3>Real Battery Drain</h3><p>Virtual Engine Logger</p><div class="card-status" style="border-color:#ff007f; color:#ff007f;">UTILITY</div></div>
             <div class="dash-card" onclick="runCmd('BATTERY_NATIVE')" style="border-color:#00e5ff;"><h3>Windows Battery Log</h3><p>Native Powercfg Report</p><div class="card-status" style="border-color:#00e5ff; color:#00e5ff;">UTILITY</div></div>
         </div>
@@ -828,9 +896,9 @@ $html = @"
                     <div id="numpad-master" style="display:none; flex-direction:column; gap:8px; border-left:1px solid #333; padding-left:20px;"><div class="kb-row"><div class="key" id="NumLock">N</div><div class="key" id="NumpadDivide">/</div><div class="key" id="NumpadMultiply">*</div></div><div class="kb-row"><div class="key" id="Numpad7">7</div><div class="key" id="Numpad8">8</div><div class="key" id="Numpad9">9</div></div><div class="kb-row"><div class="key" id="Numpad4">4</div><div class="key" id="Numpad5">5</div><div class="key" id="Numpad6">6</div></div><div class="kb-row"><div class="key" id="Numpad1">1</div><div class="key" id="Numpad2">2</div><div class="key" id="Numpad3">3</div></div></div>
                 </div>
                 
-                <div class="kb-row" style="justify-content: center; margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 25px;">
-                    <div class="key" id="MouseLeft" style="min-width: 200px; font-weight: 900; letter-spacing: 2px; font-size: 13px; border-radius: 15px 5px 5px 15px;">MOUSE L-CLICK</div>
-                    <div class="key" id="MouseRight" style="min-width: 200px; font-weight: 900; letter-spacing: 2px; font-size: 13px; border-radius: 5px 15px 15px 5px;">MOUSE R-CLICK</div>
+                <div class="kb-row" style="justify-content: center; margin-top: 8px;">
+                    <div class="key" id="MouseLeft" style="min-width: 140px; height: 35px; font-weight: 900; letter-spacing: 2px; font-size: 11px; border-radius: 10px 4px 4px 10px;">L-CLICK</div>
+                    <div class="key" id="MouseRight" style="min-width: 140px; height: 35px; font-weight: 900; letter-spacing: 2px; font-size: 11px; border-radius: 4px 10px 10px 4px;">R-CLICK</div>
                 </div>
             </div>
             <button class="btn-action-pro" onclick="manualKBFinish()">Finalize Input Check</button>
@@ -847,6 +915,8 @@ $html = @"
             <div class="dash-card" onclick="openTest('test-cpu')" style="border-color:var(--secondary);"><h3 style="color:var(--secondary);">CPU Core Stress</h3><p>Multi-threaded Math Calculations</p><div class="card-status" style="border-color:var(--secondary); color:var(--secondary);">UTILITY</div></div>
             <div class="dash-card" onclick="openTest('test-ram')" style="border-color:var(--success);"><h3 style="color:var(--success);">RAM Memory Load</h3><p>Physical Memory Allocation</p><div class="card-status" style="border-color:var(--success); color:var(--success);">UTILITY</div></div>
             <div class="dash-card" onclick="openTest('test-gpu')" style="border-color:var(--primary);"><h3 style="color:var(--primary);">GPU Render Stress</h3><p>Direct3D Engine Load</p><div class="card-status" style="border-color:var(--primary); color:var(--primary);">UTILITY</div></div>
+            <div class="dash-card" onclick="runCmd('STORAGE_TEST')" style="border-color:#8b5cf6;"><h3>Storage Speed</h3><p>Drive Read/Write Benchmark</p><div class="card-status" style="border-color:#8b5cf6; color:#8b5cf6;">DEEP TEST</div></div>
+            <div class="dash-card" onclick="runCmd('THERMAL_ANALYZER')" style="border-color:#ef4444;"><h3>Thermal Analyzer</h3><p>Cooling System Check</p><div class="card-status" style="border-color:#ef4444; color:#ef4444;">DEEP TEST</div></div>
             <div class="dash-card" onclick="openTest('test-charger')" style="border-color:#f59e0b;"><h3 style="color:#f59e0b;">AC Adapter Test</h3><p>Live Charging Stability</p><div class="card-status" style="border-color:#f59e0b; color:#f59e0b;">UTILITY</div></div>
         </div>
 
@@ -867,15 +937,16 @@ $html = @"
             <h2 style="margin-bottom: 30px; letter-spacing: 2px;">Windows Configuration Engine</h2>
             <button class="btn-hero" onclick="runCmd('AUTOPILOT')">PREPARE FOR SALE (AUTO-PILOT)</button>
             <div class="btn-grid-container">
+                <button class="btn-grid" onclick="runCmd('OEM_BRAND')">Apply Montag Branding</button>
                 <button class="btn-grid" onclick="runCmd('THISPC')">Show This PC Icon</button>
                 <button class="btn-grid" onclick="runCmd('HIGHPERF')">High Performance Mode</button>
                 <button class="btn-grid" onclick="runCmd('ARABIC')">Arabic + Egypt Region</button>
-                <button class="btn-grid" onclick="runCmd('ACTIVATE')">Activate OEM Key</button>
                 <button class="btn-grid" onclick="runCmd('BLOAT')">Remove Bloatware</button>
                 <button class="btn-grid" onclick="runCmd('BOOST')">Quick Boost & Fix</button>
-                <button class="btn-grid" onclick="runCmd('RENAME')">Rename PC & User</button>
                 <button class="btn-grid" onclick="runCmd('CLASSIC')">Classic Win11 Menu</button>
                 <button class="btn-grid" onclick="runCmd('SAC')">Disable Smart App Control</button>
+                <button class="btn-grid" onclick="runCmd('ACTIVATE')">Activate OEM Key</button>
+                <button class="btn-grid" onclick="runCmd('RENAME')">Rename PC & User</button>
             </div>
         </div>
     </div>
@@ -970,6 +1041,18 @@ $html = @"
     const pressedKeys = new Set(); let doneTests = { kb:false, sc:false, au:false, to:false, ca:false }; let stream;
     let diagStarted = false;
 
+    // --- SMART TOAST NOTIFICATION ENGINE ---
+    function showToast(msg, type) {
+        let container = document.getElementById('toast-container');
+        let t = document.createElement('div');
+        t.innerText = msg;
+        let color = type === 'success' ? '#28a745' : 'var(--secondary)';
+        t.style.cssText = 'background: rgba(10,10,15,0.95); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid ' + color + '; color: #fff; padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); font-weight: 800; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; transform: translateX(120%); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);';
+        container.appendChild(t);
+        setTimeout(() => { t.style.transform = 'translateX(0)'; }, 50);
+        setTimeout(() => { t.style.transform = 'translateX(120%)'; setTimeout(() => t.remove(), 400); }, 3500);
+    }
+
     // --- ASYNC HARDWARE DATA POLLING ---
     let hwLoaded = false;
     let hwInt = setInterval(() => {
@@ -998,14 +1081,6 @@ $html = @"
         document.getElementById('ui-bat-health').innerText = hw.BatHealth;
         document.getElementById('ui-disk-health').innerText = hw.DiskHealth;
         document.getElementById('ui-ac-status').innerText = hw.AcStatus;
-        
-        if (hw.BatHealth === "No Battery") {
-            document.querySelectorAll('.dash-card').forEach(card => {
-                if(card.getAttribute('onclick') === "runCmd('BATTERY')" || card.getAttribute('onclick') === "runCmd('BATTERY_NATIVE')") {
-                    card.style.display = 'none';
-                }
-            });
-        }
     }
     // -----------------------------------
 
@@ -1085,12 +1160,29 @@ $html = @"
     }
 
     function runCmd(actionName) {
+        // UI Silent Commands Map
+        const silentCmds = {
+            'HIGHPERF': 'High Performance Applied',
+            'BLOAT': 'Bloatware Cleaned',
+            'BOOST': 'System Boosted',
+            'THISPC': 'Desktop Icons Shown',
+            'ARABIC': 'Arabic Locale Applied',
+            'OEM_BRAND': 'Montag Branding Applied',
+            'CLASSIC': 'Classic Menu Restored',
+            'SAC': 'Smart App Control Disabled'
+        };
+        
+        if(silentCmds[actionName]) {
+            showToast(silentCmds[actionName], 'success');
+        } else {
+            showToast('Launching Tool...', 'info');
+        }
+
         let originalTitle = document.title;
         document.title = "MONTAG_CMD_" + actionName;
         setTimeout(() => { document.title = originalTitle; }, 1500);
     }
 
-    // UPDATED MASTER REQ: Now includes MouseLeft and MouseRight
     const masterReq = ['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12','Escape','Delete','Insert','Home','PageUp','PageDown','End','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal','Backspace','KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight','Backslash','KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote','Enter','KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash','ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','MetaLeft','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','MouseLeft','MouseRight'];
     
     function checkHubStatus() { if(Object.values(doneTests).every(s => s === true)) { document.getElementById('badge-hw').style.display = 'inline-block'; } }
@@ -1285,7 +1377,6 @@ $html = @"
         let c_st = document.getElementById('c-stat-ca').innerText;
         let originalTitle = document.title;
         
-        // 5 Parts for SYNC as we merged Mouse to KB
         document.title = "MONTAG_SYNC_" + k_st + "_" + s_st + "_" + a_st + "_" + t_st + "_" + c_st;
         setTimeout(() => { document.title = originalTitle; }, 1500);
 
@@ -1347,7 +1438,7 @@ $html | Out-File $GuiFile -Encoding UTF8
 
 Log-Diag "Launching UI Engine Instantly..."
 Start-Process "msedge" -ArgumentList "--new-window --kiosk --edge-kiosk-type=fullscreen `"$GuiFile`""
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 3
 
 # --- TEMP LOGGER BACKGROUND JOB ---
 $TempJS = "$env:SystemDrive\MontagTools\live_temp.js"
@@ -1518,11 +1609,15 @@ Log-Diag "UI Synced Successfully."
 # --- MEMORY UPGRADE: ZERO-DISK I/O WITH ANTI-DUPLICATE ---
 $kb_st = "PENDING"; $sc_st = "PENDING"; $au_st = "PENDING"; $to_st = "PENDING"; $ca_st = "PENDING"
 $last_cmd = ""
+$silentActions = @("HIGHPERF", "BLOAT", "BOOST", "THISPC", "ARABIC", "OEM_BRAND", "CLASSIC", "SAC")
+$edgeMissCount = 0
 
 while ($true) {
-    $activeWins = Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG_" }
-    if ($activeWins) {
-        foreach ($e in $activeWins) {
+    $edgeProcs = Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG" }
+    
+    if ($edgeProcs) {
+        $edgeMissCount = 0
+        foreach ($e in $edgeProcs) {
             $title = $e.MainWindowTitle
             
             if ($title -match "MONTAG_KB_") { $kb_st = $title.Split("_")[-1] }
@@ -1550,14 +1645,27 @@ while ($true) {
                         Remove-Job $TempJob -Force -ErrorAction SilentlyContinue
                         break
                     }
-                    Start-Process -FilePath "$env:SystemDrive\MontagTools\MontagCore.bat" -ArgumentList "CMD_$cmd" -WindowStyle Normal
+                    if ($silentActions -contains $cmd) {
+                        Log-Diag "Executing Silent CMD: $cmd"
+                        Start-Process -FilePath "$env:SystemDrive\MontagTools\MontagCore.bat" -ArgumentList "CMD_$cmd" -WindowStyle Hidden
+                    } else {
+                        Log-Diag "Executing Normal CMD: $cmd"
+                        Start-Process -FilePath "$env:SystemDrive\MontagTools\MontagCore.bat" -ArgumentList "CMD_$cmd" -WindowStyle Normal
+                    }
                 }
             } elseif ($title -notmatch "MONTAG_CMD_") {
                 $last_cmd = "" 
             }
         }
+        if ($last_cmd -eq "EXIT") { break }
+    } else {
+        # Edge missing counter to prevent premature auto-deletion
+        $edgeMissCount++
+        if ($edgeMissCount -gt 25) { 
+            Log-Diag "Edge window lost permanently. Exiting loop."
+            break 
+        }
     }
-    if (-not (Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG" })) { break }
     Start-Sleep -Milliseconds 300
 }
 
