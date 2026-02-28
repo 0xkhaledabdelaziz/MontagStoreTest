@@ -13,7 +13,7 @@ if /i "%~f0" neq "%BatchPath%" copy /y "%~f0" "%BatchPath%" >nul 2>&1
 if "%~1" neq "" goto ROUTER
 
 :: ==============================================================================
-:: [1] ADMINISTRATIVE PRIVILEGES ENFORCEMENT (CLEAN BYPASS)
+:: [1] ADMINISTRATIVE PRIVILEGES ENFORCEMENT
 :: ==============================================================================
 net session >nul 2>&1
 if %errorLevel% NEQ 0 (
@@ -30,6 +30,8 @@ title Montag Store - Quantum OS Dashboard v22.0
 for /f "usebackq delims=" %%a in (`powershell.exe -NoProfile -Command "(Get-CimInstance Win32_ComputerSystem).Manufacturer.Trim()"`) do set "BRAND=%%a"
 set "HubEngine=%ToolDir%\MontagQuantumEngine.ps1"
 if exist "%HubEngine%" del "%HubEngine%"
+
+:: Extract PowerShell Engine Safely
 for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__HUB_CORE_START__:::$" "%~f0"') do set "StartLine=%%a"
 more +%StartLine% "%~f0" > "%HubEngine%"
 
@@ -38,7 +40,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%Hu
 exit
 
 :: ==============================================================================
-:: [4] OS COMMAND ROUTER (SAFE EXECUTION ENVIRONMENT)
+:: [4] OS COMMAND ROUTER
 :: ==============================================================================
 :ROUTER
 mode con: cols=85 lines=25
@@ -55,7 +57,6 @@ set "Cyan=%ESC%[36m"
 set "Magenta=%ESC%[35m"
 
 echo.
-
 if "%~1"=="CMD_AUTOPILOT" goto DO_AUTOPILOT
 if "%~1"=="CMD_THISPC" goto DO_THISPC
 if "%~1"=="CMD_HIGHPERF" goto DO_HIGHPERF
@@ -66,6 +67,9 @@ if "%~1"=="CMD_BOOST" goto DO_BOOST
 if "%~1"=="CMD_RENAME" goto DO_RENAME
 if "%~1"=="CMD_CLASSIC" goto DO_CLASSIC
 if "%~1"=="CMD_SAC" goto DO_SAC
+
+:: SMART DRIVER HUNTER PRO
+if "%~1"=="CMD_DRV_MISSING" goto DO_DRV_MISSING
 if "%~1"=="CMD_DRV_BACKUP" goto DO_DRV_BACKUP
 if "%~1"=="CMD_DRV_RESTORE" goto DO_DRV_RESTORE
 if "%~1"=="CMD_APP_GAMING" goto DO_APP_GAMING
@@ -73,22 +77,28 @@ if "%~1"=="CMD_APP_GAMING" goto DO_APP_GAMING
 if "%~1"=="CMD_BATTERY" goto DO_BATTERY
 if "%~1"=="CMD_CHARGER_TEST" goto DO_CHARGER
 
-if "%~1"=="CMD_CPU_30" set "SType=CPU" & set "SDur=30" & goto DO_STRESS
-if "%~1"=="CMD_CPU_60" set "SType=CPU" & set "SDur=60" & goto DO_STRESS
-if "%~1"=="CMD_CPU_INF" set "SType=CPU" & set "SDur=0" & goto DO_STRESS
+:: ============================================================
+:: ISOLATED STRESS TEST COMMANDS (BUG FIXED)
+:: ============================================================
+if "%~1"=="CMD_CPU_30" ( set "SType=CPU" & set "SDur=30" & goto DO_STRESS )
+if "%~1"=="CMD_CPU_60" ( set "SType=CPU" & set "SDur=60" & goto DO_STRESS )
+if "%~1"=="CMD_CPU_INF" ( set "SType=CPU" & set "SDur=0" & goto DO_STRESS )
 
-if "%~1"=="CMD_RAM_30" set "SType=RAM" & set "SDur=30" & goto DO_STRESS
-if "%~1"=="CMD_RAM_60" set "SType=RAM" & set "SDur=60" & goto DO_STRESS
-if "%~1"=="CMD_RAM_INF" set "SType=RAM" & set "SDur=0" & goto DO_STRESS
+if "%~1"=="CMD_RAM_30" ( set "SType=RAM" & set "SDur=30" & goto DO_STRESS )
+if "%~1"=="CMD_RAM_60" ( set "SType=RAM" & set "SDur=60" & goto DO_STRESS )
+if "%~1"=="CMD_RAM_INF" ( set "SType=RAM" & set "SDur=0" & goto DO_STRESS )
 
-if "%~1"=="CMD_GPU_30" set "SType=GPU" & set "SDur=30" & goto DO_STRESS
-if "%~1"=="CMD_GPU_60" set "SType=GPU" & set "SDur=60" & goto DO_STRESS
-if "%~1"=="CMD_GPU_INF" set "SType=GPU" & set "SDur=0" & goto DO_STRESS
+if "%~1"=="CMD_GPU_30" ( set "SType=GPU" & set "SDur=30" & goto DO_STRESS )
+if "%~1"=="CMD_GPU_60" ( set "SType=GPU" & set "SDur=60" & goto DO_STRESS )
+if "%~1"=="CMD_GPU_INF" ( set "SType=GPU" & set "SDur=0" & goto DO_STRESS )
 
-if "%~1"=="CMD_UPDATE" start ms-settings:windowsupdate & exit
-if "%~1"=="CMD_OEM_DELL" start "" "https://downloads.dell.com/serviceability/catalog/SupportAssistinstaller.exe" & exit
-if "%~1"=="CMD_OEM_HP" start "" "https://ftp.hp.com/pub/softpaq/sp168501-169000/sp168523.exe" & exit
-if "%~1"=="CMD_OEM_LENOVO" start "" "https://support.lenovo.com/us/en/" & exit
+:: ============================================================
+:: ISOLATED UTILITY COMMANDS (BUG FIXED)
+:: ============================================================
+if "%~1"=="CMD_UPDATE" ( start ms-settings:windowsupdate & exit )
+if "%~1"=="CMD_OEM_DELL" ( start "" "https://downloads.dell.com/serviceability/catalog/SupportAssistinstaller.exe" & exit )
+if "%~1"=="CMD_OEM_HP" ( start "" "https://ftp.hp.com/pub/softpaq/sp168501-169000/sp168523.exe" & exit )
+if "%~1"=="CMD_OEM_LENOVO" ( start "" "https://support.lenovo.com/us/en/" & exit )
 
 if "%~1"=="CMD_APP_BUNDLE" goto DO_APP_BUNDLE
 if "%~1"=="CMD_APP_OFFICE" goto DO_APP_OFFICE
@@ -104,8 +114,18 @@ echo %Yellow%Tuning Performance...%Reset%
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0 & powercfg /change standby-timeout-ac 0 & powercfg -h off >nul 2>&1
 net start w32time >nul 2>&1 & w32tm /resync >nul 2>&1
-echo %Yellow%Removing Bloatware...%Reset%
-powershell -nop -c "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *bing* | Remove-AppxPackage -ErrorAction SilentlyContinue" >nul 2>&1
+
+echo %Yellow%Removing Bloatware (Extended Win 11 Clean)...%Reset%
+powershell -nop -c "$apps = @('*xbox*', '*solitaire*', '*bing*', '*skype*', '*YourPhone*', '*OneDriveSync*', '*Clipchamp*', '*Zune*', '*People*', '*Todos*', '*GetHelp*'); foreach ($app in $apps) { Get-AppxPackage $app | Remove-AppxPackage -ErrorAction SilentlyContinue }" >nul 2>&1
+
+echo %Yellow%Deep System Cleanup (Temp ^& Updates Cache)...%Reset%
+del /q /f /s "%TEMP%\*" >nul 2>&1
+del /q /f /s "C:\Windows\Temp\*" >nul 2>&1
+if exist "C:\Windows.old" rd /s /q "C:\Windows.old" >nul 2>&1
+net stop wuauserv >nul 2>&1
+del /q /f /s "C:\Windows\SoftwareDistribution\Download\*" >nul 2>&1
+net start wuauserv >nul 2>&1
+
 echo %Yellow%Setting Region and Language...%Reset%
 powershell -nop -c "$l=Get-WinUserLanguageList; if($l.LanguageTag -notcontains 'ar-EG'){$l.Add('ar-EG'); Set-WinUserLanguageList $l -Force}; Set-WinHomeLocation -GeoId 68; Set-Culture en-US" >nul 2>&1
 reg add "HKCU\Control Panel\International\Geo" /v Nation /t REG_SZ /d "68" /f >nul 2>&1
@@ -149,7 +169,16 @@ goto :EOF
 :DO_ACTIVATE
 cls
 echo.
-echo %Cyan%Searching for BIOS Product Key...%Reset%
+echo %Cyan%Checking Windows Activation Status...%Reset%
+cscript //nologo %windir%\system32\slmgr.vbs /xpr | findstr /i "permanently" >nul
+if %errorlevel%==0 (
+    echo %Green%[OK] Windows is already permanently activated.%Reset%
+    echo.
+    timeout /t 3 >nul
+    goto :EOF
+)
+
+echo %Yellow%Windows not activated. Searching for BIOS Product Key...%Reset%
 set "KeyScript=%ToolDir%\FindKey.ps1"
 if exist "%KeyScript%" del "%KeyScript%"
 echo $key = "" > "%KeyScript%"
@@ -182,8 +211,8 @@ goto :EOF
 
 :DO_BLOAT
 cls
-echo %Cyan%Removing Windows Bloatware...%Reset%
-powershell -nop -c "Get-AppxPackage *xbox* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *solitaire* | Remove-AppxPackage -ErrorAction SilentlyContinue; Get-AppxPackage *skype* | Remove-AppxPackage -ErrorAction SilentlyContinue"
+echo %Cyan%Removing Windows Bloatware (Extended Clean)...%Reset%
+powershell -nop -c "$apps = @('*xbox*', '*solitaire*', '*bing*', '*skype*', '*YourPhone*', '*OneDriveSync*', '*Clipchamp*', '*Zune*', '*People*', '*Todos*', '*GetHelp*'); foreach ($app in $apps) { Get-AppxPackage $app | Remove-AppxPackage -ErrorAction SilentlyContinue }"
 echo %Green%[OK] Done.%Reset%
 timeout /t 2 >nul
 goto :EOF
@@ -232,6 +261,65 @@ set "SAC_P2=Control\CI\Policy"
 reg add "!SAC_P1!\!SAC_P2!" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f >nul 2>&1
 echo %Green%[OK] Policy Updated. Restart required.%Reset%
 timeout /t 3 >nul
+goto :EOF
+
+:DO_DRV_MISSING
+cls
+echo %Cyan%================================================================================%Reset%
+echo                           [ SMART DRIVER HUNTER PRO ]
+echo %Cyan%================================================================================%Reset%
+echo %Yellow%Choose an automated engine to download and install missing drivers directly:%Reset%
+echo.
+echo   [1] Driver Booster (Recommended: Fast, 1-Click Auto Updater)
+echo   [2] Snappy Driver Installer (IT Pro Tool: Ad-Free, Open Source)
+echo   [3] Windows Update (Native Aggressive Scan)
+echo.
+set "drvChoice="
+set /p drvChoice="   Enter choice (1/2/3): "
+
+if "!drvChoice!"=="1" goto DRV_OPT1
+if "!drvChoice!"=="2" goto DRV_OPT2
+if "!drvChoice!"=="3" goto DRV_OPT3
+goto :EOF
+
+:DRV_OPT1
+echo.
+echo %Magenta%   Downloading ^& Installing Driver Booster... Please wait...%Reset%
+winget install --id IObit.DriverBooster -e --accept-source-agreements --accept-package-agreements --silent >nul 2>&1
+if %errorlevel% neq 0 (
+    echo %Yellow%   Winget engine not ready. Falling back to direct CURL download...%Reset%
+    curl -L -# -o "%TEMP%\db_setup.exe" "https://cdn.iobit.com/dl/driver_booster_setup.exe"
+    if exist "%TEMP%\db_setup.exe" (
+        echo %Green%   [OK] Download Complete! Launching Setup...%Reset%
+        start "" "%TEMP%\db_setup.exe"
+    ) else (
+        echo %Red%   [ERROR] Download failed. Please check internet connection.%Reset%
+    )
+) else (
+    echo %Green%   [OK] Complete! Launching Driver Booster...%Reset%
+    if exist "C:\Program Files (x86)\IObit\Driver Booster\DriverBooster.exe" start "" "C:\Program Files (x86)\IObit\Driver Booster\DriverBooster.exe"
+)
+echo.
+pause
+goto :EOF
+
+:DRV_OPT2
+echo.
+echo %Magenta%   Downloading Snappy Driver Installer Origin... Please wait...%Reset%
+winget install --id GlennDelahoy.SnappyDriverInstallerOrigin -e --accept-source-agreements --accept-package-agreements
+echo %Green%   [OK] Complete! Check your Desktop/Start Menu for SDIO.%Reset%
+echo.
+pause
+goto :EOF
+
+:DRV_OPT3
+echo.
+echo %Magenta%   Forcing Native Windows Update Scan...%Reset%
+pnputil /scan-devices >nul 2>&1
+usoclient ScanInstallWait >nul 2>&1
+start ms-settings:windowsupdate
+echo %Green%   [OK] Scan started in background. Check Windows Update settings.%Reset%
+timeout /t 4 >nul
 goto :EOF
 
 :DO_DRV_BACKUP
@@ -289,11 +377,18 @@ goto :EOF
 
 :DO_APP_GAMING
 cls
-echo %Cyan%Installing Gaming Essentials (VCRedist)...%Reset%
-winget install --id Microsoft.VCRedist.2015+.x64 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
-winget install --id Microsoft.VCRedist.2015+.x86 -e --accept-source-agreements --accept-package-agreements >nul 2>&1
-echo %Green%[OK] Done.%Reset%
-timeout /t 2 >nul
+echo %Cyan%Downloading and Installing Gaming Essentials (VCRedist)...%Reset%
+curl -L -# -o "%TEMP%\vcredist_x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+curl -L -# -o "%TEMP%\vcredist_x86.exe" "https://aka.ms/vs/17/release/vc_redist.x86.exe"
+
+echo %Yellow%Installing 64-bit Core...%Reset%
+if exist "%TEMP%\vcredist_x64.exe" start /wait "" "%TEMP%\vcredist_x64.exe" /install /quiet /norestart
+
+echo %Yellow%Installing 32-bit Core...%Reset%
+if exist "%TEMP%\vcredist_x86.exe" start /wait "" "%TEMP%\vcredist_x86.exe" /install /quiet /norestart
+
+echo %Green%[OK] Gaming Essentials Installed Successfully.%Reset%
+timeout /t 3 >nul
 goto :EOF
 
 :DO_APP_BUNDLE
@@ -320,75 +415,41 @@ goto :EOF
 :DO_BATTERY
 cls
 echo %Cyan%================================================================================%Reset%
-echo                               [ REAL BATTERY DRAIN TEST ]
+echo                               [ BATTERY DRAIN TEST ]
 echo %Cyan%================================================================================%Reset%
 echo.
-echo %Yellow%Starting Auto-Test:%Reset%
-echo  1. Prevent Sleep Mode...
-echo  2. Searching for 'BatteryTest.mp4' on ALL drives...
+echo %Yellow%Starting Standalone Screen-On Engine:%Reset%
+echo  1. Forcing High Performance...
+echo  2. Preventing Sleep Mode...
+echo  3. Generating Static UI HTML...
 echo.
 powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >nul 2>&1
 powercfg /change monitor-timeout-ac 0
 powercfg /change standby-timeout-ac 0
 powercfg -h off >nul 2>&1
 
-set "DestVid=%ProgramData%\BatteryTest.mp4"
-set "FoundSource="
-if exist "%~dp0BatteryTest.mp4" set "FoundSource=%~dp0BatteryTest.mp4" & goto FoundVideoBAT
-for %%d in (D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
-    if exist "%%d:\BatteryTest.mp4" (set "FoundSource=%%d:\BatteryTest.mp4" & goto FoundVideoBAT)
-)
-echo %Red%[ERROR] 'BatteryTest.mp4' NOT FOUND on any drive!%Reset%
-echo.
-pause
-goto :EOF
-
-:FoundVideoBAT
-echo %Green%[FOUND] %FoundSource%%Reset%
-echo %Yellow%Copying to ProgramData - Please Wait...%Reset%
-for %%A in ("%FoundSource%") do robocopy "%%~dpA." "%ProgramData%" "BatteryTest.mp4" /Z /NJH /NJS
-if not exist "%DestVid%" (
-    echo %Red%[ERROR] Copy Failed. Trying to play directly from USB...%Reset%
-    start "" "%FoundSource%"
-    goto StartLoggerBAT
-)
-echo %Green%[OK] Copy Complete. Starting Test...%Reset%
-timeout /t 2 >nul
-start "" "%DestVid%"
-
-:StartLoggerBAT
 set "BatScript=%ToolDir%\BatLogger.ps1"
 if exist "%BatScript%" del "%BatScript%"
-echo $host.UI.RawUI.WindowTitle = "Montag Battery Timer" > "%BatScript%"
-echo $log = "C:\MontagBatteryLog.txt" >> "%BatScript%"
-echo $sys = (Get-CimInstance Win32_ComputerSystem).Model.Trim() >> "%BatScript%"
-echo $ser = (Get-CimInstance Win32_Bios).SerialNumber.Trim() >> "%BatScript%"
-echo $start = Get-Date >> "%BatScript%"
-echo Add-Content $log "==========================================" >> "%BatScript%"
-echo Add-Content $log "      MONTAG STORE - BATTERY TEST" >> "%BatScript%"
-echo Add-Content $log "==========================================" >> "%BatScript%"
-echo Add-Content $log "Device : $sys" >> "%BatScript%"
-echo Add-Content $log "Serial : $ser" >> "%BatScript%"
-echo Add-Content $log "Started: $start" >> "%BatScript%"
-echo Add-Content $log "------------------------------------------" >> "%BatScript%"
-echo Write-Host "`n   MONTAG STORE - BATTERY STOPWATCH" -ForegroundColor Magenta >> "%BatScript%"
-echo while ($true) { >> "%BatScript%"
-echo     $now = Get-Date >> "%BatScript%"
-echo     $diff = $now - $start >> "%BatScript%"
-echo     $b = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue >> "%BatScript%"
-echo     $bat = if ($b) { $b.EstimatedChargeRemaining } else { '??' } >> "%BatScript%"
-echo     $str = "{0:hh\:mm\:ss}          {1}%%" -f $diff, $bat >> "%BatScript%"
-echo     Write-Host "`r   $str" -NoNewline -ForegroundColor Cyan >> "%BatScript%"
-echo     $logLine = "$($now.ToString('HH:mm:ss')) | Elapsed: $($diff.ToString('hh\:mm')) | Battery: $bat%%" >> "%BatScript%"
-echo     Add-Content $log $logLine -ErrorAction SilentlyContinue >> "%BatScript%"
-echo     Start-Sleep -Seconds 60 >> "%BatScript%"
-echo } >> "%BatScript%"
+
+:: Safely extract the PowerShell Virtual Movie Code from the bottom of this script
+for /f "tokens=1 delims=:" %%a in ('findstr /n "^:::__LOGGER_CORE_START__:::$" "%~f0"') do (
+    more +%%a "%~f0" > "%BatScript%"
+)
+
+echo %Magenta%   [ INITIALIZING LIGHTWEIGHT ENGINE ]%Reset%
+start "Montag Battery Logger" powershell -nop -ep bypass -File "%BatScript%"
+timeout /t 3 >nul
+
+echo %Green%   [ LAUNCHING KIOSK DISPLAY ]%Reset%
+start msedge --new-window --kiosk --edge-kiosk-type=fullscreen --autoplay-policy=no-user-gesture-required "file:///C:/MontagTools/MontagLiveDrain.html"
+
 cls
 echo.
-echo   [ MONTAG BATTERY TEST - RUNNING IN SEPARATE WINDOW ]
-echo   Initializing Logger...
+echo   [ MONTAG VIRTUAL BATTERY TEST - ACTIVE ]
+echo   Live Display Running in Fullscreen.
+echo   Final Summary Report will be saved to: C:\MontagBatteryReport.html
+echo   To stop, close the Browser window and the PowerShell window.
 echo.
-start "Montag Battery Logger" powershell -nop -ep bypass -File "%BatScript%"
 goto :EOF
 
 :DO_CHARGER
@@ -474,8 +535,14 @@ echo     $a = $null; [GC]::Collect() >> "%PSStress%"
 echo } elseif ($Type -eq 'GPU') { >> "%PSStress%"
 echo     Write-Host "   Launching WebGL Shader Engine... (DO NOT CLOSE THE BROWSER WINDOW)" -ForegroundColor Cyan >> "%PSStress%"
 echo     $gpuHtml = "$env:SystemDrive\MontagTools\MontagGPU.html" >> "%PSStress%"
-echo     $htmlContent = "<!DOCTYPE html><html><head><style>body{margin:0;overflow:hidden;background:#000;}canvas{width:100vw;height:100vh;display:block;}</style></head><body><canvas id='gl'></canvas><script>var c=document.getElementById('gl');var gl=c.getContext('webgl')||c.getContext('experimental-webgl');c.width=window.innerWidth;c.height=window.innerHeight;gl.viewport(0,0,c.width,c.height);var vs=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vs,'attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}');gl.compileShader(vs);var fs=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fs,'precision highp float;uniform float t;uniform vec2 r;void main(){vec2 p=(gl_FragCoord.xy*2.-r)/min(r.x,r.y);float s=0.,v=0.;for(float i=0.;i<250.;i++){vec2 q=p+vec2(cos(t*0.1+i),sin(t*0.15+i))*0.5;float l=length(q);s+=exp(-l*10.);v+=sin(l*20.-t*4.);}gl_FragColor=vec4(vec3(s*0.5+v*0.2,s*0.2,v*0.5),1);}');gl.compileShader(fs);var p=gl.createProgram();gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);gl.useProgram(p);var b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);var al=gl.getAttribLocation(p,'p');gl.enableVertexAttribArray(al);gl.vertexAttribPointer(al,2,gl.FLOAT,false,0,0);var ut=gl.getUniformLocation(p,'t');var ur=gl.getUniformLocation(p,'r');var start=Date.now();function f(){gl.uniform1f(ut,(Date.now()-start)*0.001);gl.uniform2f(ur,c.width,c.height);gl.drawArrays(gl.TRIANGLES,0,6);requestAnimationFrame(f);}f();</script></body></html>" >> "%PSStress%"
-echo     Set-Content -Path $gpuHtml -Value $htmlContent -Encoding UTF8 >> "%PSStress%"
+echo     $h1 = "<!DOCTYPE html><html><head><style>body{margin:0;overflow:hidden;background:#000;}canvas{width:100vw;height:100vh;display:block;}</style></head><body><canvas id='gl'></canvas><script>" >> "%PSStress%"
+echo     $h2 = "var c=document.getElementById('gl');var gl=c.getContext('webgl')||c.getContext('experimental-webgl');c.width=window.innerWidth;c.height=window.innerHeight;gl.viewport(0,0,c.width,c.height);" >> "%PSStress%"
+echo     $h3 = "var vs=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vs,'attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}');gl.compileShader(vs);var fs=gl.createShader(gl.FRAGMENT_SHADER);" >> "%PSStress%"
+echo     $h4 = "gl.shaderSource(fs,'precision highp float;uniform float t;uniform vec2 r;void main(){vec2 p=(gl_FragCoord.xy*2.-r)/min(r.x,r.y);float s=0.,v=0.;for(float i=0.;i<250.;i++){vec2 q=p+vec2(cos(t*0.1+i),sin(t*0.15+i))*0.5;float l=length(q);s+=exp(-l*10.);v+=sin(l*20.-t*4.);}gl_FragColor=vec4(vec3(s*0.5+v*0.2,s*0.2,v*0.5),1);}');" >> "%PSStress%"
+echo     $h5 = "gl.compileShader(fs);var p=gl.createProgram();gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);gl.useProgram(p);var b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);" >> "%PSStress%"
+echo     $h6 = "gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);var al=gl.getAttribLocation(p,'p');gl.enableVertexAttribArray(al);gl.vertexAttribPointer(al,2,gl.FLOAT,false,0,0);" >> "%PSStress%"
+echo     $h7 = "var ut=gl.getUniformLocation(p,'t');var ur=gl.getUniformLocation(p,'r');var start=Date.now();function f(){gl.uniform1f(ut,(Date.now()-start)*0.001);gl.uniform2f(ur,c.width,c.height);gl.drawArrays(gl.TRIANGLES,0,6);requestAnimationFrame(f);}f();</script></body></html>" >> "%PSStress%"
+echo     Set-Content -Path $gpuHtml -Value "$h1$h2$h3$h4$h5$h6$h7" -Encoding UTF8 >> "%PSStress%"
 echo     Start-Process "msedge" -ArgumentList "--new-window --kiosk --edge-kiosk-type=fullscreen --disable-web-security --user-data-dir=`"$env:SystemDrive\MontagTools\EdgeGPU`" `"$gpuHtml`"" >> "%PSStress%"
 echo     $s = [Diagnostics.Stopwatch]::StartNew() >> "%PSStress%"
 echo     while ($true) { >> "%PSStress%"
@@ -494,6 +561,7 @@ powershell -nop -ep bypass -File "%PSStress%" -Type "%SType%" -Duration "%SDur%"
 del "%PSStress%" >nul 2>&1
 goto :EOF
 :: ==============================================================================
+
 :::__HUB_CORE_START__:::
 param($MFG)
 
@@ -517,9 +585,21 @@ if (-not (Test-Path $IconPath)) { Invoke-WebRequest -Uri $UrlIcon -OutFile $Icon
 # --- LOGOS LOGIC ---
 $LogoMontag = "https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.png?rlkey=b8n5e732fsepkadzg7y10gj1k&st=7q4k6jll&raw=1"
 $BrandLogo = "https://cdn.simpleicons.org/windows/00e5ff" 
-if ($MFG -match "Dell") { $BrandLogo = "https://cdn.simpleicons.org/dell/0076CE" }
-elseif ($MFG -match "HP" -or $MFG -match "Hewlett") { $BrandLogo = "https://cdn.simpleicons.org/hp/0096D6" }
-elseif ($MFG -match "Lenovo") { $BrandLogo = "https://cdn.simpleicons.org/lenovo/E2231A" }
+$ColorPrimary = "#a820ff"
+$ColorSecondary = "#00e5ff"
+
+if ($MFG -match "Dell") { 
+    $BrandLogo = "https://cdn.simpleicons.org/dell/0076CE"
+    $ColorPrimary = "#0076CE"; $ColorSecondary = "#00a2ff"
+}
+elseif ($MFG -match "HP" -or $MFG -match "Hewlett") { 
+    $BrandLogo = "https://cdn.simpleicons.org/hp/0096D6"
+    $ColorPrimary = "#0096D6"; $ColorSecondary = "#00e0ff"
+}
+elseif ($MFG -match "Lenovo") { 
+    $BrandLogo = "https://cdn.simpleicons.org/lenovo/E2231A"
+    $ColorPrimary = "#E2231A"; $ColorSecondary = "#ff4d4d"
+}
 
 # --- FAST HARDWARE SCAN FOR WELCOME SCREEN & REPORTS ---
 $sys = Get-CimInstance Win32_ComputerSystem
@@ -666,11 +746,11 @@ try {
 } catch {}
 
 $cpuDetails = "$cpuName | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr"
-$cpuDetailsUI = "$cpuName <br> <span style='color:#a0a0ab; font-size:13px;'>$($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr</span> <br> <span class='badge' style='background-color: $($cpuTempColor)20; color: $cpuTempColor; border-color: $cpuTempColor;'>TEMP: $cpuTemp</span>"
+$cpuDetailsUI = "$cpuName <br> <span style='color:#a0a0ab; font-size:13px;'>$($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr</span> <br> <span id='live-cpu-temp' class='badge' style='background-color: $($cpuTempColor)20; color: $cpuTempColor; border-color: $cpuTempColor;'>TEMP: $cpuTemp</span>"
 
 $gpuStringUI = ($gpuList | Select-Object -Unique) -join " <br> "
 if (-not $gpuStringUI) { $gpuStringUI = "Standard Graphics Adapter" }
-$gpuStringUI = "$gpuStringUI <br><span class='badge' style='background-color: rgba(0,229,255,0.1); color: var(--secondary); border-color: var(--secondary);'>$resString</span> <span class='badge' style='background-color: $($gpuTempColor)20; color: $gpuTempColor; border-color: $gpuTempColor;'>TEMP: $gpuTemp</span>"
+$gpuStringUI = "$gpuStringUI <br><span class='badge' style='background-color: rgba(0,229,255,0.1); color: var(--secondary); border-color: var(--secondary);'>$resString</span> <span id='live-gpu-temp' class='badge' style='background-color: $($gpuTempColor)20; color: $gpuTempColor; border-color: $gpuTempColor;'>TEMP: $gpuTemp</span>"
 
 # --- BATTERY HEALTH (CIM) ---
 $batHealth = "Unknown"
@@ -715,51 +795,40 @@ $html = @"
 <meta charset="UTF-8">
 <title>MONTAG_HUB_ACTIVE</title>
 <style>
-    :root { --primary: #a820ff; --secondary: #00e5ff; --accent: #ff00aa; --bg-deep: #050505; --card: rgba(15, 15, 20, 0.75); --success: #28a745; --error: #ef4444; }
+    :root { --primary: $($ColorPrimary); --secondary: $($ColorSecondary); --accent: #ff00aa; --bg-deep: #050505; --card: rgba(15, 15, 20, 0.75); --success: #28a745; --error: #ef4444; }
     html, body { width: 100vw; height: 100vh; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; background-color: var(--bg-deep); color: #fff; display: block; overflow: hidden; box-sizing: border-box; position: relative; z-index: 1; }
-
     @keyframes floatLive { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(6%, 6%) scale(1.15); } }
     @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-
     body::before, body::after { content: ''; position: absolute; width: 60vw; height: 60vw; border-radius: 50%; filter: blur(120px); z-index: -1; pointer-events: none; }
     body::before { background: rgba(0, 229, 255, 0.15); top: -15%; left: -10%; animation: floatLive 2.5s infinite alternate ease-in-out; } 
     body::after { background: rgba(168, 32, 255, 0.20); bottom: -15%; right: -10%; animation: floatLive 3s infinite alternate-reverse ease-in-out; } 
-
     #splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s ease-in-out; }
-    .splash-logo { width: 630px; filter: drop-shadow(0 0 50px var(--primary)); animation: constantNeonPulse 2.5s infinite alternate ease-in-out, splashFinalZoom 3s forwards; opacity: 0; }
+    .splash-logo { width: 630px; filter: drop-shadow(0 0 50px #a820ff); animation: constantNeonPulse 2.5s infinite alternate ease-in-out, splashFinalZoom 3s forwards; opacity: 0; }
     @keyframes splashFinalZoom { 0% { transform: scale(0.75) translateY(20px); opacity: 0; filter: brightness(0) blur(25px); } 30% { opacity: 1; filter: brightness(1.8) blur(0px); } 100% { transform: scale(1) translateY(0); opacity: 1; } }
-    @keyframes constantNeonPulse { 0% { filter: drop-shadow(0 0 30px var(--primary)) brightness(0.9); } 100% { filter: drop-shadow(0 0 80px var(--primary)) brightness(1.4); } }
+    @keyframes constantNeonPulse { 0% { filter: drop-shadow(0 0 30px #a820ff) brightness(0.9); } 100% { filter: drop-shadow(0 0 80px #a820ff) brightness(1.4); } }
     .master-loader-box { width: 420px; height: 3px; background: rgba(255,255,255,0.02); margin: 60px auto 0; border-radius: 10px; overflow: hidden; opacity: 0; animation: fadeIn 0.5s 0.5s forwards; }
     .master-loader-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary)); box-shadow: 0 0 25px var(--accent); animation: loaderMasterFill 2.5s ease-in-out forwards; }
     @keyframes loaderMasterFill { 0% { width: 0%; } 100% { width: 100%; } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
     .sidebar { position: fixed; top: 0; left: 0; transform: translateX(calc(-100% + 15px)); width: 340px; height: 100vh; background: rgba(2, 2, 8, 0.98); border-right: 3px solid var(--primary); display: flex; flex-direction: column; padding: 30px 0; backdrop-filter: blur(80px); z-index: 9999; box-sizing: border-box; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s; animation: sideBorderGlow 3s infinite alternate ease-in-out; }
     @keyframes sideBorderGlow { 0% { border-color: var(--primary); box-shadow: 5px 0 20px rgba(168,32,255,0.6), inset -3px 0 15px rgba(168,32,255,0.3); } 100% { border-color: var(--accent); box-shadow: 8px 0 35px rgba(255,0,170,0.8), inset -5px 0 25px rgba(255,0,170,0.4); } }
     .sidebar::after { content: ''; position: absolute; top: 0; right: -60px; width: 60px; height: 100%; background: transparent; z-index: 10001; }
-    
-    .sidebar-trigger { position: absolute; left: 100%; top: auto; bottom: 60px; transform: none; padding: 12px 20px; background: rgba(2, 2, 8, 0.98); border: 3px solid var(--primary); border-left: none; border-radius: 0 15px 15px 0; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 950; font-size: 16px; letter-spacing: 4px; cursor: pointer; transition: 0.3s; z-index: 10000; animation: triggerBtnGlow 3s infinite alternate ease-in-out; white-space: nowrap; }
-    @keyframes triggerBtnGlow { 0% { border-color: var(--primary); box-shadow: 10px 0 20px rgba(168,32,255,0.6), inset 0 0 15px rgba(168,32,255,0.4); color: var(--primary); text-shadow: 0 0 10px var(--primary); } 100% { border-color: var(--secondary); box-shadow: 15px 0 35px rgba(0,229,255,0.8), inset 0 0 20px rgba(0,229,255,0.6); color: var(--secondary); text-shadow: 0 0 15px var(--secondary); } }
-    
+    .sidebar-trigger { position: absolute; left: 100%; top: auto; bottom: 60px; padding: 10px 12px; background: rgba(10, 10, 15, 0.95); border: 1px solid rgba(255,255,255,0.05); border-left: none; border-radius: 0 10px 10px 0; display: flex; align-items: center; justify-content: center; color: #666; font-weight: 800; font-size: 12px; letter-spacing: 3px; cursor: pointer; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 10000; box-shadow: 4px 0 15px rgba(0,0,0,0.5); white-space: nowrap; }
+    .sidebar:hover .sidebar-trigger, .sidebar-trigger:hover { background: rgba(168,32,255,0.15); color: #fff; border-color: var(--primary); box-shadow: 5px 0 25px rgba(168,32,255,0.4); text-shadow: 0 0 8px var(--primary); }
     .sidebar:hover { transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,0.9); }
     .nav-btn { background: transparent; color: #666; border: none; padding: 22px 40px; text-align: left; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.5s; border-left: 4px solid transparent; width: 100%; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; text-transform: uppercase; letter-spacing: 1px; }
     .nav-btn:hover { background: rgba(255,255,255,0.02); color: #fff; }
     .nav-btn.active { background: linear-gradient(90deg, rgba(168,32,255,0.12), transparent); color: #fff; border-left-color: var(--primary); font-weight: 800; }
     .done-badge { display: none; color: var(--success); font-size: 9px; font-weight: 900; border: 1px solid var(--success); padding: 2px 6px; border-radius: 4px; margin-left: 10px; flex-shrink: 0; }
-
     .panel { width: 100vw; height: 100vh; padding: 30px 80px 30px 100px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; box-sizing: border-box; position: relative; }
-    
     #mainContainer::before { content: ''; position: absolute; width: 50vw; height: 50vw; border-radius: 50%; background: rgba(255, 0, 170, 0.1); filter: blur(120px); z-index: -1; top: 20%; left: 25%; animation: floatLive 3s infinite alternate-reverse ease-in-out; pointer-events: none; }
-
     .header-system { width: 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 15px; margin-bottom: 20px; max-width: 1300px; }
     .montag-logo-main { grid-column: 1; justify-self: start; height: 95px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(168, 32, 255, 0.7)); animation: neonPulseTop 1.5s infinite alternate ease-in-out; }
     .header-system img.brand { grid-column: 3; justify-self: end; height: 75px; filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.3)); }
     .header-system h1 { margin: 0; font-size: 28px; font-weight: 950; background: linear-gradient(to right, var(--primary), var(--accent), var(--secondary), var(--primary)); background-size: 300% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: 4px; text-align: center; animation: gradientFlow 3s linear infinite; }
-
     .section { display: none; width: 100%; flex-direction: column; align-items: center; animation: epicFadeIn 0.8s ease-out; max-width: 1300px; }
     .section.active { display: flex; }
     @keyframes epicFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
     .dash-grid { width: 100%; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
     .dash-card { background: var(--card); border: 1px solid rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
     .dash-card:hover { transform: translateY(-8px); border-color: var(--primary); box-shadow: 0 20px 50px rgba(168,32,255,0.3); }
@@ -767,11 +836,9 @@ $html = @"
     .dash-card p { margin: 0; color: #777; font-size: 13px; }
     .card-status { margin-top: 20px; font-size: 11px; font-weight: 900; padding: 5px 15px; border-radius: 10px; background: rgba(255,255,255,0.05); color: #aaa; border: 1px solid #333; }
     .card-status.ok { background: rgba(40,167,69,0.1); color: var(--success); border-color: var(--success); }
-	
     .welcome-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 1150px; margin: 0 auto; animation: epicFadeIn 0.8s ease-out; }
     .welcome-header-row { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 25px; }
     .device-title { margin: 0; font-size: 34px; font-weight: 900; letter-spacing: 2px; text-align: center; line-height: 1.3; padding: 0 20px; background: linear-gradient(to right, #fff, var(--secondary), #fff, var(--accent), #fff); background-size: 300% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientFlow 4s linear infinite; filter: drop-shadow(0 0 15px rgba(0,229,255,0.3)); }
-    
     .spec-grid-custom { display: flex; flex-direction: column; gap: 12px; width: 100%; }
     .spec-row-split { display: flex; gap: 12px; width: 100%; }
     .spec-row-split > div { flex: 1; }
@@ -780,31 +847,19 @@ $html = @"
     .spec-card-mini.accent { border-left-color: var(--secondary); align-items: center; flex-direction: row; justify-content: space-between; text-align: left; }
     .spec-label-mini { font-size: 11px; color: #a0a0ab; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 800; display:block; }
     .spec-value-mini { font-size: 15px; font-weight: 500; color: #fff; line-height: 1.4; }
-    
     .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-top: 8px; margin-right: 6px; text-transform: uppercase; border: 1px solid transparent; }
     .progress-bg { width: 100%; height: 5px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 12px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary), var(--primary)) !important; background-size: 300% 100% !important; animation: gradientFlow 1.5s linear infinite !important; }
-
     @keyframes fastPulseBtn { 0% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0.6); } 70% { box-shadow: 0 0 0 20px rgba(168, 32, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0); } }
     @keyframes hyperGradientFast { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-
-    .welcome-container button[onclick="startDiagnosticHub()"] { background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary), var(--accent)) !important; background-size: 200% 100% !important; animation: hyperGradientFast 0.4s linear infinite, fastPulseBtn 0.8s infinite !important; border-color: transparent !important; color: #fff !important; text-shadow: 0 2px 5px rgba(0,0,0,0.5); font-weight: 900; }
-    
-    .btn-action-pro { margin-top: 20px; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border: none; padding: 18px 75px; font-size: 16px; font-weight: 950; border-radius: 50px; cursor: pointer; text-transform: uppercase; transition: 0.4s; }
-    .btn-action-pro:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(168,32,255,0.4); }
-
-    .btn-hero { width: 100%; background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary)); background-size: 200% 100%; animation: hyperGradientFast 0.8s linear infinite; color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 15px; font-size: 16px; font-weight: 950; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 30px rgba(168,32,255,0.4); margin-bottom: 20px; }
-    .btn-hero:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(255,0,170,0.6); }
-
+    .welcome-container button[onclick="startDiagnosticHub()"] { background-image: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent), var(--primary)) !important; background-size: 300% 100% !important; background-position: 0% 50%; animation: gradientFlow 2.5s ease-in-out infinite, fastPulseBtn 1.5s infinite !important; border-color: transparent !important; color: #fff !important; text-shadow: 0 2px 5px rgba(0,0,0,0.5); font-weight: 900; }    .btn-hero:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(255,0,170,0.6); }
     .btn-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; width: 100%; margin-top: 10px; }
     .btn-grid { background: rgba(255,255,255,0.03); color: #ccc; border: 1px solid rgba(255,255,255,0.06); padding: 22px 15px; border-radius: 15px; cursor: pointer; font-weight: 800; text-transform: uppercase; font-size: 13px; transition: 0.3s; display: flex; align-items: center; justify-content: center; letter-spacing: 1px; }
     .btn-grid:hover { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border-color: transparent; transform: translateY(-4px); box-shadow: 0 12px 25px rgba(168,32,255,0.3); }
-
     .test-view { display: none; width: 100%; flex-direction: column; align-items: center; animation: epicFadeIn 0.5s ease-out; }
     .test-view.active { display: flex; }
     .btn-back { align-self: flex-start; background: transparent; border: 1px solid #444; color: #aaa; padding: 10px 25px; border-radius: 30px; cursor: pointer; font-weight: 800; transition: 0.3s; margin-bottom: 30px; text-transform: uppercase; }
     .btn-back:hover { background: #222; color: #fff; border-color: #888; }
-    
     .kb-frame { display: flex; gap: 15px; background: var(--card); padding: 40px; border-radius: 35px; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 45px 120px rgba(0,0,0,0.85); white-space: nowrap; }
     .kb-row { display: flex; gap: 8px; margin-bottom: 8px; justify-content: flex-start; }
     .key { background: #0f0f15; border: 1px solid #222; border-radius: 10px; color: #555; font-size: 8.5px; display: flex; align-items: center; justify-content: center; min-width: 50px; height: 50px; transition: 0.1s; font-weight: 750; }
@@ -813,9 +868,7 @@ $html = @"
     .nav-row-up { display: flex; justify-content: center; width: 100%; margin-top: 15px; }
     .nav-row-bottom { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
     .test-card-ultimate { background: var(--card); padding: 70px; border-radius: 40px; text-align: center; width: 100%; max-width: 800px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 30px 90px rgba(0,0,0,0.6); }
-    
     video { width: 100%; border-radius: 20px; margin-top: 30px; border: 4px solid var(--primary); background: #000; }
-
     .input-group { margin-bottom: 15px; width: 100%; text-align: left; }
     .input-group label { display: block; font-size: 12px; color: #a0a0ab; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 800; }
     .input-group input, .input-group textarea { width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: #00e5ff; border-radius: 8px; font-family: inherit; margin-bottom: 10px; outline: none; box-sizing: border-box; font-size: 14px; }
@@ -907,7 +960,6 @@ $html = @"
                     <span>START<br>TESTS</span>
                 </button>
             </div>
-
         </div>
 
         <div id="hw-dashboard" class="dash-grid" style="display: none;">
@@ -916,7 +968,7 @@ $html = @"
             <div class="dash-card" onclick="openTest('test-au')"><h3>Stereo Engine</h3><p>Acoustic Verification</p><div class="card-status" id="c-stat-au">PENDING</div></div>
             <div class="dash-card" onclick="openTest('test-to')"><h3>Touch Digitizer</h3><p>Matrix Scan</p><div class="card-status" id="c-stat-to">PENDING</div></div>
             <div class="dash-card" onclick="openTest('test-ca')"><h3>Webcam Sensor</h3><p>Visual Stream</p><div class="card-status" id="c-stat-ca">PENDING</div></div>
-            <div class="dash-card" onclick="runCmd('BATTERY')" style="border-color:#ff007f;"><h3>Real Battery Drain</h3><p>Offline Video Logger</p><div class="card-status" style="border-color:#ff007f; color:#ff007f;">UTILITY</div></div>
+            <div class="dash-card" onclick="runCmd('BATTERY')" style="border-color:#ff007f;"><h3>Real Battery Drain</h3><p>Virtual Engine Logger</p><div class="card-status" style="border-color:#ff007f; color:#ff007f;">UTILITY</div></div>
         </div>
 
         <div id="test-kb" class="test-view">
@@ -984,6 +1036,7 @@ $html = @"
     <div id="tab-drv" class="section">
         <div class="test-card-ultimate" style="max-width: 900px; padding: 50px;">
             <h2 style="margin-bottom: 30px; letter-spacing: 2px;">Driver Management Center</h2>
+            <button class="btn-hero" style="background: linear-gradient(90deg, #f59e0b, #ef4444); box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4); margin-bottom: 25px; border-radius: 15px;" onclick="runCmd('DRV_MISSING')">AUTO-SCAN & DOWNLOAD MISSING DRIVERS</button>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
                 <button class="btn-grid" style="font-size: 15px; padding: 25px; border-color: var(--primary);" onclick="runCmd('DRV_BACKUP')">SMART BACKUP DRIVERS</button>
                 <button class="btn-grid" style="font-size: 15px; padding: 25px; border-color: var(--secondary);" onclick="runCmd('DRV_RESTORE')">SMART RESTORE DRIVERS</button>
@@ -1148,7 +1201,8 @@ $html = @"
     function runCmd(actionName) {
         let originalTitle = document.title;
         document.title = "MONTAG_CMD_" + actionName;
-        setTimeout(() => { document.title = originalTitle; }, 600);
+        // INCREASED TIMEOUT TO 1500ms TO FIX POWERSHELL INTERCEPT DELAY ON SLOW MACHINES
+        setTimeout(() => { document.title = originalTitle; }, 1500);
     }
 
     const masterReq = ['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12','Escape','Delete','Insert','Home','PageUp','PageDown','End','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal','Backspace','KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight','Backslash','KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote','Enter','KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash','ShiftLeft','ShiftRight','ControlLeft','ControlRight','AltLeft','AltRight','MetaLeft','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
@@ -1253,11 +1307,16 @@ $html = @"
 
     window.addEventListener('touchmove', function(e) { if(document.getElementById('touch-surface-master').style.display === 'block') actTouch(e); }, {passive: false});
     window.addEventListener('mousemove', function(e) { if(document.getElementById('touch-surface-master').style.display === 'block' && e.buttons === 1) actTouch(e); });
-    function finalizeTouch(st) { document.getElementById('touch-surface-master').style.display = 'none'; doneTests.to = true; document.getElementById('c-stat-to').innerText = st; document.getElementById('c-stat-to').className = st === "OK" ? "card-status ok" : "card-status"; document.title = "MONTAG_TO_" + st; checkHubStatus(); closeTest(); }
+    function finalizeTouch(st) { document.getElementById('touch-surface-master').style.display = 'none';
+    doneTests.to = true; document.getElementById('c-stat-to').innerText = st; document.getElementById('c-stat-to').className = st === "OK" ? "card-status ok" : "card-status";
+    document.title = "MONTAG_TO_" + st; checkHubStatus(); closeTest(); }
     document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && document.getElementById('touch-surface-master').style.display === 'block') { let a = document.querySelectorAll('.touched').length; finalizeTouch(a >= 238 ? "OK" : "X"); } });
     
-    async function toggleC() { try { stream = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('vid').srcObject = stream; document.getElementById('vid').style.display = 'block'; document.getElementById('caDec').style.display = 'block'; } catch(e) { alert('Lens Sensor Denied.'); } }
-    function verifyCA(st) { if(stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } document.getElementById('vid').style.display = 'none'; document.getElementById('caDec').style.display = 'none'; doneTests.ca = true; document.getElementById('c-stat-ca').innerText = st; document.getElementById('c-stat-ca').className = st === "OK" ? "card-status ok" : "card-status"; document.title = "MONTAG_CA_" + st; checkHubStatus(); closeTest(); }
+    async function toggleC() { try { stream = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('vid').srcObject = stream; document.getElementById('vid').style.display = 'block'; document.getElementById('caDec').style.display = 'block';
+    } catch(e) { alert('Lens Sensor Denied.'); } }
+    function verifyCA(st) { if(stream) { stream.getTracks().forEach(t => t.stop());
+    stream = null; } document.getElementById('vid').style.display = 'none'; document.getElementById('caDec').style.display = 'none'; doneTests.ca = true; document.getElementById('c-stat-ca').innerText = st;
+    document.getElementById('c-stat-ca').className = st === "OK" ? "card-status ok" : "card-status"; document.title = "MONTAG_CA_" + st; checkHubStatus(); closeTest(); }
 
     function handleSell() {
         var section = document.getElementById('clientSection');
@@ -1312,7 +1371,6 @@ $html = @"
         if(!tester) { alert("Tester Name Required!"); return; }
         
         var finalStatus = updateLiveChecklist();
-
         let k_st = document.getElementById('c-stat-kb').innerText;
         let s_st = document.getElementById('c-stat-sc').innerText;
         let a_st = document.getElementById('c-stat-au').innerText;
@@ -1324,7 +1382,6 @@ $html = @"
 
         var userNotes = document.getElementById('userNotes').value.trim();
         var clientInfo = "";
-        
         if (type === 'SELL') {
             clientInfo = document.getElementById('clientName').value + " - " + document.getElementById('clientPhone').value;
             if (userNotes) { finalStatus += " | NOTES: " + userNotes; }
@@ -1351,14 +1408,55 @@ $html = @"
     }
 
     function exitHub() { document.title = "MONTAG_CMD_EXIT"; setTimeout(() => window.close(), 1500); }
+
+    // --- Live Temperature Sync ---
+    function updateLiveTemps(cpu, cColor, gpu, gColor) {
+        let ct = document.getElementById('live-cpu-temp');
+        if(ct) { ct.innerText = 'TEMP: ' + cpu; ct.style.color = cColor; ct.style.borderColor = cColor; ct.style.backgroundColor = cColor + '20'; }
+        let gt = document.getElementById('live-gpu-temp');
+        if(gt && gpu !== 'N/A') { gt.innerText = 'TEMP: ' + gpu; gt.style.color = gColor; gt.style.borderColor = gColor; gt.style.backgroundColor = gColor + '20'; }
+    }
+    setInterval(() => {
+        let s = document.createElement('script');
+        s.src = 'file:///C:/MontagTools/live_temp.js?t=' + Date.now();
+        document.body.appendChild(s);
+        s.onload = () => document.body.removeChild(s);
+        s.onerror = () => document.body.removeChild(s);
+    }, 2000);
+
+    // --- Desktop Battery Test Skip ---
+    if ("$batHealth" === "No Battery") {
+        document.querySelectorAll('.dash-card').forEach(card => {
+            if(card.getAttribute('onclick') === "runCmd('BATTERY')") {
+                card.style.display = 'none';
+            }
+        });
+    }
 </script>
 </body>
 </html>
 "@
+
 $html | Out-File $GuiFile -Encoding UTF8
 
 Start-Process "msedge" -ArgumentList "--new-window --kiosk --edge-kiosk-type=fullscreen `"$GuiFile`""
 Start-Sleep -Seconds 2
+
+# --- TEMP LOGGER BACKGROUND JOB ---
+$TempJS = "$env:SystemDrive\MontagTools\live_temp.js"
+Set-Content -Path $TempJS -Value "" -Force
+$TempJob = Start-Job -ScriptBlock {
+    param($jsPath)
+    while($true) {
+        $c = "N/A"; $g = "N/A"; $cc = "#a0a0ab"; $gc = "#a0a0ab"
+        try { $tz = Get-CimInstance -Namespace "root/wmi" -ClassName "MSAcpi_ThermalZoneTemperature" -ErrorAction SilentlyContinue | Select-Object -First 1; if($tz){ $val = [math]::Round(($tz.CurrentTemperature/10)-273.15); if($val -gt 0 -and $val -lt 150){ $c = "$val C"; if($val -ge 85){$cc="#ef4444"}elseif($val -ge 75){$cc="#f59e0b"}else{$cc="#28a745"} } } } catch{}
+        try { $nvsmi = "$env:windir\System32\nvidia-smi.exe"; if(Test-Path $nvsmi){ $gInfo = &$nvsmi --query-gpu=temperature.gpu --format=csv,noheader; if($gInfo -match "\d+"){ $val=[int]$matches[0]; $g = "$val C"; if($val -ge 85){$gc="#ef4444"}elseif($val -ge 75){$gc="#f59e0b"}else{$gc="#28a745"} } } } catch{}
+        $out = "if(typeof updateLiveTemps === 'function') { updateLiveTemps('$c', '$cc', '$g', '$gc'); }"
+        Set-Content -Path $jsPath -Value $out -Encoding UTF8 -Force
+        Start-Sleep -Seconds 2
+    }
+} -ArgumentList $TempJS
+
 
 # --- MEMORY UPGRADE: ZERO-DISK I/O WITH ANTI-DUPLICATE ---
 $kb_st = "PENDING"; $sc_st = "PENDING"; $au_st = "PENDING"; $to_st = "PENDING"; $ca_st = "PENDING"
@@ -1383,16 +1481,18 @@ while ($true) {
                 }
             }
             
-            # --- PREVENT COMMAND DUPLICATION ---
-            if ($title -match "MONTAG_CMD_(.+)") { 
+            # --- PREVENT COMMAND DUPLICATION (REGEX FIXED FOR MICROSOFT EDGE SUFFIX) ---
+            if ($title -match "MONTAG_CMD_([A-Z0-9_]+)") { 
                 $cmd = $matches[1]
                 if ($cmd -ne $last_cmd) { 
                     $last_cmd = $cmd 
                     if ($cmd -eq "EXIT") { 
-                        Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG_" } | Stop-Process -Force -ErrorAction SilentlyContinue
+                        Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG" } | Stop-Process -Force -ErrorAction SilentlyContinue
+                        Stop-Job $TempJob -Force -ErrorAction SilentlyContinue
+                        Remove-Job $TempJob -Force -ErrorAction SilentlyContinue
                         break
                     }
-                    Start-Process cmd -ArgumentList "/c `"`"$env:SystemDrive\MontagTools\MontagCore.bat`" CMD_$cmd`"" -WindowStyle Normal
+                    Start-Process -FilePath "$env:SystemDrive\MontagTools\MontagCore.bat" -ArgumentList "CMD_$cmd" -WindowStyle Normal
                 }
             } elseif ($title -notmatch "MONTAG_CMD_") {
                 $last_cmd = "" 
@@ -1430,37 +1530,29 @@ $ClientReport = @"
 <title>Montag Store - Premium Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;800&display=swap" rel="stylesheet">
 <style>
-    :root { --primary: #a820ff; --secondary: #00e5ff; --bg: #050505; --card-bg: rgba(15, 15, 20, 0.75); }
+    :root { --primary: $($ColorPrimary); --secondary: $($ColorSecondary); --bg: #050505; --card-bg: rgba(15, 15, 20, 0.75); }
     body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; overflow-y: auto; position: relative; z-index: 1; }
-
     body::before, body::after { content: ''; position: absolute; width: 60vw; height: 60vw; border-radius: 50%; filter: blur(120px); z-index: -1; animation: floatOrbs 3.5s infinite ease-in-out alternate; }
     body::before { background: rgba(0, 229, 255, 0.12); top: -15%; left: -10%; } 
     body::after { background: rgba(168, 32, 255, 0.20); bottom: -15%; right: -10%; animation-delay: -1.5s; } 
     @keyframes floatOrbs { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(5%, 5%) scale(1.15); } }
-
     .outside-logo { display: flex; justify-content: center; margin-bottom: 15px; z-index: 10; }
-    .outside-logo img { height: 200px; filter: drop-shadow(0 0 20px rgba(168, 32, 255, 0.7)); animation: neonPulseTop 1.5s infinite alternate ease-in-out; }
-    @keyframes neonPulseTop { 0% { filter: drop-shadow(0 0 10px rgba(168, 32, 255, 0.5)) scale(1); } 100% { filter: drop-shadow(0 0 40px rgba(168, 32, 255, 1)) scale(1.08); } }
-
+    .outside-logo img { height: 200px; filter: drop-shadow(0 0 20px #a820ff); animation: neonPulseTop 1.5s infinite alternate ease-in-out; }
+    @keyframes neonPulseTop { 0% { filter: drop-shadow(0 0 10px rgba(168, 32, 255, 0.5)) scale(1); } 100% { filter: drop-shadow(0 0 40px #a820ff) scale(1.08); } }
     .container { max-width: 780px; width: 100%; background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 25px 30px; box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6); max-height: 85vh; overflow-y: auto; }
     .container::-webkit-scrollbar { width: 8px; }
     .container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-    
     .header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 15px; margin-bottom: 20px; }
-    
     .header img.brand { justify-self: start; height: 110px; width: auto; max-width: 140px; object-fit: contain; filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.4)); }
     .header .title-box { justify-self: center; text-align: center; }
     .header img.cpu-logo { justify-self: end; height: 80px; width: auto; max-width: 120px; object-fit: contain; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.15)); }
-
     .title-box h1 { margin: 0; font-size: 24px; font-weight: 800; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: 1px; }
     .title-box p { margin: 5px 0 0 0; color: #a0a0ab; font-size: 13px; letter-spacing: 1px; }
-
     .specs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
     .spec-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 12px 18px; transition: all 0.3s ease; position: relative; overflow: hidden; border-left: 4px solid var(--primary); }
     .spec-card:hover { transform: translateY(-3px); border-color: rgba(168, 32, 255, 0.5); box-shadow: 0 10px 20px rgba(168, 32, 255, 0.15); background: rgba(255, 255, 255, 0.05); }
     .spec-label { font-size: 11px; color: #a0a0ab; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; font-weight: 800; }
     .spec-value { font-size: 15px; font-weight: 500; color: #fff; }
-    
     .actions { margin-top: 25px; display: flex; gap: 12px; flex-wrap: wrap; }
     .btn { flex: 1; min-width: 180px; padding: 12px; border: none; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: all 0.3s ease; text-align: center; text-decoration: none; display: flex; justify-content: center; align-items: center; gap: 10px; }
     .btn-copy { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
@@ -1546,7 +1638,6 @@ $ClientReport = @"
                          "*Status:* $FinalStatusLog\n\n" +
                          "Verified by Montag Store System [OK]";
         forceCopyText(textToCopy);
-        
         var originalText = btn.innerHTML;
         btn.innerHTML = "Copied to Clipboard! [OK]";
         btn.style.background = "#28a745";
@@ -1580,3 +1671,159 @@ Remove-Item -Path "$env:SystemDrive\MontagOffice" -Recurse -Force -ErrorAction S
 Remove-Item -Path "$env:TEMP\Montag*" -Recurse -Force -ErrorAction SilentlyContinue
 
 exit
+
+:::__LOGGER_CORE_START__:::
+$host.UI.RawUI.WindowTitle = "Montag Realistic Battery Test"
+$sys = Get-CimInstance Win32_ComputerSystem
+$mfg = $sys.Manufacturer
+$mod = $sys.Model.Trim()
+$ser = (Get-CimInstance Win32_Bios).SerialNumber.Trim()
+$start = Get-Date
+$montagLogo = 'https://www.dropbox.com/scl/fi/2qv201jvm18n3c971436o/Logo-purple.png?rlkey=b8n5e732fsepkadzg7y10gj1k&st=7q4k6jll&raw=1'
+$brandLogo = 'https://cdn.simpleicons.org/windows/00e5ff'
+if ($mfg -match 'Dell') { $brandLogo = 'https://cdn.simpleicons.org/dell/0076CE' } elseif ($mfg -match 'HP' -or $mfg -match 'Hewlett') { $brandLogo = 'https://cdn.simpleicons.org/hp/0096D6' } elseif ($mfg -match 'Lenovo') { $brandLogo = 'https://cdn.simpleicons.org/lenovo/E2231A' }
+
+$liveHtml = 'C:\MontagTools\MontagLiveDrain.html'
+$reportHtml = 'C:\MontagBatteryReport.html'
+$history = @()
+
+Write-Host "`n   [ REALISTIC USAGE ENGINE RUNNING ]" -ForegroundColor Magenta
+Write-Host "   Simulating Video Playback & Browsing Load (~5% CPU/GPU)" -ForegroundColor Gray
+Write-Host "   DO NOT CLOSE THIS WINDOW!`n" -ForegroundColor Yellow
+
+while ($true) {
+    $now = Get-Date
+    $diff = $now - $start
+    $b = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue
+    $bat = if ($b) { $b.EstimatedChargeRemaining } else { '0' }
+    $timeStr = $now.ToString('hh:mm tt')
+    $elapsedStr = "{0:hh\:mm\:ss}" -f $diff
+    $history += [PSCustomObject]@{ Time = $timeStr; Elapsed = $elapsedStr; Battery = $bat }
+    
+    $jsVals = @()
+    foreach ($h in $history) { $jsVals += "['$($h.Elapsed)', $($h.Battery)]" }
+    $jsArray = $jsVals -join ","
+    
+    $rows = ""
+    foreach ($h in $history) {
+        $c = if([int]$h.Battery -ge 70){'good'}elseif([int]$h.Battery -ge 30){'warn'}else{'danger'}
+        $rows += "<tr><td>$($h.Time)</td><td>$($h.Elapsed)</td><td class='$c'><strong>$($h.Battery)%</strong></td></tr>"
+    }
+    
+    # --- 1. LIVE HTML (Realistic Load Simulation) ---
+    $htmlLive = @"
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="60"><title>Montag Battery Test</title>
+<style>
+body{font-family:'Segoe UI',sans-serif;margin:0;padding:40px;background:#050505; color:#fff; height:100vh; box-sizing:border-box; overflow:hidden;}
+.header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #a820ff;padding-bottom:15px;margin-bottom:20px;background:rgba(20,20,25,0.8);padding:20px;border-radius:15px; position:relative; z-index:10;}
+.logos img{height:60px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;position:relative;z-index:10;}
+.info-box{background:rgba(20,20,25,0.8);padding:20px;border-radius:10px;border-left:4px solid #00e5ff;backdrop-filter:blur(10px);}
+.val{font-size:24px;font-weight:bold;color:#00e5ff;}
+.chart-container{width:100%;height:120px;background:rgba(20,20,25,0.8);border:1px solid #333;border-radius:10px;position:relative;margin-bottom:15px;overflow:hidden;backdrop-filter:blur(10px); z-index:10;}
+.bar{position:absolute;bottom:0;width:12px;background:linear-gradient(to top, #a820ff, #00e5ff);border-radius:5px 5px 0 0;transition:height 0.5s;}
+table{width:100%;border-collapse:collapse;background:rgba(20,20,25,0.8);margin-top:10px;}
+th,td{padding:10px;border:1px solid rgba(255,255,255,0.1);text-align:center;}
+th{background:rgba(168,32,255,0.4);color:#fff;}
+.good{color:#28a745;} .warn{color:#f59e0b;} .danger{color:#ef4444;}
+#loadCanvas{position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:1; pointer-events:none;}
+</style></head><body>
+
+<canvas id="loadCanvas"></canvas>
+
+<div class="header">
+<img src="$montagLogo" style="height:70px;">
+<div style="text-align:center"><h1 style="margin:0;color:#00e5ff;letter-spacing:2px;">REALISTIC DRAIN TEST (LIVE)</h1><p style="margin:5px 0 0;color:#ccc;">Simulating Video Playback Load</p></div>
+<img src="$brandLogo" style="height:55px;filter:brightness(0) invert(1);">
+</div>
+<div class="info-grid">
+<div class="info-box"><div style="color:#aaa;font-size:12px;">DEVICE INFO</div><div style="margin-top:10px;">Model: <span class="val" style="font-size:18px;">$mod</span><br>Serial: <span class="val" style="font-size:18px;">$ser</span></div><div style="margin-top:10px;color:#aaa;font-size:12px;">Date: $($now.ToString('yyyy-MM-dd')) | Started: $($start.ToString('hh:mm tt'))</div></div>
+<div class="info-box" style="border-left-color:#a820ff;"><div style="color:#aaa;font-size:12px;">LIVE TIMER (ELAPSED)</div><div class="val" id="liveTimer" style="margin-top:10px;font-size:45px;letter-spacing:3px;">$elapsedStr</div><div style="color:#aaa;font-size:12px;margin-top:5px;">Current Battery: <span style="color:#fff;font-size:16px;font-weight:bold;">$bat%</span></div></div>
+</div>
+<h3 style="color:#fff;text-shadow:0 2px 4px #000; margin-bottom:10px; position:relative; z-index:10; font-size:16px;">Drain Graph & Log</h3>
+<div class="chart-container" id="chart"></div>
+<div style="max-height:350px;overflow-y:auto;border-radius:10px; position:relative; z-index:10;">
+<table><tr><th>Time</th><th>Elapsed</th><th>Battery Percent</th></tr>
+$rows
+</table></div>
+<script>
+// Graph Logic
+var data=[$jsArray]; var c=document.getElementById('chart'); var w=c.clientWidth; var gap=(w-40)/(data.length>1?data.length-1:1);
+for(var i=0;i<data.length;i++){ var b=document.createElement('div'); b.className='bar'; b.style.height=data[i][1]+'%'; b.style.left=(20+(i*gap))+'px'; b.title='Time: '+data[i][0]+' | '+data[i][1]+'%'; c.appendChild(b); }
+var tSecs = Math.floor($($diff.TotalSeconds));
+setInterval(function(){ tSecs++; var h=Math.floor(tSecs/3600); var m=Math.floor((tSecs%3600)/60); var s=tSecs%60; document.getElementById('liveTimer').innerText = (h<10?'0'+h:h)+':'+(m<10?'0'+m:m)+':'+(s<10?'0'+s:s); }, 1000);
+// --- Realistic Load Engine (~5% CPU/GPU Simulation) ---
+var lC = document.getElementById('loadCanvas');
+var lCtx = lC.getContext('2d');
+function resizeL(){ lC.width=window.innerWidth; lC.height=window.innerHeight; }
+window.addEventListener('resize', resizeL); resizeL();
+var pts = [];
+for(var j=0; j<30; j++) pts.push({x:Math.random()*lC.width, y:Math.random()*lC.height, vx:Math.random()*2-1, vy:Math.random()*2-1});
+function simLoad() {
+    lCtx.fillStyle = 'rgba(5, 5, 5, 0.2)';
+    lCtx.fillRect(0, 0, lC.width, lC.height);
+    lCtx.fillStyle = '#a820ff';
+    for(var j=0; j<pts.length; j++) {
+        var p = pts[j]; p.x += p.vx; p.y += p.vy;
+        if(p.x<0 || p.x>lC.width) p.vx*=-1; if(p.y<0 || p.y>lC.height) p.vy*=-1;
+        lCtx.beginPath(); lCtx.arc(p.x, p.y, 1.5, 0, 6.28); lCtx.fill();
+    }
+    for(var k=0; k<2000; k++) Math.sin(k);
+    setTimeout(function() { requestAnimationFrame(simLoad); }, 33);
+}
+simLoad();
+</script></body></html>
+"@
+
+    # --- 2. STATIC REPORT HTML ---
+    $htmlReport = @"
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Montag Battery Report</title>
+<style>
+body{font-family:'Segoe UI',sans-serif;margin:0;padding:40px;background: #050505; color:#fff; box-sizing:border-box;}
+.header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #a820ff;padding-bottom:15px;margin-bottom:20px;background:rgba(20,20,25,0.8);padding:20px;border-radius:15px;}
+.logos img{height:60px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.info-box{background:rgba(20,20,25,0.8);padding:20px;border-radius:10px;border-left:4px solid #00e5ff;}
+.val{font-size:24px;font-weight:bold;color:#00e5ff;}
+.chart-container{width:100%;height:150px;background:rgba(20,20,25,0.8);border:1px solid #333;border-radius:10px;position:relative;margin-bottom:15px;overflow:hidden;}
+.bar{position:absolute;bottom:0;width:12px;background:linear-gradient(to top, #a820ff, #00e5ff);border-radius:5px 5px 0 0;transition:height 0.5s;}
+table{width:100%;border-collapse:collapse;background:rgba(20,20,25,0.8);margin-top:10px;}
+th,td{padding:10px;border:1px solid rgba(255,255,255,0.1);text-align:center;}
+th{background:rgba(168,32,255,0.4);color:#fff;}
+.good{color:#28a745;} .warn{color:#f59e0b;} .danger{color:#ef4444;}
+</style></head><body>
+<div class="header">
+<img src="$montagLogo" style="height:70px;">
+<div style="text-align:center"><h1 style="margin:0;color:#00e5ff;letter-spacing:2px;">FINAL BATTERY DRAIN REPORT</h1><p style="margin:5px 0 0;color:#aaa;">Montag Store Official Diagnostic</p></div>
+<img src="$brandLogo" style="height:55px;filter:brightness(0) invert(1);">
+</div>
+<div class="info-grid">
+<div class="info-box"><div style="color:#aaa;font-size:12px;">DEVICE INFO</div><div style="margin-top:10px;">Model: <span class="val" style="font-size:18px;">$mod</span><br>Serial: <span class="val" style="font-size:18px;">$ser</span></div><div style="margin-top:10px;color:#aaa;font-size:12px;">Date: $($now.ToString('yyyy-MM-dd')) | Started: $($start.ToString('hh:mm tt'))</div></div>
+<div class="info-box" style="border-left-color:#a820ff;"><div style="color:#aaa;font-size:12px;">TOTAL DURATION RECORDED</div><div class="val" style="margin-top:10px;font-size:45px;letter-spacing:3px;">$elapsedStr</div><div style="color:#aaa;font-size:12px;margin-top:5px;">Ending Battery: <span style="color:#fff;font-size:16px;font-weight:bold;">$bat%</span></div></div>
+</div>
+<h3 style="color:#fff; margin-bottom:10px; font-size:16px;">Drain Graph & Log</h3>
+<div class="chart-container" id="chart"></div>
+<div style="max-height:400px;overflow-y:auto;border-radius:10px;">
+<table><tr><th>Time</th><th>Elapsed</th><th>Battery Percent</th></tr>
+$rows
+</table></div>
+<script>
+var data=[$jsArray]; var c=document.getElementById('chart'); var w=c.clientWidth; var gap=(w-40)/(data.length>1?data.length-1:1);
+for(var i=0;i<data.length;i++){ var b=document.createElement('div'); b.className='bar'; b.style.height=data[i][1]+'%'; b.style.left=(20+(i*gap))+'px'; b.title='Time: '+data[i][0]+' | '+data[i][1]+'%'; c.appendChild(b); }
+</script></body></html>
+"@
+
+    Set-Content -Path $liveHtml -Value $htmlLive -Encoding UTF8 -Force
+    
+    # Save Real Report to C: and create a Shortcut with Custom Icon
+    $realBatHtml = "$env:SystemDrive\MontagBatteryReport.html"
+    Set-Content -Path $realBatHtml -Value $htmlReport -Encoding UTF8 -Force
+    
+    $batShortcut = "$env:USERPROFILE\Desktop\Battery Report - $mod.url"
+    $batIcon = "$env:ProgramData\MontagStore\Montag.ico"
+    $scContent = "[InternetShortcut]`r`nURL=file:///$realBatHtml`r`nIconIndex=0`r`nIconFile=$batIcon"
+    [System.IO.File]::WriteAllText($batShortcut, $scContent)
+    
+    Write-Host "`r   Elapsed: $elapsedStr    | Battery: $bat%   " -NoNewline -ForegroundColor Cyan
+    Start-Sleep -Seconds 60
+}
