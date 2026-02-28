@@ -40,12 +40,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%Hu
 exit
 
 :: ==============================================================================
-:: [4] OS COMMAND ROUTER
+:: [4] OS COMMAND ROUTER (STEALTH LOGGING INCLUDED)
 :: ==============================================================================
 :ROUTER
 mode con: cols=85 lines=25
 color 0B
 title Montag Store - Executing Task...
+
+:: Stealth Logging for Commands
+echo [%DATE% %TIME%] CMD_EXEC: %~1 >> "%SystemDrive%\MontagTools\debug.log"
 
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (set "ESC=%%b")
 set "Reset=%ESC%[0m"
@@ -75,11 +78,10 @@ if "%~1"=="CMD_DRV_RESTORE" goto DO_DRV_RESTORE
 if "%~1"=="CMD_APP_GAMING" goto DO_APP_GAMING
 
 if "%~1"=="CMD_BATTERY" goto DO_BATTERY
+if "%~1"=="CMD_BATTERY_NATIVE" goto DO_BAT_NATIVE
 if "%~1"=="CMD_CHARGER_TEST" goto DO_CHARGER
 
-:: ============================================================
-:: ISOLATED STRESS TEST COMMANDS (BUG FIXED)
-:: ============================================================
+:: ISOLATED STRESS TEST COMMANDS
 if "%~1"=="CMD_CPU_30" ( set "SType=CPU" & set "SDur=30" & goto DO_STRESS )
 if "%~1"=="CMD_CPU_60" ( set "SType=CPU" & set "SDur=60" & goto DO_STRESS )
 if "%~1"=="CMD_CPU_INF" ( set "SType=CPU" & set "SDur=0" & goto DO_STRESS )
@@ -92,9 +94,7 @@ if "%~1"=="CMD_GPU_30" ( set "SType=GPU" & set "SDur=30" & goto DO_STRESS )
 if "%~1"=="CMD_GPU_60" ( set "SType=GPU" & set "SDur=60" & goto DO_STRESS )
 if "%~1"=="CMD_GPU_INF" ( set "SType=GPU" & set "SDur=0" & goto DO_STRESS )
 
-:: ============================================================
-:: ISOLATED UTILITY COMMANDS (BUG FIXED)
-:: ============================================================
+:: ISOLATED UTILITY COMMANDS
 if "%~1"=="CMD_UPDATE" ( start ms-settings:windowsupdate & exit )
 if "%~1"=="CMD_OEM_DELL" ( start "" "https://downloads.dell.com/serviceability/catalog/SupportAssistinstaller.exe" & exit )
 if "%~1"=="CMD_OEM_HP" ( start "" "https://ftp.hp.com/pub/softpaq/sp168501-169000/sp168523.exe" & exit )
@@ -452,6 +452,16 @@ echo   To stop, close the Browser window and the PowerShell window.
 echo.
 goto :EOF
 
+:DO_BAT_NATIVE
+cls
+echo %Cyan%Generating Native Windows Battery Report...%Reset%
+set "NatBatPath=%SystemDrive%\MontagBatteryNative.html"
+powercfg /batteryreport /output "%NatBatPath%" >nul 2>&1
+if exist "%NatBatPath%" start msedge "%NatBatPath%"
+echo %Green%[OK] Native Battery Report Generated and Opened.%Reset%
+timeout /t 3 >nul
+goto :EOF
+
 :DO_CHARGER
 set "PSChg=%ToolDir%\MontagCharger.ps1"
 if exist "%PSChg%" del "%PSChg%"
@@ -565,6 +575,14 @@ goto :EOF
 :::__HUB_CORE_START__:::
 param($MFG)
 
+# --- STEALTH LOGGING SETUP ---
+$LogFile = "$env:SystemDrive\MontagTools\debug.log"
+function Log-Diag ($msg) { 
+    $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    "$ts | $msg" | Out-File $LogFile -Append -Encoding UTF8 -ErrorAction SilentlyContinue
+}
+Log-Diag "=== MONTAG QUANTUM ENGINE INIT ==="
+
 Add-Type -Name ConsoleHider -Namespace Win32 -MemberDefinition '
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -601,192 +619,8 @@ elseif ($MFG -match "Lenovo") {
     $ColorPrimary = "#E2231A"; $ColorSecondary = "#ff4d4d"
 }
 
-# --- FAST HARDWARE SCAN FOR WELCOME SCREEN & REPORTS ---
-$sys = Get-CimInstance Win32_ComputerSystem
-$bios = Get-CimInstance Win32_Bios
-
-$Mod = $sys.Model.Trim()
-if ($Mod.StartsWith($sys.Manufacturer.Trim())) { $FullModel = $Mod } else { $FullModel = "$($sys.Manufacturer.Trim()) $Mod" }
-$serialNum = $bios.SerialNumber
-
-# Warranty Links
-$WarrantyLink = "https://www.google.com/search?q=$($bios.SerialNumber)+warranty"
-if ($MFG -match "Dell") { $WarrantyLink = "https://www.dell.com/support/home/en-us/product-support/servicetag/$($bios.SerialNumber)/overview" }
-elseif ($MFG -match "HP" -or $MFG -match "Hewlett") { $WarrantyLink = "https://support.hp.com/us-en/checkwarranty" }
-elseif ($MFG -match "Lenovo") { $WarrantyLink = "https://pcsupport.lenovo.com/us/en/warrantylookup" }
-
-# CPU Info & Logo
-$cpu = @(Get-CimInstance Win32_Processor)[0]
-$cpuName = $cpu.Name.Trim() -replace '\s+', ' '
-$maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
-$cacheMB = [int]($cpu.L3CacheSize / 1024)
-if ($cacheMB -eq 0 -and $cpu.L2CacheSize) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
-$cacheStr = if ($cacheMB -gt 0) { " | $cacheMB MB Cache" } else { "" }
-
-$CpuLogo = "https://cdn.simpleicons.org/intel/0068B5"
-if ($cpuName -match "AMD") { $CpuLogo = "https://cdn.simpleicons.org/amd/ED1C24" }
-
-# RAM
-$memArray = @(Get-CimInstance Win32_PhysicalMemoryArray)[0]
-$mems = @(Get-CimInstance Win32_PhysicalMemory)
-$totalSlots = if ($memArray) { $memArray.MemoryDevices } else { "?" }
-$maxMem = if ($memArray) { [math]::Round($memArray.MaxCapacity / 1048576, 1) } else { "?" }
-$usedSlots = $mems.Count
-$speed = if ($mems) { $mems[0].Speed } else { "?" }
-$totalRam = [math]::Round(($mems | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
-$ramDetails = "$totalRam GB Installed ($usedSlots Sticks) @ $speed MHz"
-
-# RAM Progress Bar Calculation
-$ramSlotPct = 0
-if ($totalSlots -ne "?" -and $totalSlots -gt 0) { $ramSlotPct = [math]::Round(($usedSlots / $totalSlots) * 100) }
-$ramBar = "<div class='progress-bg'><div class='progress-fill' style='width: $($ramSlotPct)%%;'></div></div>"
-$ramDetailsUI = "$totalRam GB ($speed MHz) <br> <span style='color:#a0a0ab; font-size:13px;'>Slots: $usedSlots Used of $totalSlots | Max Upgrade: $maxMem GB</span> $ramBar"
-
-# Storage
-$disks = Get-CimInstance Win32_DiskDrive | Where-Object { ($_.MediaType -eq 'Fixed hard disk media') -and ($_.InterfaceType -ne 'USB') -and ($_.PNPDeviceID -notmatch 'USBSTOR') -and ($_.Model -notmatch 'USB') }
-$totalDiskSize = 0
-$diskCount = 0
-$diskList = @()
-foreach ($d in $disks) { 
-    $s = [math]::Round($d.Size / 1GB, 0)
-    $totalDiskSize += $s; 
-    $diskCount++ 
-    $diskList += "$($d.Model) ($s GB)" 
-}
-$storageBar = "<div class='progress-bg'><div class='progress-fill' style='width: 100%%;'></div></div>"
-
-if ($totalDiskSize -eq 0) { 
-    $storageStringUI = "No Internal Disk Detected" 
-    $storageString = "No Internal Disk Detected"
-} else { 
-    $storageStringUI = "$totalDiskSize GB <br> <span style='color:#a0a0ab; font-size:13px;'>Installed Drives: $diskCount</span> $storageBar" 
-    $storageString = $diskList -join " | "
-}
-
-# GPU
-$gpuList = @()
-$regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
-    $props = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
-    if ($props -and $props.DriverDesc) {
-        $size = 0
-        if ($null -ne $props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
-        elseif ($null -ne $props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
-        if ($size -is [array]) {
-            try {
-                if ($size.Count -ge 8) { $size = [BitConverter]::ToUInt64($size, 0) }
-                elseif ($size.Count -ge 4) { $size = [BitConverter]::ToUInt32($size, 0) }
-                else { $size = 0 }
-            } catch { $size = 0 }
-        }
-        $gb = 0
-        if ($size -gt 0) { $gb = [math]::Round([uint64]$size / 1GB) }
-        if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" } else { $gpuList += $props.DriverDesc }
-    }
-}
-$gpuString = ($gpuList | Select-Object -Unique) -join " + "
-
-# GPU Logo Logic
-$GpuLogo = "https://cdn.simpleicons.org/ssg/666666"
-if ($gpuString -match "(?i)NVIDIA") { $GpuLogo = "https://cdn.simpleicons.org/nvidia/76B900" }
-elseif ($gpuString -match "(?i)AMD" -or $gpuString -match "(?i)Radeon") { $GpuLogo = "https://cdn.simpleicons.org/amd/ED1C24" }
-elseif ($gpuString -match "(?i)Intel") { $GpuLogo = "https://cdn.simpleicons.org/intel/0068B5" }
-
-# --- DISPLAY RESOLUTION ---
-$resString = ""
-try {
-    $vid = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Where-Object CurrentHorizontalResolution -ne $null | Select-Object -First 1
-    if ($vid) {
-        $w = $vid.CurrentHorizontalResolution
-        $h = $vid.CurrentVerticalResolution
-        $hz = $vid.CurrentRefreshRate
-        $resType = "HD"
-        if ($w -ge 1920) { $resType = "FHD" }
-        if ($w -ge 2560) { $resType = "QHD" }
-        if ($w -ge 3840) { $resType = "4K" }
-        $resString = "$w x $h ($resType) @ $hz Hz"
-    } else {
-        $resString = "Standard Display"
-    }
-} catch { $resString = "Standard Display" }
-
-# MERGE DISPLAY WITH GPU STRING FOR THE FINAL REPORT AND DB UPLOAD
-$gpuStringUpload = "$gpuString | Display: $resString"
-
-# --- TEMPERATURE DETECTION ---
-$cpuTemp = "N/A"
-$cpuTempColor = "#a0a0ab"
-try {
-    $tz = Get-CimInstance -Namespace "root/wmi" -ClassName "MSAcpi_ThermalZoneTemperature" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($tz -and $tz.CurrentTemperature) {
-        $c = [math]::Round(($tz.CurrentTemperature / 10) - 273.15)
-        if ($c -gt 0 -and $c -lt 150) {
-            $cpuTemp = "$c C"
-            if ($c -ge 85) { $cpuTempColor = "#ef4444" }
-            elseif ($c -ge 75) { $cpuTempColor = "#f59e0b" }
-            else { $cpuTempColor = "#28a745" }
-        }
-    }
-} catch {}
-
-$gpuTemp = "N/A"
-$gpuTempColor = "#a0a0ab"
-try {
-    $nvsmi = "$env:windir\System32\nvidia-smi.exe"
-    if (Test-Path $nvsmi) {
-        $gInfo = &$nvsmi --query-gpu=temperature.gpu --format=csv,noheader
-        if ($gInfo -match "\d+") {
-            $gVal = [int]$matches[0]
-            $gpuTemp = "$gVal C"
-            if ($gVal -ge 85) { $gpuTempColor = "#ef4444" }
-            elseif ($gVal -ge 75) { $gpuTempColor = "#f59e0b" }
-            else { $gpuTempColor = "#28a745" }
-        }
-    }
-} catch {}
-
-$cpuDetails = "$cpuName | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr"
-$cpuDetailsUI = "$cpuName <br> <span style='color:#a0a0ab; font-size:13px;'>$($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr</span> <br> <span id='live-cpu-temp' class='badge' style='background-color: $($cpuTempColor)20; color: $cpuTempColor; border-color: $cpuTempColor;'>TEMP: $cpuTemp</span>"
-
-$gpuStringUI = ($gpuList | Select-Object -Unique) -join " <br> "
-if (-not $gpuStringUI) { $gpuStringUI = "Standard Graphics Adapter" }
-$gpuStringUI = "$gpuStringUI <br><span class='badge' style='background-color: rgba(0,229,255,0.1); color: var(--secondary); border-color: var(--secondary);'>$resString</span> <span id='live-gpu-temp' class='badge' style='background-color: $($gpuTempColor)20; color: $gpuTempColor; border-color: $gpuTempColor;'>TEMP: $gpuTemp</span>"
-
-# --- BATTERY HEALTH (CIM) ---
-$batHealth = "Unknown"
-try {
-    $full = (Get-CimInstance -ClassName BatteryFullCapacity -Namespace root\wmi -ErrorAction SilentlyContinue).FullChargeCapacity
-    $design = (Get-CimInstance -ClassName BatteryStaticData -Namespace root\wmi -ErrorAction SilentlyContinue).DesignedCapacity
-    if ($full -and $design -and $design -gt 0) {
-        $pct = [math]::Round(($full / $design) * 100)
-        if ($pct -gt 100) { $pct = 100 }
-        $batHealth = "$pct% Excellent"
-        if ($pct -lt 80) { $batHealth = "$pct% Good" }
-        if ($pct -lt 50) { $batHealth = "$pct% Weak" }
-    } else {
-        $b2 = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue
-        if ($b2) { $batHealth = "Status OK" } else { $batHealth = "No Battery" }
-    }
-} catch { $batHealth = "No Battery" }
-
-# --- STORAGE HEALTH (S.M.A.R.T via CIM) ---
-$diskHealth = "100% Excellent"
-try {
-    $smart = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
-    if ($smart) { foreach ($d in $smart) { if ($d.PredictFailure) { $diskHealth = "FAILING (Warning)" } } }
-} catch { }
-
-# --- AC ADAPTER STATUS ---
-$acStatus = "Connected"
-try {
-    $batStatus = (Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue).BatteryStatus
-    if ($batStatus -eq 1) { $acStatus = "Disconnected" }
-    elseif ($batStatus -eq 2) { $acStatus = "Charging" }
-    else { $acStatus = "Plugged In" }
-} catch { $acStatus = "AC Power" }
-
 # ==========================================================
-# MASTER UI HTML CONSTRUCTION
+# ASYNC MASTER UI HTML CONSTRUCTION (FAST LOAD)
 # ==========================================================
 $html = @"
 <!DOCTYPE html>
@@ -851,8 +685,12 @@ $html = @"
     .progress-bg { width: 100%; height: 5px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 12px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary), var(--primary)) !important; background-size: 300% 100% !important; animation: gradientFlow 1.5s linear infinite !important; }
     @keyframes fastPulseBtn { 0% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0.6); } 70% { box-shadow: 0 0 0 20px rgba(168, 32, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 32, 255, 0); } }
-    @keyframes hyperGradientFast { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-    .welcome-container button[onclick="startDiagnosticHub()"] { background-image: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent), var(--primary)) !important; background-size: 300% 100% !important; background-position: 0% 50%; animation: gradientFlow 2.5s ease-in-out infinite, fastPulseBtn 1.5s infinite !important; border-color: transparent !important; color: #fff !important; text-shadow: 0 2px 5px rgba(0,0,0,0.5); font-weight: 900; }    .btn-hero:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(255,0,170,0.6); }
+    .scanning-pulse { color: var(--secondary); font-weight: 800; font-size: 14px; letter-spacing: 2px; animation: constantNeonPulse 1.5s infinite alternate; }
+    .welcome-container button[onclick="startDiagnosticHub()"] { background-image: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent), var(--primary)) !important; background-size: 300% 100% !important; background-position: 0% 50%; animation: gradientFlow 2.5s ease-in-out infinite, fastPulseBtn 1.5s infinite !important; border-color: transparent !important; color: #fff !important; text-shadow: 0 2px 5px rgba(0,0,0,0.5); font-weight: 900; }
+    .btn-action-pro { margin-top: 20px; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border: none; padding: 18px 75px; font-size: 16px; font-weight: 950; border-radius: 50px; cursor: pointer; text-transform: uppercase; transition: 0.4s; }
+    .btn-action-pro:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(168,32,255,0.4); }
+    .btn-hero { width: 100%; background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary)); background-size: 200% 100%; animation: hyperGradientFast 0.8s linear infinite; color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 15px; font-size: 16px; font-weight: 950; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 30px rgba(168,32,255,0.4); margin-bottom: 20px; }
+    .btn-hero:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(255,0,170,0.6); }
     .btn-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; width: 100%; margin-top: 10px; }
     .btn-grid { background: rgba(255,255,255,0.03); color: #ccc; border: 1px solid rgba(255,255,255,0.06); padding: 22px 15px; border-radius: 15px; cursor: pointer; font-weight: 800; text-transform: uppercase; font-size: 13px; transition: 0.3s; display: flex; align-items: center; justify-content: center; letter-spacing: 1px; }
     .btn-grid:hover { background: linear-gradient(45deg, var(--primary), var(--secondary)); color: #fff; border-color: transparent; transform: translateY(-4px); box-shadow: 0 12px 25px rgba(168,32,255,0.3); }
@@ -932,25 +770,25 @@ $html = @"
 
     <div id="tab-hw" class="section active">
         <div id="welcome-view" class="welcome-container">
-            <div class="welcome-header-row"><h2 class="device-title">$FullModel</h2></div>
+            <div class="welcome-header-row"><h2 class="device-title" id="ui-model"><span class="scanning-pulse">CONNECTING TO QUANTUM CORE...</span></h2></div>
             
             <div style="display: flex; gap: 20px; width: 100%; align-items: stretch;">
                 <div class="spec-grid-custom" style="flex: 1; margin-bottom: 0;">
                     <div class="spec-card-mini accent">
-                        <div><span class="spec-label-mini">Processor Engine (CPU)</span><div class="spec-value-mini">$cpuDetailsUI</div></div>
-                        <img src="$CpuLogo" style="height: 45px; max-width: 80px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));">
+                        <div><span class="spec-label-mini">Processor Engine (CPU)</span><div class="spec-value-mini" id="ui-cpu"><span class="scanning-pulse">[ FETCHING DATA... ]</span></div></div>
+                        <img src="https://cdn.simpleicons.org/ssg/666666" id="img-cpu" style="height: 45px; max-width: 80px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));">
                     </div>
                     <div class="spec-card-mini accent" style="border-left-color: var(--primary);">
-                        <div><span class="spec-label-mini">Graphics Processor (GPU)</span><div class="spec-value-mini" style="color: #e0e0e0;">$gpuStringUI</div></div>
-                        <img src="$GpuLogo" style="height: 45px; max-width: 80px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));">
+                        <div><span class="spec-label-mini">Graphics Processor (GPU)</span><div class="spec-value-mini" id="ui-gpu" style="color: #e0e0e0;"><span class="scanning-pulse">[ FETCHING DATA... ]</span></div></div>
+                        <img src="https://cdn.simpleicons.org/ssg/666666" id="img-gpu" style="height: 45px; max-width: 80px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));">
                     </div>
                     <div class="spec-row-split">
                         <div class="spec-card-mini accent" style="border-left-color: var(--secondary);">
-                            <div><span class="spec-label-mini">Installed Memory (RAM)</span><div class="spec-value-mini">$ramDetailsUI</div></div>
+                            <div><span class="spec-label-mini">Installed Memory (RAM)</span><div class="spec-value-mini" id="ui-ram"><span class="scanning-pulse">[ FETCHING DATA... ]</span></div></div>
                             <svg viewBox="0 0 24 24" style="height: 40px; min-width: 40px; flex-shrink: 0; fill: var(--secondary); filter: drop-shadow(0 0 10px rgba(0,229,255,0.3));"><path d="M2 6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H2zm0 2h20v8H2V8zm2 2v4h2v-4H4zm4 0v4h2v-4H8zm4 0v4h2v-4h-2zm4 0v4h2v-4h-2z"/></svg>
                         </div>
                         <div class="spec-card-mini accent" style="border-left-color: #ff007f;">
-                            <div><span class="spec-label-mini">Internal Storage</span><div class="spec-value-mini">$storageStringUI</div></div>
+                            <div><span class="spec-label-mini">Internal Storage</span><div class="spec-value-mini" id="ui-storage"><span class="scanning-pulse">[ FETCHING DATA... ]</span></div></div>
                             <svg viewBox="0 0 24 24" style="height: 40px; min-width: 40px; flex-shrink: 0; fill: #ff007f; filter: drop-shadow(0 0 10px rgba(255,0,127,0.3));"><path d="M4 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4zm0 2h16v12H4V6zm2 2v2h12V8H6zm0 4v2h12v-2H6z"/></svg>
                         </div>
                     </div>
@@ -969,6 +807,7 @@ $html = @"
             <div class="dash-card" onclick="openTest('test-to')"><h3>Touch Digitizer</h3><p>Matrix Scan</p><div class="card-status" id="c-stat-to">PENDING</div></div>
             <div class="dash-card" onclick="openTest('test-ca')"><h3>Webcam Sensor</h3><p>Visual Stream</p><div class="card-status" id="c-stat-ca">PENDING</div></div>
             <div class="dash-card" onclick="runCmd('BATTERY')" style="border-color:#ff007f;"><h3>Real Battery Drain</h3><p>Virtual Engine Logger</p><div class="card-status" style="border-color:#ff007f; color:#ff007f;">UTILITY</div></div>
+            <div class="dash-card" onclick="runCmd('BATTERY_NATIVE')" style="border-color:#00e5ff;"><h3>Windows Battery Log</h3><p>Native Powercfg Report</p><div class="card-status" style="border-color:#00e5ff; color:#00e5ff;">UTILITY</div></div>
         </div>
 
         <div id="test-kb" class="test-view">
@@ -1004,9 +843,9 @@ $html = @"
         </div>
 
         <div id="stress-status-cards" style="width: 100%; max-width: 1300px; margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-             <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(40, 167, 69, 0.4); text-align: center;"><h4 style="margin: 0 0 10px 0; color: var(--success); text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Battery Health</h4><span style="font-size: 22px; font-weight: 800; color: #fff;">$batHealth</span></div>
-            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(0, 229, 255, 0.4); text-align: center;"><h4 style="margin: 0 0 10px 0; color: var(--secondary); text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Storage Health</h4><span style="font-size: 22px; font-weight: 800; color: #fff;">$diskHealth</span></div>
-            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(245, 158, 11, 0.4); text-align: center;"><h4 style="margin: 0 0 10px 0; color: #f59e0b; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Charger (AC)</h4><span style="font-size: 20px; font-weight: 800; color: #fff;">$acStatus</span></div>
+             <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(40, 167, 69, 0.4); text-align: center;"><h4 style="margin: 0 0 10px 0; color: var(--success); text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Battery Health</h4><span id="ui-bat-health" style="font-size: 22px; font-weight: 800; color: #fff;">Scanning...</span></div>
+            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(0, 229, 255, 0.4); text-align: center;"><h4 style="margin: 0 0 10px 0; color: var(--secondary); text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Storage Health</h4><span id="ui-disk-health" style="font-size: 22px; font-weight: 800; color: #fff;">Scanning...</span></div>
+            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(245, 158, 11, 0.4); text-align: center;"><h4 style="margin: 0 0 10px 0; color: #f59e0b; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Charger (AC)</h4><span id="ui-ac-status" style="font-size: 20px; font-weight: 800; color: #fff;">Scanning...</span></div>
         </div>
 
         <div id="test-cpu" class="test-view"><button class="btn-back" onclick="closeTest()">BACK TO STRESS HUB</button><div class="test-card-ultimate"><h2 style="margin-bottom:20px; color:var(--secondary);">CPU (Processor Core Stress)</h2><p style="color:#666; margin-bottom:45px;">Forces all logical cores to 100% via multi-threaded math calculations.</p><div class="btn-grid-container"><button class="btn-grid" onclick="runCmd('CPU_30')">30 Seconds</button><button class="btn-grid" onclick="runCmd('CPU_60')">60 Seconds</button><button class="btn-grid" style="border-color:#ff007f; color:#ff007f;" onclick="runCmd('CPU_INF')">Infinite Load</button></div></div></div>
@@ -1123,6 +962,45 @@ $html = @"
     const pressedKeys = new Set(); let doneTests = { kb:false, sc:false, au:false, to:false, ca:false }; let stream;
     let diagStarted = false;
 
+    // --- ASYNC HARDWARE DATA POLLING ---
+    let hwLoaded = false;
+    let hwInt = setInterval(() => {
+        if(hwLoaded) { clearInterval(hwInt); return; }
+        let s = document.createElement('script');
+        s.src = 'file:///C:/MontagTools/hw_sync.js?t=' + Date.now();
+        document.body.appendChild(s);
+        s.onload = () => { document.body.removeChild(s); };
+        s.onerror = () => document.body.removeChild(s);
+    }, 1000);
+
+    function applyHWData() {
+        if(!window.MontagHW) return;
+        hwLoaded = true;
+        let hw = window.MontagHW;
+        
+        document.getElementById('ui-model').innerHTML = hw.FullModel;
+        document.getElementById('ui-cpu').innerHTML = hw.CpuDetailsUI + "<br><span id='live-cpu-temp' class='badge' style='background-color: #a0a0ab20; color: #a0a0ab; border-color: #a0a0ab;'>TEMP: N/A</span>";
+        document.getElementById('ui-gpu').innerHTML = hw.GpuStringUI + "<br><span class='badge' style='background-color: rgba(0,229,255,0.1); color: var(--secondary); border-color: var(--secondary);'>" + hw.ResString + "</span> <span id='live-gpu-temp' class='badge' style='background-color: #a0a0ab20; color: #a0a0ab; border-color: #a0a0ab;'>TEMP: N/A</span>";
+        document.getElementById('ui-ram').innerHTML = hw.RamDetailsUI;
+        document.getElementById('ui-storage').innerHTML = hw.StorageStringUI;
+        
+        document.getElementById('img-cpu').src = hw.CpuLogo;
+        document.getElementById('img-gpu').src = hw.GpuLogo;
+        
+        document.getElementById('ui-bat-health').innerText = hw.BatHealth;
+        document.getElementById('ui-disk-health').innerText = hw.DiskHealth;
+        document.getElementById('ui-ac-status').innerText = hw.AcStatus;
+        
+        if (hw.BatHealth === "No Battery") {
+            document.querySelectorAll('.dash-card').forEach(card => {
+                if(card.getAttribute('onclick') === "runCmd('BATTERY')" || card.getAttribute('onclick') === "runCmd('BATTERY_NATIVE')") {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    }
+    // -----------------------------------
+
     function playQuantumChime() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1201,7 +1079,6 @@ $html = @"
     function runCmd(actionName) {
         let originalTitle = document.title;
         document.title = "MONTAG_CMD_" + actionName;
-        // INCREASED TIMEOUT TO 1500ms TO FIX POWERSHELL INTERCEPT DELAY ON SLOW MACHINES
         setTimeout(() => { document.title = originalTitle; }, 1500);
     }
 
@@ -1393,12 +1270,18 @@ $html = @"
         url += "&entry.371291262=" + type;
         url += "&entry.392302034=" + encodeURIComponent(tester);
         url += "&entry.517500793=" + encodeURIComponent(clientInfo);
-        url += "&entry.531158115=" + encodeURIComponent("$FullModel");
-        url += "&entry.1203480099=" + encodeURIComponent("$($bios.SerialNumber)");
-        url += "&entry.1462565184=" + encodeURIComponent("$cpuDetails | Temp: $cpuTemp");
-        url += "&entry.212987726=" + encodeURIComponent("$ramDetails");
-        url += "&entry.1717831234=" + encodeURIComponent("$storageString");
-        url += "&entry.2044586469=" + encodeURIComponent("$gpuStringUpload | Temp: $gpuTemp");
+        
+        if (window.MontagHW) {
+            url += "&entry.531158115=" + encodeURIComponent(window.MontagHW.FullModel);
+            url += "&entry.1203480099=" + encodeURIComponent(window.MontagHW.SerialNumber);
+            url += "&entry.1462565184=" + encodeURIComponent(window.MontagHW.CpuDetails);
+            url += "&entry.212987726=" + encodeURIComponent(window.MontagHW.RamDetails);
+            url += "&entry.1717831234=" + encodeURIComponent(window.MontagHW.StorageString);
+            url += "&entry.2044586469=" + encodeURIComponent(window.MontagHW.GpuStringUpload);
+        } else {
+            url += "&entry.531158115=UNKNOWN";
+        }
+        
         url += "&entry.310563239=" + encodeURIComponent(finalStatus);
         fetch(url, { mode: 'no-cors' }).then(() => {
             document.getElementById('tab-rep').innerHTML = "<div class='test-card-ultimate' style='max-width: 900px; padding: 40px; width: 100%; text-align:center;'><h1 style='color:var(--secondary); font-size:40px; margin-bottom:20px;'>UPLOAD SUCCESSFUL!</h1><p style='color:#aaa; font-size:16px;'>Data has been saved to the Sales Database.</p><button class='btn-action-pro' onclick='exitHub()'>CLOSE DIAGNOSTIC HUB</button></div>";
@@ -1423,15 +1306,6 @@ $html = @"
         s.onload = () => document.body.removeChild(s);
         s.onerror = () => document.body.removeChild(s);
     }, 2000);
-
-    // --- Desktop Battery Test Skip ---
-    if ("$batHealth" === "No Battery") {
-        document.querySelectorAll('.dash-card').forEach(card => {
-            if(card.getAttribute('onclick') === "runCmd('BATTERY')") {
-                card.style.display = 'none';
-            }
-        });
-    }
 </script>
 </body>
 </html>
@@ -1439,8 +1313,9 @@ $html = @"
 
 $html | Out-File $GuiFile -Encoding UTF8
 
+Log-Diag "Launching UI Engine Instantly..."
 Start-Process "msedge" -ArgumentList "--new-window --kiosk --edge-kiosk-type=fullscreen `"$GuiFile`""
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 1
 
 # --- TEMP LOGGER BACKGROUND JOB ---
 $TempJS = "$env:SystemDrive\MontagTools\live_temp.js"
@@ -1457,6 +1332,156 @@ $TempJob = Start-Job -ScriptBlock {
     }
 } -ArgumentList $TempJS
 
+# ==========================================================
+# ASYNC HARDWARE SCAN WITH WMI FAILSAFES
+# ==========================================================
+Log-Diag "Starting WMI Background Hardware Scan..."
+
+# System & BIOS
+try {
+    $sys = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop
+    $Mod = $sys.Model.Trim()
+    if ($Mod.StartsWith($sys.Manufacturer.Trim())) { $FullModel = $Mod } else { $FullModel = "$($sys.Manufacturer.Trim()) $Mod" }
+} catch { $FullModel = "Unknown Target Device"; Log-Diag "WMI Err: Win32_ComputerSystem" }
+
+try { $serialNum = (Get-CimInstance Win32_Bios -ErrorAction Stop).SerialNumber.Trim() } catch { $serialNum = "UNKNOWN-SN"; Log-Diag "WMI Err: Win32_Bios" }
+
+# Warranty
+$WarrantyLink = "https://www.google.com/search?q=$($serialNum)+warranty"
+if ($MFG -match "Dell") { $WarrantyLink = "https://www.dell.com/support/home/en-us/product-support/servicetag/$($serialNum)/overview" }
+elseif ($MFG -match "HP" -or $MFG -match "Hewlett") { $WarrantyLink = "https://support.hp.com/us-en/checkwarranty" }
+elseif ($MFG -match "Lenovo") { $WarrantyLink = "https://pcsupport.lenovo.com/us/en/warrantylookup" }
+
+# CPU
+try {
+    $cpu = @(Get-CimInstance Win32_Processor -ErrorAction Stop)[0]
+    $cpuName = $cpu.Name.Trim() -replace '\s+', ' '
+    $maxSpeed = [math]::Round($cpu.MaxClockSpeed / 1000, 2)
+    $cacheMB = [int]($cpu.L3CacheSize / 1024)
+    if ($cacheMB -eq 0 -and $cpu.L2CacheSize) { $cacheMB = [int]($cpu.L2CacheSize / 1024) }
+    $cacheStr = if ($cacheMB -gt 0) { " | $cacheMB MB Cache" } else { "" }
+    $cpuDetails = "$cpuName | $($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr"
+    $cpuDetailsUI = "$cpuName <br> <span style='color:#a0a0ab; font-size:13px;'>$($cpu.NumberOfCores) Cores / $($cpu.NumberOfLogicalProcessors) Threads | $maxSpeed GHz$cacheStr</span>"
+    $CpuLogo = "https://cdn.simpleicons.org/intel/0068B5"
+    if ($cpuName -match "AMD") { $CpuLogo = "https://cdn.simpleicons.org/amd/ED1C24" }
+} catch {
+    Log-Diag "WMI Err: Win32_Processor"
+    $cpuDetails = "Unknown Processor Data"
+    $cpuDetailsUI = "<span style='color:#ef4444'>Failed to read CPU Data</span>"
+    $CpuLogo = "https://cdn.simpleicons.org/ssg/666666"
+}
+
+# RAM
+try {
+    $memArray = @(Get-CimInstance Win32_PhysicalMemoryArray -ErrorAction SilentlyContinue)[0]
+    $mems = @(Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop)
+    $totalSlots = if ($memArray) { $memArray.MemoryDevices } else { "?" }
+    $maxMem = if ($memArray) { [math]::Round($memArray.MaxCapacity / 1048576, 1) } else { "?" }
+    $usedSlots = $mems.Count
+    $speed = if ($mems) { $mems[0].Speed } else { "?" }
+    $totalRam = [math]::Round(($mems | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
+    $ramDetails = "$totalRam GB Installed ($usedSlots Sticks) @ $speed MHz"
+    $ramSlotPct = 0
+    if ($totalSlots -ne "?" -and $totalSlots -gt 0) { $ramSlotPct = [math]::Round(($usedSlots / $totalSlots) * 100) }
+    $ramBar = "<div class='progress-bg'><div class='progress-fill' style='width: $($ramSlotPct)%%;'></div></div>"
+    $ramDetailsUI = "$totalRam GB ($speed MHz) <br> <span style='color:#a0a0ab; font-size:13px;'>Slots: $usedSlots Used of $totalSlots | Max Upgrade: $maxMem GB</span> $ramBar"
+} catch {
+    Log-Diag "WMI Err: Win32_PhysicalMemory"
+    $ramDetails = "Unknown Memory Data"
+    $ramDetailsUI = "<span style='color:#ef4444'>Failed to read RAM Data</span>"
+}
+
+# Storage
+try {
+    $disks = Get-CimInstance Win32_DiskDrive -ErrorAction Stop | Where-Object { ($_.MediaType -eq 'Fixed hard disk media') -and ($_.InterfaceType -ne 'USB') -and ($_.PNPDeviceID -notmatch 'USBSTOR') -and ($_.Model -notmatch 'USB') }
+    $totalDiskSize = 0; $diskCount = 0; $diskList = @()
+    foreach ($d in $disks) { $s = [math]::Round($d.Size / 1GB, 0); $totalDiskSize += $s; $diskCount++; $diskList += "$($d.Model) ($s GB)" }
+    $storageBar = "<div class='progress-bg'><div class='progress-fill' style='width: 100%%;'></div></div>"
+    if ($totalDiskSize -eq 0) { $storageStringUI = "No Internal Disk Detected"; $storageString = "No Internal Disk Detected" } 
+    else { $storageStringUI = "$totalDiskSize GB <br> <span style='color:#a0a0ab; font-size:13px;'>Installed Drives: $diskCount</span> $storageBar"; $storageString = $diskList -join " | " }
+} catch {
+    Log-Diag "WMI Err: Win32_DiskDrive"
+    $storageString = "Unknown Storage Data"
+    $storageStringUI = "<span style='color:#ef4444'>Failed to read Storage Data</span>"
+}
+
+# GPU
+$gpuList = @()
+try {
+    $regBase = 'HKLM:\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+    Get-ChildItem $regBase -ErrorAction SilentlyContinue | ForEach-Object {
+        $props = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
+        if ($props -and $props.DriverDesc) {
+            $size = 0
+            if ($null -ne $props.'HardwareInformation.QwMemorySize') { $size = $props.'HardwareInformation.QwMemorySize' }
+            elseif ($null -ne $props.'HardwareInformation.MemorySize') { $size = $props.'HardwareInformation.MemorySize' }
+            if ($size -is [array]) { try { if ($size.Count -ge 8) { $size = [BitConverter]::ToUInt64($size, 0) } elseif ($size.Count -ge 4) { $size = [BitConverter]::ToUInt32($size, 0) } else { $size = 0 } } catch { $size = 0 } }
+            $gb = 0; if ($size -gt 0) { $gb = [math]::Round([uint64]$size / 1GB) }
+            if ($gb -gt 0) { $gpuList += "$($props.DriverDesc) ($gb GB)" } else { $gpuList += $props.DriverDesc }
+        }
+    }
+} catch { Log-Diag "Reg Err: GPU Fetch" }
+$gpuString = ($gpuList | Select-Object -Unique) -join " + "
+$GpuLogo = "https://cdn.simpleicons.org/ssg/666666"
+if ($gpuString -match "(?i)NVIDIA") { $GpuLogo = "https://cdn.simpleicons.org/nvidia/76B900" } elseif ($gpuString -match "(?i)AMD" -or $gpuString -match "(?i)Radeon") { $GpuLogo = "https://cdn.simpleicons.org/amd/ED1C24" } elseif ($gpuString -match "(?i)Intel") { $GpuLogo = "https://cdn.simpleicons.org/intel/0068B5" }
+
+# Display Resolution
+$resString = "Standard Display"
+try {
+    $vid = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Where-Object CurrentHorizontalResolution -ne $null | Select-Object -First 1
+    if ($vid) {
+        $w = $vid.CurrentHorizontalResolution; $h = $vid.CurrentVerticalResolution; $hz = $vid.CurrentRefreshRate
+        $resType = "HD"; if ($w -ge 1920) { $resType = "FHD" }; if ($w -ge 2560) { $resType = "QHD" }; if ($w -ge 3840) { $resType = "4K" }
+        $resString = "$w x $h ($resType) @ $hz Hz"
+    }
+} catch { Log-Diag "WMI Err: Win32_VideoController" }
+
+$gpuStringUpload = "$gpuString | Display: $resString"
+$gpuStringUI = ($gpuList | Select-Object -Unique) -join " <br> "
+if (-not $gpuStringUI) { $gpuStringUI = "Standard Graphics Adapter" }
+
+# Health Checks
+$batHealth = "Unknown"
+try {
+    $full = (Get-CimInstance -ClassName BatteryFullCapacity -Namespace root\wmi -ErrorAction SilentlyContinue).FullChargeCapacity
+    $design = (Get-CimInstance -ClassName BatteryStaticData -Namespace root\wmi -ErrorAction SilentlyContinue).DesignedCapacity
+    if ($full -and $design -and $design -gt 0) {
+        $pct = [math]::Round(($full / $design) * 100); if ($pct -gt 100) { $pct = 100 }
+        $batHealth = "$pct% Excellent"; if ($pct -lt 80) { $batHealth = "$pct% Good" }; if ($pct -lt 50) { $batHealth = "$pct% Weak" }
+    } else { $b2 = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue; if ($b2) { $batHealth = "Status OK" } else { $batHealth = "No Battery" } }
+} catch { $batHealth = "No Battery"; Log-Diag "WMI Err: Battery Health" }
+
+$diskHealth = "100% Excellent"
+try { $smart = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue; if ($smart) { foreach ($d in $smart) { if ($d.PredictFailure) { $diskHealth = "FAILING (Warning)" } } } } catch { Log-Diag "WMI Err: SMART Status" }
+
+$acStatus = "Connected"
+try { $batStatus = (Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue).BatteryStatus; if ($batStatus -eq 1) { $acStatus = "Disconnected" } elseif ($batStatus -eq 2) { $acStatus = "Charging" } else { $acStatus = "Plugged In" } } catch { $acStatus = "AC Power"; Log-Diag "WMI Err: AC Status" }
+
+# EXPORT DATA TO UI
+Log-Diag "Hardware Scan Complete. Pushing to UI Engine..."
+$HWObj = @{
+    FullModel = $FullModel
+    SerialNumber = $serialNum
+    CpuDetailsUI = $cpuDetailsUI
+    GpuStringUI = $gpuStringUI
+    RamDetailsUI = $ramDetailsUI
+    StorageStringUI = $storageStringUI
+    CpuLogo = $CpuLogo
+    GpuLogo = $GpuLogo
+    CpuDetails = $cpuDetails
+    GpuString = $gpuString
+    GpuStringUpload = $gpuStringUpload
+    RamDetails = $ramDetails
+    StorageString = $storageString
+    BatHealth = $batHealth
+    DiskHealth = $diskHealth
+    AcStatus = $acStatus
+    ResString = $resString
+}
+$json = $HWObj | ConvertTo-Json -Compress
+$jsContent = "window.MontagHW = $json; if(typeof applyHWData === 'function') applyHWData();"
+Set-Content -Path "$env:SystemDrive\MontagTools\hw_sync.js" -Value $jsContent -Encoding UTF8 -Force
+Log-Diag "UI Synced Successfully."
 
 # --- MEMORY UPGRADE: ZERO-DISK I/O WITH ANTI-DUPLICATE ---
 $kb_st = "PENDING"; $sc_st = "PENDING"; $au_st = "PENDING"; $to_st = "PENDING"; $ca_st = "PENDING"
@@ -1481,12 +1506,13 @@ while ($true) {
                 }
             }
             
-            # --- PREVENT COMMAND DUPLICATION (REGEX FIXED FOR MICROSOFT EDGE SUFFIX) ---
+            # --- PREVENT COMMAND DUPLICATION ---
             if ($title -match "MONTAG_CMD_([A-Z0-9_]+)") { 
                 $cmd = $matches[1]
                 if ($cmd -ne $last_cmd) { 
                     $last_cmd = $cmd 
                     if ($cmd -eq "EXIT") { 
+                        Log-Diag "Terminate Command Received."
                         Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match "MONTAG" } | Stop-Process -Force -ErrorAction SilentlyContinue
                         Stop-Job $TempJob -Force -ErrorAction SilentlyContinue
                         Remove-Job $TempJob -Force -ErrorAction SilentlyContinue
@@ -1504,6 +1530,7 @@ while ($true) {
 }
 
 # --- GENERATE DESKTOP CLIENT REPORT ---
+Log-Diag "Generating Final Sales Report..."
 function Get-FullTextStatus($st) {
     if ($st -match "OK") { return "Passed [OK]" }
     if ($st -match "X") { return "Failed [X]" }
@@ -1515,11 +1542,14 @@ $FinalStatusLog = "Keyboard: $(Get-FullTextStatus $kb_st) | Screen: $(Get-FullTe
 $SafeModel = $FullModel -replace '[\\/:*?"<>|]','_'
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
 
-# Save to ProgramData to hide it, then create a shortcut on Desktop
 $ReportDir = "$env:ProgramData\MontagStore"
 if (-not (Test-Path $ReportDir)) { New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null }
-$RealHtmlFile = "$ReportDir\Montag_$($bios.SerialNumber).html"
+$RealHtmlFile = "$ReportDir\Montag_$($serialNum).html"
 $DesktopShortcut = "$DesktopPath\Report - $SafeModel.url"
+
+$cpuTemp = "N/A"; $gpuTemp = "N/A"
+try { $tz = Get-CimInstance -Namespace "root/wmi" -ClassName "MSAcpi_ThermalZoneTemperature" -ErrorAction SilentlyContinue | Select-Object -First 1; if($tz){ $val = [math]::Round(($tz.CurrentTemperature/10)-273.15); if($val -gt 0 -and $val -lt 150){ $cpuTemp = "$val C" } } } catch{}
+try { $nvsmi = "$env:windir\System32\nvidia-smi.exe"; if(Test-Path $nvsmi){ $gInfo = &$nvsmi --query-gpu=temperature.gpu --format=csv,noheader; if($gInfo -match "\d+"){ $val=[int]$matches[0]; $gpuTemp = "$val C" } } } catch{}
 
 $ClientReport = @"
 <!DOCTYPE html>
@@ -1586,15 +1616,15 @@ $ClientReport = @"
         </div>
         <div class="spec-card">
             <span class="spec-label">Serial Number</span>
-            <div class="spec-value" style="color:var(--secondary); font-size: 17px; font-weight:800;">$($bios.SerialNumber)</div>
+            <div class="spec-value" style="color:var(--secondary); font-size: 17px; font-weight:800;">$serialNum</div>
         </div>
         <div class="spec-card">
             <span class="spec-label">Processor (CPU)</span>
-            <div class="spec-value">$cpuDetails <br><span style="color:$cpuTempColor; font-size:13px; font-weight:800;">Temp: $cpuTemp</span></div>
+            <div class="spec-value">$cpuDetails <br><span style="color:#a0a0ab; font-size:13px; font-weight:800;">Temp: $cpuTemp</span></div>
         </div>
         <div class="spec-card">
             <span class="spec-label">Graphics (GPU)</span>
-            <div class="spec-value">$gpuString <br><span style="color:$gpuTempColor; font-size:13px; font-weight:800;">Temp: $gpuTemp</span></div>
+            <div class="spec-value">$gpuString <br><span style="color:#a0a0ab; font-size:13px; font-weight:800;">Temp: $gpuTemp</span></div>
         </div>
         <div class="spec-card">
             <span class="spec-label">Installed RAM</span>
@@ -1630,7 +1660,7 @@ $ClientReport = @"
     function copySpecs(btn) {
         var textToCopy = "[ Montag Store - Device Specs ]\n\n" +
                          "*Model:* $FullModel\n" +
-                         "*Serial:* $($bios.SerialNumber)\n" +
+                         "*Serial:* $serialNum\n" +
                          "*CPU:* $cpuDetails | Temp: $cpuTemp\n" +
                          "*RAM:* $ramDetails\n" +
                          "*GPU:* $gpuString | Temp: $gpuTemp\n" +
@@ -1650,7 +1680,7 @@ $ClientReport = @"
     }
 
     function handleWarranty(btn) {
-        forceCopyText("$($bios.SerialNumber)");
+        forceCopyText("$serialNum");
         var originalText = btn.innerHTML;
         btn.innerHTML = "Serial Copied! Opening...";
         setTimeout(function() { window.open("$WarrantyLink", "_blank"); btn.innerHTML = originalText; }, 800);
@@ -1665,6 +1695,7 @@ $ShortcutContent = "[InternetShortcut]`r`nURL=file:///$RealHtmlFile`r`nIconIndex
 [System.IO.File]::WriteAllText($DesktopShortcut, $ShortcutContent)
 
 # --- CLEANUP ROUTINE ---
+Log-Diag "Executing Final Cleanup..."
 Remove-Item -Path "$env:SystemDrive\MontagTools" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemDrive\MontagReports" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:SystemDrive\MontagOffice" -Recurse -Force -ErrorAction SilentlyContinue
