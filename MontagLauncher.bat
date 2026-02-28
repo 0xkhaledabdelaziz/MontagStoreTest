@@ -636,7 +636,9 @@ $html = @"
     body::before, body::after { content: ''; position: absolute; width: 60vw; height: 60vw; border-radius: 50%; filter: blur(120px); z-index: -1; pointer-events: none; }
     body::before { background: rgba(0, 229, 255, 0.15); top: -15%; left: -10%; animation: floatLive 2.5s infinite alternate ease-in-out; } 
     body::after { background: rgba(168, 32, 255, 0.20); bottom: -15%; right: -10%; animation: floatLive 3s infinite alternate-reverse ease-in-out; } 
-    #splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s ease-in-out; }
+    
+    /* MODIFIED SPLASH SCREEN FOR CYBER-SPEED EFFECT */
+    #splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(45deg, rgba(168,32,255,0.15), rgba(0,0,0,0.8), rgba(0,229,255,0.15), rgba(0,0,0,0.8)); background-size: 400% 400%; animation: gradientFlow 1.5s linear infinite; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s ease-in-out; backdrop-filter: blur(5px); }
     .splash-logo { width: 630px; filter: drop-shadow(0 0 50px #a820ff); animation: constantNeonPulse 2.5s infinite alternate ease-in-out, splashFinalZoom 3s forwards; opacity: 0; }
     @keyframes splashFinalZoom { 0% { transform: scale(0.75) translateY(20px); opacity: 0; filter: brightness(0) blur(25px); } 30% { opacity: 1; filter: brightness(1.8) blur(0px); } 100% { transform: scale(1) translateY(0); opacity: 1; } }
     @keyframes constantNeonPulse { 0% { filter: drop-shadow(0 0 30px #a820ff) brightness(0.9); } 100% { filter: drop-shadow(0 0 80px #a820ff) brightness(1.4); } }
@@ -806,6 +808,7 @@ $html = @"
             <div class="dash-card" onclick="openTest('test-au')"><h3>Stereo Engine</h3><p>Acoustic Verification</p><div class="card-status" id="c-stat-au">PENDING</div></div>
             <div class="dash-card" onclick="openTest('test-to')"><h3>Touch Digitizer</h3><p>Matrix Scan</p><div class="card-status" id="c-stat-to">PENDING</div></div>
             <div class="dash-card" onclick="openTest('test-ca')"><h3>Webcam Sensor</h3><p>Visual Stream</p><div class="card-status" id="c-stat-ca">PENDING</div></div>
+            <div class="dash-card" onclick="openTest('test-ms')"><h3>Touchpad & Mouse</h3><p>Button & Scroll Mapper</p><div class="card-status" id="c-stat-ms">PENDING</div></div>
             <div class="dash-card" onclick="runCmd('BATTERY')" style="border-color:#ff007f;"><h3>Real Battery Drain</h3><p>Virtual Engine Logger</p><div class="card-status" style="border-color:#ff007f; color:#ff007f;">UTILITY</div></div>
             <div class="dash-card" onclick="runCmd('BATTERY_NATIVE')" style="border-color:#00e5ff;"><h3>Windows Battery Log</h3><p>Native Powercfg Report</p><div class="card-status" style="border-color:#00e5ff; color:#00e5ff;">UTILITY</div></div>
         </div>
@@ -832,6 +835,24 @@ $html = @"
         <div id="test-au" class="test-view"><button class="btn-back" onclick="closeTest()">BACK TO DASHBOARD</button><div class="test-card-ultimate"><h2 style="margin-bottom:20px;">Stereo Sound Engine</h2><p style="color:#666; margin-bottom:45px;">Verify acoustic channels and crackling distortion.</p><div style="display:flex; gap:15px; justify-content:center; margin-bottom:30px; flex-wrap:wrap;"><button class="btn-action-pro" style="background:#3b82f6; margin-top:0;" onclick="playT(-1)">Left Channel</button><button class="btn-action-pro" style="background:#10b981; margin-top:0;" onclick="playT(1)">Right Channel</button><button class="btn-action-pro" style="background:#f59e0b; margin-top:0;" onclick="playBassSweep()">Crackle/Bass Test</button></div><div style="margin-top:40px; border-top:1px solid rgba(255,255,255,0.05); padding-top:40px;"><h3 style="letter-spacing:3px; margin-bottom:30px;">AUDIO INTEGRITY?</h3><button class="btn-action-pro" style="background:var(--success); padding:20px 50px; margin-right:15px;" onclick="verifyAU('OK')">YES - CLEAR</button><button class="btn-action-pro" style="background:var(--error); padding:20px 50px;" onclick="verifyAU('X')">NO - DEFECT</button></div></div></div>
         <div id="test-to" class="test-view"><button class="btn-back" onclick="closeTest()">BACK TO DASHBOARD</button><div class="test-card-ultimate"><h2 style="margin-bottom:20px;">Digitizer Matrix Scanner</h2><p style="color:#666; margin-bottom:45px;">Perform a full coverage sweep of the touch layer.</p><button class="btn-action-pro" onclick="startTO()">Launch Matrix Scan</button></div></div>
         <div id="test-ca" class="test-view"><button class="btn-back" onclick="closeTest()">BACK TO DASHBOARD</button><div class="test-card-ultimate"><h2 style="margin-bottom:20px;">Visual Stream Analyzer</h2><button class="btn-action-pro" id="cBtn" onclick="toggleC()" style="margin-top:0;">Open Live Sensor</button><div style="width:100%; border-radius:20px; border:4px solid var(--primary); margin-top:35px; overflow:hidden; background:#000;"><video id="vid" autoplay playsinline style="display:none; width:100%; height:auto;"></video></div><div id="caDec" style="display:none; margin-top:45px;"><h3 style="letter-spacing:2px; margin-bottom:30px;">SENSOR CLARITY OK?</h3><button class="btn-action-pro" style="background:var(--success); padding:20px 50px; margin-right:15px;" onclick="verifyCA('OK')">YES - PERFECT</button><button class="btn-action-pro" style="background:var(--error); padding:20px 50px;" onclick="verifyCA('X')">NO - DEFECT</button></div></div></div>
+        
+        <div id="test-ms" class="test-view">
+            <button class="btn-back" onclick="closeTest()">BACK TO DASHBOARD</button>
+            <div class="test-card-ultimate" style="max-width: 800px; width:100%;">
+                <h2 style="margin-bottom:20px;">Touchpad & Mouse Engine</h2>
+                <p style="color:#666; margin-bottom:30px;">Perform clicks and scroll inside the zone below to verify mechanics.</p>
+                <div id="ms-zone" oncontextmenu="return false;" style="display: flex; gap: 10px; justify-content: center; margin: 0 auto 30px; width: 100%; max-width: 400px; height: 200px; padding: 20px; background: rgba(0,0,0,0.5); border: 1px dashed rgba(255,255,255,0.1); border-radius: 20px; cursor: crosshair;">
+                    <div id="ms-left" style="flex: 1; background: rgba(255,255,255,0.03); border: 2px solid #333; border-radius: 15px 5px 5px 15px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #555; transition: 0.1s;">LEFT</div>
+                    <div id="ms-mid" style="width: 70px; background: rgba(255,255,255,0.03); border: 2px solid #333; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; color: #555; transition: 0.1s;"><span style="font-size:10px;">SCROLL</span><br><span id="ms-scroll-val" style="color:#fff; font-size:18px;">0</span></div>
+                    <div id="ms-right" style="flex: 1; background: rgba(255,255,255,0.03); border: 2px solid #333; border-radius: 5px 15px 15px 5px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #555; transition: 0.1s;">RIGHT</div>
+                </div>
+                <div id="msDec" style="display:none; margin-top:30px; border-top:1px solid rgba(255,255,255,0.05); padding-top:30px;">
+                    <h3 style="letter-spacing:2px; margin-bottom:20px;">MECHANICS WORKING OK?</h3>
+                    <button class="btn-action-pro" style="background:var(--success); padding:15px 40px; margin-right:15px;" onclick="verifyMS('OK')">YES - PERFECT</button>
+                    <button class="btn-action-pro" style="background:var(--error); padding:15px 40px;" onclick="verifyMS('X')">NO - DEFECT</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="tab-stress" class="section">
@@ -959,7 +980,7 @@ $html = @"
 
 <script>
     window.moveTo(0,0); window.resizeTo(screen.availWidth, screen.availHeight);
-    const pressedKeys = new Set(); let doneTests = { kb:false, sc:false, au:false, to:false, ca:false }; let stream;
+    const pressedKeys = new Set(); let doneTests = { kb:false, sc:false, au:false, to:false, ca:false, ms:false }; let stream;
     let diagStarted = false;
 
     // --- ASYNC HARDWARE DATA POLLING ---
@@ -1035,7 +1056,8 @@ $html = @"
         let au = getFullStatusText('c-stat-au');
         let to = getFullStatusText('c-stat-to');
         let ca = getFullStatusText('c-stat-ca');
-        let res = "Keyboard: " + kb + " | Screen: " + sc + " | Audio: " + au + " | Touch: " + to + " | Camera: " + ca;
+        let ms = getFullStatusText('c-stat-ms');
+        let res = "Keyboard: " + kb + " | Screen: " + sc + " | Audio: " + au + " | Touch: " + to + " | Camera: " + ca + " | Mouse: " + ms;
         document.getElementById('checklistDisplay').innerText = res;
         return res;
     }
@@ -1189,6 +1211,36 @@ $html = @"
     document.title = "MONTAG_TO_" + st; checkHubStatus(); closeTest(); }
     document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && document.getElementById('touch-surface-master').style.display === 'block') { let a = document.querySelectorAll('.touched').length; finalizeTouch(a >= 238 ? "OK" : "X"); } });
     
+    // --- Mouse & Touchpad Engine ---
+    let msState = { l:false, r:false, m:false, s:false };
+    function checkMS() { if(msState.l && msState.r && msState.m && msState.s) document.getElementById('msDec').style.display = 'block'; }
+    let msZ = document.getElementById('ms-zone');
+    if(msZ) {
+        msZ.addEventListener('mousedown', function(e){
+            e.preventDefault();
+            if(e.button===0){ document.getElementById('ms-left').style.background='var(--primary)'; document.getElementById('ms-left').style.color='#fff'; document.getElementById('ms-left').style.borderColor='var(--primary)'; msState.l=true; }
+            if(e.button===2){ document.getElementById('ms-right').style.background='var(--secondary)'; document.getElementById('ms-right').style.color='#fff'; document.getElementById('ms-right').style.borderColor='var(--secondary)'; msState.r=true; }
+            if(e.button===1){ document.getElementById('ms-mid').style.background='var(--accent)'; document.getElementById('ms-mid').style.color='#fff'; document.getElementById('ms-mid').style.borderColor='var(--accent)'; msState.m=true; }
+            checkMS();
+        });
+        msZ.addEventListener('mouseup', function(e){
+            if(e.button===0){ document.getElementById('ms-left').style.background='rgba(255,255,255,0.03)'; document.getElementById('ms-left').style.borderColor='#333'; document.getElementById('ms-left').style.color='#555';}
+            if(e.button===2){ document.getElementById('ms-right').style.background='rgba(255,255,255,0.03)'; document.getElementById('ms-right').style.borderColor='#333'; document.getElementById('ms-right').style.color='#555';}
+            if(e.button===1){ document.getElementById('ms-mid').style.background='rgba(255,255,255,0.03)'; document.getElementById('ms-mid').style.borderColor='#333'; document.getElementById('ms-mid').style.color='#555';}
+        });
+        let sAc = 0;
+        msZ.addEventListener('wheel', function(e){
+            e.preventDefault();
+            sAc += Math.abs(e.deltaY);
+            document.getElementById('ms-scroll-val').innerText = sAc;
+            document.getElementById('ms-mid').style.borderColor = 'var(--success)';
+            document.getElementById('ms-mid').style.color = '#fff';
+            msState.s = true;
+            checkMS();
+        });
+    }
+    function verifyMS(st) { doneTests.ms = true; document.getElementById('c-stat-ms').innerText = st; document.getElementById('c-stat-ms').className = st === "OK" ? "card-status ok" : "card-status"; document.title = "MONTAG_MS_" + st; checkHubStatus(); closeTest(); }
+    
     async function toggleC() { try { stream = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('vid').srcObject = stream; document.getElementById('vid').style.display = 'block'; document.getElementById('caDec').style.display = 'block';
     } catch(e) { alert('Lens Sensor Denied.'); } }
     function verifyCA(st) { if(stream) { stream.getTracks().forEach(t => t.stop());
@@ -1253,8 +1305,9 @@ $html = @"
         let a_st = document.getElementById('c-stat-au').innerText;
         let t_st = document.getElementById('c-stat-to').innerText;
         let c_st = document.getElementById('c-stat-ca').innerText;
+        let ms_st = document.getElementById('c-stat-ms').innerText;
         let originalTitle = document.title;
-        document.title = "MONTAG_SYNC_" + k_st + "_" + s_st + "_" + a_st + "_" + t_st + "_" + c_st;
+        document.title = "MONTAG_SYNC_" + k_st + "_" + s_st + "_" + a_st + "_" + t_st + "_" + c_st + "_" + ms_st;
         setTimeout(() => { document.title = originalTitle; }, 1500);
 
         var userNotes = document.getElementById('userNotes').value.trim();
@@ -1484,7 +1537,7 @@ Set-Content -Path "$env:SystemDrive\MontagTools\hw_sync.js" -Value $jsContent -E
 Log-Diag "UI Synced Successfully."
 
 # --- MEMORY UPGRADE: ZERO-DISK I/O WITH ANTI-DUPLICATE ---
-$kb_st = "PENDING"; $sc_st = "PENDING"; $au_st = "PENDING"; $to_st = "PENDING"; $ca_st = "PENDING"
+$kb_st = "PENDING"; $sc_st = "PENDING"; $au_st = "PENDING"; $to_st = "PENDING"; $ca_st = "PENDING"; $ms_st = "PENDING"
 $last_cmd = ""
 
 while ($true) {
@@ -1498,11 +1551,12 @@ while ($true) {
             if ($title -match "MONTAG_AU_") { $au_st = $title.Split("_")[-1] }
             if ($title -match "MONTAG_TO_") { $to_st = $title.Split("_")[-1] }
             if ($title -match "MONTAG_CA_") { $ca_st = $title.Split("_")[-1] }
+            if ($title -match "MONTAG_MS_") { $ms_st = $title.Split("_")[-1] }
             
             if ($title -match "MONTAG_SYNC_") {
                 $syncParts = $title.Split("_")
-                if ($syncParts.Count -ge 7) {
-                    $kb_st = $syncParts[2]; $sc_st = $syncParts[3]; $au_st = $syncParts[4]; $to_st = $syncParts[5]; $ca_st = $syncParts[6]
+                if ($syncParts.Count -ge 8) {
+                    $kb_st = $syncParts[2]; $sc_st = $syncParts[3]; $au_st = $syncParts[4]; $to_st = $syncParts[5]; $ca_st = $syncParts[6]; $ms_st = $syncParts[7]
                 }
             }
             
@@ -1537,7 +1591,7 @@ function Get-FullTextStatus($st) {
     return "Pending"
 }
 
-$FinalStatusLog = "Keyboard: $(Get-FullTextStatus $kb_st) | Screen: $(Get-FullTextStatus $sc_st) | Audio: $(Get-FullTextStatus $au_st) | Touch: $(Get-FullTextStatus $to_st) | Camera: $(Get-FullTextStatus $ca_st)"
+$FinalStatusLog = "Keyboard: $(Get-FullTextStatus $kb_st) | Screen: $(Get-FullTextStatus $sc_st) | Audio: $(Get-FullTextStatus $au_st) | Touch: $(Get-FullTextStatus $to_st) | Camera: $(Get-FullTextStatus $ca_st) | Mouse: $(Get-FullTextStatus $ms_st)"
 
 $SafeModel = $FullModel -replace '[\\/:*?"<>|]','_'
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
